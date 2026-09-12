@@ -1,28 +1,32 @@
 # Current Handoff
 
-Current status:
-- planning stage
-- no milestone completed yet
+```
+# Current Handoff
 
-Active milestone:
+Completed:
 - M00 Project Foundation
 
-Completed decisions:
-- mobile-first web MVP
-- PDF/DOCX only
-- individual learning
-- Next.js + TypeScript + Tailwind
-- Phaser for 2D game visuals
-- Supabase for auth/database/storage
-- server-side AI generation
-- 3-option MCQ
-- Easy / Medium / Hard combat
-- three-stage dungeon
+Validation:
+- lint passed
+- typecheck passed
+- tests passed
+- production build passed
+- mobile layout checked at 320px–414px
+- no scope creep found
 
-Known product risks:
-- AI question accuracy
-- balancing Easy/Medium/Hard risk/reward
-- ensuring the game produces real learning
-- mobile Phaser performance/integration
+Important decisions / notes for M01:
+- Supabase env validation currently requires sb_publishable_* keys.
+- M01 must decide whether local development also supports legacy/local anon JWT keys.
+- M01 must implement the proper Supabase session refresh mechanism before relying on protected routes.
+- Node.js is currently pinned to 24.x; keep deployment/CI runtime aligned unless intentionally changed.
 
-Update this file after every accepted milestone.
+Deferred minor items:
+- root error boundary
+- .gitattributes
+- nested-route nav active state
+- deeper test glob
+
+Active milestone:
+- M01 Authentication
+```
+

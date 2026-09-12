@@ -57,12 +57,14 @@ The user does not review generated questions before beginning the dungeon.
 Because of this, question generation quality is critical.
 
 Bad questions must support:
+
 - Report
 - Regenerate
 
 Question generation should remain grounded in the uploaded document.
 
 Where practical, store source evidence:
+
 - source excerpt
 - source page / section
 - topic
@@ -70,6 +72,7 @@ Where practical, store source evidence:
 ## Learning system
 
 Planned learning mechanics:
+
 - wrong-answer explanations
 - weak-topic tracking
 - post-dungeon performance report
@@ -82,6 +85,7 @@ A review run may replay old material for learning, but should grant little or no
 ## Rewards and progression
 
 Reward calculation may consider:
+
 - difficulty attempted
 - correct answers
 - accuracy
@@ -93,12 +97,14 @@ Reward calculation may consider:
 Gold will later be used for:
 
 ### Cosmetic gacha
+
 - character appearance
 - armor skins
 - weapon skins
 - visual effects
 
 ### Armory / gameplay items
+
 - healing potion
 - shield
 - remove one wrong option
@@ -114,6 +120,7 @@ Advanced armory, gacha, and progression are not MVP priorities.
 Freemium.
 
 Initial concept:
+
 - first material upload / dungeon generation is free
 - additional material generations/uploads require payment or premium access
 
@@ -122,10 +129,12 @@ For early BIFEST validation, payment can remain operationally simple. Payment-ga
 ## Target market
 
 Primary:
+
 - university students
 - students preparing for quizzes/exams from their own lecture material
 
 Secondary:
+
 - any self-learner who wants to turn personal study material into a game-based quiz experience
 
 ## Competitive positioning
@@ -133,11 +142,13 @@ Secondary:
 Nerdungeon is not "the first gamified quiz app".
 
 Adjacent products already exist for:
+
 - AI-generated quizzes from uploaded materials
 - flashcards and practice tests
 - game modes based on question sets
 
 Nerdungeon's intended differentiation:
+
 1. learner-provided material
 2. AI-generated personalized questions
 3. one continuous 2D RPG dungeon run
@@ -152,11 +163,13 @@ Positioning sentence:
 ## MVP platform and technical direction
 
 MVP platform:
+
 - mobile-first responsive web app
 - primarily used through phone browsers
 - future path may include PWA / Capacitor for Android and iOS
 
 Recommended stack:
+
 - Next.js
 - TypeScript
 - Tailwind CSS
@@ -172,7 +185,60 @@ Recommended stack:
 - Vercel deployment
 
 Architecture principle:
+
 - React / Next.js owns app UI and question UI
 - Phaser owns visual game scenes and animation
 - server owns authoritative answer validation, rewards, inventory, and persistent run state
-- AI keys never exist in the browser
+- AI keys never exist in the browser  
+
+
+## Visual Identity &amp; UX Direction
+
+Nerdungeon must look and feel like a game-first learning product, not a generic SaaS dashboard.
+
+The overall interface should use a cohesive 2D fantasy / dungeon RPG visual language even outside the Phaser combat scene.
+
+Design principles:
+
+- Mobile-first portrait layout
+
+- Dark fantasy / medieval dungeon atmosphere
+
+- Pixel-art or illustrated RPG-inspired UI
+
+- Panels may resemble stone, parchment, wooden signs, inventory slots, quest cards, or dungeon menus
+
+- Buttons should feel like game actions, not generic SaaS CTAs
+
+- Avoid generic white dashboards, corporate cards, analytics-heavy layouts, and startup-style gradients
+
+- The product should feel playful and immersive while remaining readable and usable
+
+- Use original Nerdungeon assets whenever available
+
+- UI outside Phaser should visually belong to the same game world
+
+Product terminology should reinforce the theme where it improves clarity:
+
+- Material → Dungeon Source / Study Material
+
+- Upload Material → Forge Dungeon / Create Dungeon
+
+- Dashboard → Adventurer's Hall / Home
+
+- Material Library → Dungeon Library
+
+- Start Quiz → Enter Dungeon
+
+- Results → Battle Report
+
+- Weak Topics → Weaknesses / Topics to Review
+
+- Inventory → Armory / Inventory
+
+Do not sacrifice usability for theme. Labels may combine game language with conventional descriptions when needed.
+
+Example:
+
+"Forge a Dungeon — Upload your PDF or DOCX study material."
+

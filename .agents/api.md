@@ -9,7 +9,26 @@ Only implement endpoints required by the active milestone.
 Prefer Supabase Auth primitives.
 
 ### GET `/api/me`
-Returns current user and entitlement summary.
+M01 returns the user verified by Supabase Auth. Tokens, passwords, and raw user
+metadata are never returned. Entitlements are reserved for M12 and are `null`.
+
+```json
+{
+  "user": { "id": "uuid", "email": "learner@example.com" },
+  "entitlements": null
+}
+```
+
+`email` may be `null`. All responses use `Cache-Control: private, no-store`
+(with additional revalidation directives).
+
+- `200`: authenticated identity, as above.
+- `401`: `{ "error": "unauthenticated" }` for missing/invalid sessions.
+- `503`: `{ "error": "auth_unavailable" }` for configuration/provider failures.
+
+Authentication mutations use Next.js Server Actions: email/password sign-in and
+sign-out of the current session. No signup, password recovery, OAuth callback,
+or domain-table endpoints are implemented in M01.
 
 ---
 

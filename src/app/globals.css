@@ -1,21 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #f6f5ef;
-  --color-surface: #ffffff;
-  --color-ink: #233c33;
-  --color-muted: #58665f;
-  --color-line: #d6dcd4;
-  --color-accent: #285c43;
-  --color-accent-hover: #1d4733;
-  --color-soft: #e5ecdf;
+  --color-paper: #13171c;
+  --color-surface: #20262d;
+  --color-ink: #eee5d3;
+  --color-muted: #b8b4aa;
+  --color-line: #62605a;
+  --color-accent: #d8b66b;
+  --color-accent-hover: #edcd8b;
+  --color-soft: #30312d;
+  --color-danger: #ffc1ad;
   --font-sans: Arial, Helvetica, sans-serif;
-  --font-display: Georgia, "Times New Roman", serif;
+}
+
+@theme inline {
+  --font-display: var(--font-rpg), Georgia, serif;
 }
 
 @layer base {
   html {
-    color-scheme: light;
+    color-scheme: dark;
     background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
@@ -48,5 +52,82 @@
   ::selection {
     background: var(--color-accent);
     color: var(--color-surface);
+  }
+}
+
+@layer components {
+  .dungeon-panel {
+    position: relative;
+    border: 2px solid var(--color-line);
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 4px var(--color-paper);
+  }
+
+  .dungeon-panel::before,
+  .dungeon-panel::after {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-accent);
+    pointer-events: none;
+    content: "";
+  }
+
+  .dungeon-panel::before {
+    top: -2px;
+    left: -2px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .dungeon-panel::after {
+    right: -2px;
+    bottom: -2px;
+    border-top: 0;
+    border-left: 0;
+  }
+
+  .game-button {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-accent);
+    background: var(--color-accent);
+    padding: 12px 24px;
+    color: var(--color-paper);
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .game-button:hover {
+    border-color: var(--color-accent-hover);
+    background: var(--color-accent-hover);
+  }
+
+  .game-button:active {
+    transform: translateY(1px);
+  }
+
+  .game-button:disabled {
+    border-color: var(--color-line);
+    background: var(--color-soft);
+    color: var(--color-muted);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .game-link {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  .game-link:hover {
+    color: var(--color-accent-hover);
   }
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard", label: "Adventurer’s Hall" },
 ];
 
 export function Navigation() {
@@ -18,7 +18,7 @@ export function Navigation() {
           key={href}
           href={href}
           aria-current={pathname === href ? "page" : undefined}
-          className="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold hover:bg-soft aria-[current=page]:bg-soft aria-[current=page]:underline"
+          className="inline-flex min-h-11 items-center border border-transparent px-3 text-sm font-semibold hover:border-line hover:bg-soft aria-[current=page]:border-accent aria-[current=page]:text-accent aria-[current=page]:underline"
         >
           {label}
         </Link>
