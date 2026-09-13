@@ -1,87 +1,69 @@
 # Nerdungeon
 
-A mobile-first learning product that will turn a learner's own study material into a personalized RPG dungeon.
+React Native / Expo implementation of the five supplied Stitch screens:
+Hub, Adventure Map, Bazaar, Armory and Battle Study.
 
-## Current milestone: M00 — Project Foundation
+## Run on your phone
 
-Next.js App Router, TypeScript, Tailwind CSS, public placeholder routes, and Supabase configuration/client helpers. Authentication, uploads, AI, gameplay, database tables, and payments are outside this milestone. `/dashboard` is a public preview, not a protected route.
+Use Node 24 and npm:
 
-## Run locally
-
-Use Node.js **24.x** (see `.nvmrc`) and npm. Dependencies are pinned in `package-lock.json`.
-
-```bash
-npm ci
-npm run dev
+```sh
+npm --prefix frontend ci
+npm start
 ```
 
-Open [localhost:3000](http://localhost:3000). The home page (`/`) and dashboard (`/dashboard`) run without environment variables or a Supabase project.
+Scan the Expo QR with a compatible Expo Go on Android or iPhone. Keep the
+phone and computer on the same network. This project uses Expo SDK 57.
+If your installed Expo Go does not support it, use the matching development
+client. No Supabase configuration is needed for the UI preview.
 
-For a production run:
+For the browser preview: `npm run web`. For an installed Android emulator:
+`npm run android`. Browser rendering is a convenience for iteration; it does
+not certify native device behavior.
 
-```bash
-npm run build
-npm run start
-```
+## Structure
 
-## Environment configuration
+- `frontend/src/screens/`: one React Native screen per Stitch page.
+- `frontend/src/components/`: shared buttons, panels, icons, badges and meters.
+- `frontend/src/theme.ts`: palette, type and reusable layout styles.
+- `frontend/src/data/`: local demonstration data.
+- `frontend/assets/stitch/`: original artwork, bundled locally, with source manifest.
+- `backend/`: existing Supabase/server foundation, isolated from the UI.
+- `docs/stitch/`: untouched HTML and screenshot references.
 
-When you need the Supabase helpers, copy `.env.example` to `.env.local` and fill in your project's values. For PowerShell:
+The earlier Next.js landing/dashboard/login UI has been removed. Its committed
+version is recoverable from Git. The server helpers and unit tests were moved
+into backend. Historical milestone documents are retained as history; the
+current UI scope follows the user's replacement brief.
 
-```powershell
-Copy-Item .env.example .env.local
-```
+## Preview interactions
 
-On macOS/Linux use `cp .env.example .env.local`. Local env files are ignored by Git; `.env.example` is the only tracked env template.
+Navigate through the four bottom tabs. Open Battle from the Map or continue an
+expedition from Hub. Select a PDF/DOCX up to 25 MB in the Forge. Choose an
+inventory item and preview equipping it. Try correct and incorrect battle
+answers, inspect feedback, retry, and exit. Bazaar actions show preview feedback.
 
-| Variable | Value | Required in M00? |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL, such as `https://your-project.supabase.co` | Only when a helper is called |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public `sb_publishable_...` key from the project's Connect dialog | Only when a helper is called |
-
-Both values are public and become part of the browser bundle at **build time**. Restart development after changing them; rebuild/redeploy for production changes. Never place secret keys, service-role keys, or AI keys in `NEXT_PUBLIC_*` variables. This baseline deliberately accepts publishable keys only, not legacy `anon` JWT keys. No server secrets are needed for M00.
-
-The helpers validate configuration when called, with descriptive errors for missing or invalid values. Importing them does not require credentials or contact Supabase. The placeholder routes do not call them.
-
-- Browser components: `createClient` from `@/lib/supabase/client` uses `@supabase/ssr`'s browser client.
-- Server Components, Server Actions, and Route Handlers: async `createClient` from `@/lib/supabase/server` creates a client per request using Next.js cookies and is guarded with `server-only`.
-- There is no admin client, session refresh proxy, sign-in, or route protection. M01 must implement session handling before these helpers are used for authenticated flows. Cookie writes work in writable request contexts; Server Components cannot persist refreshed cookies.
-
-Setup references: [Next.js](https://nextjs.org/docs/app/getting-started/installation), [Tailwind for Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs), and [Supabase SSR clients](https://supabase.com/docs/guides/auth/server-side/creating-a-client).
+Data, HP changes, item selection, gold, summons and timers are local illustrative
+UI states from Stitch, not production game rules. Files are selected locally,
+not uploaded or processed. No money is charged. Native auth, backend gameplay,
+AI generation and durable inventory are not connected in this UI task.
 
 ## Checks
 
-```bash
+```sh
 npm run lint
 npm run typecheck
-npm test
 npm run build
+npm --prefix backend ci
+npm --prefix backend test
+npm --prefix backend run typecheck
+npm --prefix backend run build
 ```
 
-Typechecking first generates Next.js route types, so it works on a clean checkout. Tests use Node's built-in test runner to check environment errors and public-key safeguards; no live backend is needed. Lint runs separately because `next build` does not run ESLint.
+`build` exports Android, iOS and web JS/assets; it does not produce an APK/IPA.
+The optional browser interaction check uses Playwright and installed Edge:
+run the web preview on port 8081, then `node scripts/verify-ui.cjs`.
+Its screenshots go into `.impeccable/review/` and are explicitly marked web previews.
 
-Tooling limitation: ESLint is pinned to 9.39.5 because the React, JSX accessibility, and import plugins in `eslint-config-next` do not yet declare support for ESLint 10. npm reports a deprecation warning for ESLint 9. Upgrade once the preset's plugin dependencies support ESLint 10; do not bypass their peer requirements.
-
-Manual smoke test:
-
-1. Run the app without `.env.local`; visit `/` and `/dashboard` directly and refresh both.
-2. Follow the header navigation, “Preview dashboard,” and “Back to home.” Confirm the current navigation item changes.
-3. Check both pages at 320px, 375px, and desktop widths. Confirm text wraps, navigation remains usable, and there is no horizontal scrolling.
-4. Use Tab to reach “Skip to content” and the links. Check visible focus and activate the skip link with Enter.
-5. Visit an unknown path and use the not-found page's link to return home.
-
-## Deployment
-
-The app is ready to import into Vercel using its **Next.js** framework preset, Node.js **24.x**, `npm ci` for installation, and `npm run build` for the build. Leave the output directory at the framework default. M00 needs no environment variables; add the two public Supabase variables before building once a feature starts using the helpers. No migrations or external services are needed for this baseline.
-
-For another Node host, run `npm ci`, `npm run build`, then `npm run start` (default port 3000; the host can set `PORT`). Do not use a static-export-only host: future milestones need server capabilities. No deployment has been performed as part of M00.
-
-## Files
-
-- `src/app/`: shared responsive layout, home, dashboard, and not-found placeholders.
-- `src/components/navigation.tsx`: accessible navigation with current-page indication.
-- `src/lib/supabase/`: lazy env validation and separate browser/server client factories.
-- `tests/`: configuration validation tests.
-- `.agents/`: product context, milestone tasks, and review workflow.
-
-Work stops after M00 verification for human review. Continue only after explicit approval; see `AGENTS.md`.
+For manual native review, check all five pages at your device's font scale,
+safe areas, Android Back, file picker, and keyboard/screen-reader navigation.

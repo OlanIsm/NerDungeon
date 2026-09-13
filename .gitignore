@@ -1,4 +1,7 @@
 node_modules/
+.expo/
+dist/
+.impeccable/review/
 .next/
 out/
 build/
