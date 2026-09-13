@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ImageBackground, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { art, icons } from "../assets";
+import { icons } from "../assets";
 import {
   Badge,
   Button,
@@ -43,21 +43,6 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
   }
   return (
     <View style={{ gap: 20 }}>
-      <Panel style={{ padding: 0, overflow: "hidden" }}>
-        <ImageBackground
-          source={art.landscape}
-          style={{ height: 144, alignItems: "flex-end", padding: 8 }}
-        >
-          <Badge text="STREAK: 4 DAYS" icon="fire" color={colors.teal} />
-        </ImageBackground>
-        <View style={{ padding: 14, paddingTop: 0, gap: 8 }}>
-          <Text style={ui.hero}>Turn Notes Into Adventures</Text>
-          <Text style={ui.body}>
-            Upload your PDF or DOCX study materials to auto-forge playable
-            monster encounters and tactical quest stages.
-          </Text>
-        </View>
-      </Panel>
       <Panel>
         <View style={ui.between}>
           <View style={ui.row}>
@@ -120,7 +105,7 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
       <SectionTitle
         title="Active Expeditions"
         aside="2 In Progress"
-        icon="compass-outline"
+        color={colors.white}
       />
       {[
         {
@@ -167,6 +152,7 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
           <Button
             label="Continue Quest"
             icon="play"
+            tone="gold"
             onPress={() => navigate("Map")}
           />
         </Panel>

@@ -24,3 +24,9 @@ export const icons = {
   gems: require("../assets/icon/gems.png"),
   exp: require("../assets/icon/exp.png"),
 };
+
+export const gui = {
+  background: require("../assets/GUI/background.png"),
+  goldButton: require("../assets/GUI/gold button.png"),
+  woodenRectangle: require("../assets/GUI/wooden rectangle.png"),
+};

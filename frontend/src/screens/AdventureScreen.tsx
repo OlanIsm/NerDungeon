@@ -131,6 +131,7 @@ export function AdventureScreen({ navigate, notify }: ScreenProps) {
         <Button
           label="Start Stage 2 (Battle!)"
           icon="sword-cross"
+          tone="gold"
           onPress={() => navigate("Battle")}
         />
         <Button

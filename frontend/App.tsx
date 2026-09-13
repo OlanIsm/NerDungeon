@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   BackHandler,
-  Image,
+  ImageBackground,
   Modal,
-  Pressable,
   ScrollView,
   Text,
   View,
@@ -17,8 +16,9 @@ import { Rubik_700Bold } from "@expo-google-fonts/rubik/700Bold";
 import { Rubik_900Black } from "@expo-google-fonts/rubik/900Black";
 import { Epilogue_500Medium } from "@expo-google-fonts/epilogue/500Medium";
 import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk/700Bold";
-import { icons } from "./src/assets";
+import { gui, icons } from "./src/assets";
 import { Button } from "./src/components/GameUI";
+import { BottomNavItem } from "./src/components/BottomNavItem";
 import { PlayerHeader } from "./src/components/PlayerHeader";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { AdventureScreen } from "./src/screens/AdventureScreen";
@@ -29,10 +29,10 @@ import { colors, ui } from "./src/theme";
 import type { Screen } from "./src/types";
 
 const navigation = [
-  { screen: "Hub", icon: icons.hub, size: 35 },
-  { screen: "Map", icon: icons.map, size: 34 },
-  { screen: "Bazaar", icon: icons.bazaar, size: 37 },
-  { screen: "Armory", icon: icons.armory, size: 38 },
+  { screen: "Hub", icon: icons.hub, size: 52 },
+  { screen: "Map", icon: icons.map, size: 51 },
+  { screen: "Bazaar", icon: icons.bazaar, size: 56 },
+  { screen: "Armory", icon: icons.armory, size: 57 },
 ] as const;
 export default function App() {
   const [loaded, error] = useFonts({
@@ -81,6 +81,12 @@ function GameApp() {
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
       <StatusBar style="light" />
       <View style={s.app}>
+        <ImageBackground
+          accessibilityIgnoresInvertColors
+          source={gui.background}
+          resizeMode="cover"
+          style={s.appBackground}
+        />
         <PlayerHeader
           onPressProfile={() =>
             setMessage(
@@ -90,6 +96,7 @@ function GameApp() {
         />
         <ScrollView
           ref={scroll}
+          style={s.content}
           contentContainerStyle={{ padding: 12, paddingBottom: 28 }}
           showsVerticalScrollIndicator={false}
         >
@@ -102,38 +109,14 @@ function GameApp() {
         {screen !== "Battle" && (
           <View style={s.nav}>
             {navigation.map((item) => (
-              <Pressable
+              <BottomNavItem
                 key={item.screen}
-                accessibilityRole="tab"
-                accessibilityLabel={item.screen}
-                accessibilityState={{ selected: screen === item.screen }}
+                screen={item.screen}
+                icon={item.icon}
+                size={item.size}
+                selected={screen === item.screen}
                 onPress={() => navigate(item.screen)}
-                style={[
-                  s.navItem,
-                  screen === item.screen && { backgroundColor: colors.wood },
-                ]}
-              >
-                <Image
-                  accessibilityIgnoresInvertColors
-                  source={item.icon}
-                  resizeMode="contain"
-                  style={{
-                    width: item.size,
-                    height: item.size,
-                    transform: [
-                      { scale: screen === item.screen ? 1.06 : 0.94 },
-                    ],
-                  }}
-                />
-                <Text
-                  style={[
-                    ui.label,
-                    { color: screen === item.screen ? "#fff2d9" : colors.wood },
-                  ]}
-                >
-                  {item.screen}
-                </Text>
-              </Pressable>
+              />
             ))}
           </View>
         )}
@@ -150,7 +133,11 @@ function GameApp() {
             >
               <Text style={ui.heading}>Adventurer’s Journal</Text>
               <Text style={ui.body}>{message}</Text>
-              <Button label="Continue" onPress={() => setMessage(undefined)} />
+              <Button
+                label="Continue"
+                tone="gold"
+                onPress={() => setMessage(undefined)}
+              />
             </View>
           </View>
         </Modal>
@@ -165,26 +152,28 @@ const s = StyleSheet.create({
     width: "100%",
     maxWidth: 520,
     alignSelf: "center",
+    overflow: "hidden",
     backgroundColor: colors.background,
   },
   loading: { flex: 1, backgroundColor: colors.background, gap: 16 },
+  appBackground: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  content: { flex: 1, backgroundColor: "transparent" },
   nav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#fff2d9",
+    height: 76,
+    overflow: "hidden",
+    backgroundColor: "#fff2d9f2",
     borderTopWidth: 1,
     borderTopColor: "#e8d9b6",
-  },
-  navItem: {
-    minWidth: 62,
-    minHeight: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10,
-    gap: 4,
   },
   overlay: {
     flex: 1,

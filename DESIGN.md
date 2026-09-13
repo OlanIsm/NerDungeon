@@ -18,17 +18,27 @@ use the supplied coin, gem and XP artwork. Touch targets are at least 48 dp.
 
 ## Composition
 Phone portrait first, scrollable content below a shared player HUD and above
-fixed bottom navigation. Hub uses a 144 dp landscape, study forge and expeditions.
+fixed bottom navigation. Hub opens directly on the study forge and expeditions.
 Map uses a 470 dp illustrated stage selector. Bazaar centers the original
 chest and three relics. Armory shows the player, equipment grid and inspector.
 Battle replaces navigation with Exit, HP bars, two original sprites and a
 wood-framed three-option question.
 
-The shared HUD follows the supplied player-strip reference on every screen:
-profile portrait on the left, player name and star/XP progress in the middle,
-then gold and gem blocks on the right. Its dark timber silhouette includes an
-angled lower cut; the reference colors are translated into the established
-timber, gold and teal roles.
+The shared HUD follows the supplied game-status reference on every screen:
+profile portrait on the left; level, player name, XP progress and rank in the
+middle; then coin and gems in dark resource capsules. The shared header uses
+the wooden rectangle artwork from `frontend/assets/GUI`, with high-contrast
+gold and teal status values layered above it.
+
+Scrollable page content uses the blue patterned background artwork from
+`frontend/assets/GUI/background.png` instead of a flat application color.
+
+Bottom navigation is icon-only at rest. The selected destination reveals a
+filled gold bookmark from below, animates its label into view and gives the
+larger icon a contained pop in scale without crossing into page content.
+
+Primary gold actions use the supplied `gold button.png` surface with a subtle,
+periodic shine pass rather than a flat fill.
 
 ## Implementation boundaries
 Actual React Native primitives, no embedded HTML or WebView. Preview state

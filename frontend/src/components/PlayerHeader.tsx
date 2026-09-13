@@ -6,41 +6,50 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { art, icons } from "../assets";
+import { art, gui, icons } from "../assets";
 import { colors, fonts } from "../theme";
 
-type ResourceProps = {
-  label: string;
-  image: number;
-  compact: boolean;
-  accent: string;
-};
+type ResourceKind = "coins" | "gems";
 
-function Resource({ label, image, compact, accent }: ResourceProps) {
-  const iconSize = compact ? 22 : 27;
+const resourceImages = { coins: icons.coins, gems: icons.gems } as const;
+
+function Resource({
+  kind,
+  label,
+  compact,
+}: {
+  kind: ResourceKind;
+  label: string;
+  compact: boolean;
+}) {
+  const iconSize = compact ? 23 : 28;
   return (
-    <View style={styles.resource}>
-      <View
-        style={[
-          styles.resourceIcon,
-          { backgroundColor: accent, width: compact ? "44%" : "49%" },
-        ]}
-      >
+    <View
+      style={[
+        styles.resource,
+        {
+          width: kind === "coins" ? (compact ? 60 : 64) : compact ? 52 : 56,
+        },
+      ]}
+    >
+      <View style={[styles.resourceIcon, { width: compact ? 23 : 28 }]}>
         <Image
           accessibilityIgnoresInvertColors
-          source={image}
+          source={resourceImages[kind]}
           resizeMode="contain"
           style={{ width: iconSize, height: iconSize }}
         />
       </View>
-      <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}
-        style={[styles.resourceValue, compact && { fontSize: 9 }]}
-      >
-        {label}
-      </Text>
+      <View style={styles.resourcePill}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.65}
+          style={[styles.resourceValue, compact && styles.resourceValueCompact]}
+        >
+          {label}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -53,12 +62,17 @@ export function PlayerHeader({
   const { width } = useWindowDimensions();
   const compact = width <= 350;
   const portraitSize = compact ? 50 : 60;
-
   return (
-    <View style={[styles.header, { minHeight: compact ? 88 : 98 }]}>
-      <View style={styles.identityPlate} />
-      <View style={styles.identityCut} />
-
+    <View style={[styles.header, compact && styles.headerCompact]}>
+      <Image
+        accessibilityIgnoresInvertColors
+        source={gui.woodenRectangle}
+        resizeMode="stretch"
+        style={[
+          styles.woodenBackground,
+          compact && styles.woodenBackgroundCompact,
+        ]}
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open player profile"
@@ -68,7 +82,7 @@ export function PlayerHeader({
           {
             width: portraitSize,
             height: portraitSize,
-            borderRadius: compact ? 14 : 17,
+            borderRadius: compact ? 12 : 15,
           },
         ]}
       >
@@ -79,62 +93,47 @@ export function PlayerHeader({
           style={[
             styles.portrait,
             {
-              width: portraitSize - 6,
-              height: portraitSize - 6,
-              borderRadius: compact ? 11 : 14,
+              width: portraitSize - 10,
+              height: portraitSize - 10,
+              borderRadius: compact ? 9 : 12,
             },
           ]}
         />
       </Pressable>
-
-      <View style={styles.player}>
-        <View style={styles.namePlate}>
+      <View style={styles.playerInfo}>
+        <View style={styles.nameRow}>
+          <Text style={[styles.level, compact && styles.levelCompact]}>5</Text>
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
-            style={styles.playerName}
+            minimumFontScale={0.72}
+            style={[styles.playerName, compact && styles.playerNameCompact]}
           >
             NERD MAGE
           </Text>
         </View>
-        <View style={styles.experience}>
+        <View style={styles.rankRow}>
           <Image
             accessibilityIgnoresInvertColors
             source={icons.exp}
             resizeMode="contain"
-            style={{ width: compact ? 23 : 27, height: compact ? 23 : 27 }}
+            style={{ width: compact ? 17 : 20, height: compact ? 17 : 20 }}
           />
-          <View style={styles.expBody}>
-            <View style={styles.expLabels}>
-              <Text style={styles.expLabel}>LV. 5</Text>
-              {!compact && (
-                <Text style={styles.expValue}>1,250 / 2,000 XP</Text>
-              )}
-            </View>
-            <View
-              accessibilityRole="progressbar"
-              accessibilityValue={{ min: 0, max: 2000, now: 1250 }}
-              style={styles.expTrack}
-            >
-              <View style={styles.expFill} />
-            </View>
-          </View>
+          <Text style={[styles.rank, compact && styles.rankCompact]}>
+            1,771
+          </Text>
+        </View>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: 2000, now: 1250 }}
+          style={[styles.expTrack, { width: compact ? 72 : 104 }]}
+        >
+          <View style={styles.expFill} />
         </View>
       </View>
-
-      <View style={[styles.wallet, { width: compact ? 128 : 144 }]}>
-        <Resource
-          label="1,450"
-          image={icons.coins}
-          compact={compact}
-          accent={colors.gold}
-        />
-        <Resource
-          label="320"
-          image={icons.gems}
-          compact={compact}
-          accent={colors.teal}
-        />
+      <View style={styles.resources}>
+        <Resource kind="coins" label="1,450" compact={compact} />
+        <Resource kind="gems" label="320" compact={compact} />
       </View>
     </View>
   );
@@ -143,105 +142,140 @@ export function PlayerHeader({
 const styles = StyleSheet.create({
   header: {
     position: "relative",
+    minHeight: 82,
     overflow: "hidden",
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 9,
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    backgroundColor: "#2e1500",
-    borderBottomWidth: 3,
-    borderBottomColor: "#1d0d00",
+    gap: 6,
+    backgroundColor: "transparent",
   },
-  identityPlate: {
+  headerCompact: {
+    minHeight: 74,
+    paddingHorizontal: 6,
+    paddingVertical: 7,
+    gap: 4,
+  },
+  woodenBackground: {
     position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: "39%",
-    backgroundColor: "#4a260e",
+    top: -22,
+    left: "-4%",
+    width: "108%",
+    height: 128,
   },
-  identityCut: {
-    position: "absolute",
-    width: 34,
-    height: 110,
-    right: "35%",
-    bottom: -37,
-    backgroundColor: "#4a260e",
-    transform: [{ rotate: "31deg" }],
-  },
+  woodenBackgroundCompact: { top: -20, height: 116 },
   portraitFrame: {
     padding: 3,
-    backgroundColor: colors.gold,
-    borderWidth: 2,
-    borderColor: "#ffd86a",
-    shadowColor: "#130700",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.45,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  portrait: { backgroundColor: colors.wood },
-  player: { flex: 1, minWidth: 0, gap: 6 },
-  namePlate: {
-    alignSelf: "stretch",
-    minHeight: 28,
+    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 9,
-    backgroundColor: colors.woodLight,
-    borderRadius: 4,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.edge,
+    backgroundColor: "#b86f16",
+    borderWidth: 2,
+    borderColor: "#f6d98f",
+    shadowColor: "#120703",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.55,
+    shadowRadius: 2,
+    elevation: 5,
   },
+  portrait: {
+    backgroundColor: colors.wood,
+    borderWidth: 1,
+    borderColor: "#6d390f",
+  },
+  playerInfo: {
+    flex: 1.12,
+    minWidth: 0,
+    alignSelf: "stretch",
+    justifyContent: "center",
+  },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  level: {
+    fontFamily: fonts.heavy,
+    fontSize: 18,
+    color: colors.gold,
+    textShadowColor: "#120703",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 1,
+  },
+  levelCompact: { fontSize: 14 },
   playerName: {
+    flex: 1,
     fontFamily: fonts.heading,
-    fontSize: 14,
-    color: "#fff2d9",
+    fontSize: 13,
+    color: "#fff7e4",
     letterSpacing: 0.5,
   },
-  experience: { flexDirection: "row", alignItems: "center", gap: 5 },
-  expBody: { flex: 1, gap: 3 },
-  expLabels: { flexDirection: "row", justifyContent: "space-between", gap: 4 },
-  expLabel: { fontFamily: fonts.label, fontSize: 9, color: "#ffe08a" },
-  expValue: { fontFamily: fonts.label, fontSize: 8, color: "#fcedc9" },
+  playerNameCompact: { fontSize: 11 },
   expTrack: {
-    height: 7,
+    height: 6,
+    marginLeft: 22,
+    marginTop: -1,
+    maxWidth: "78%",
     overflow: "hidden",
     borderRadius: 5,
-    backgroundColor: "#211006",
+    backgroundColor: "#120905",
     borderWidth: 1,
-    borderColor: "#120700",
+    borderColor: "#0b0402",
   },
   expFill: {
     width: "62.5%",
     height: "100%",
     borderRadius: 4,
-    backgroundColor: colors.gold,
+    backgroundColor: "#75d9e5",
   },
-  wallet: { flexDirection: "row", alignItems: "stretch", gap: 5 },
-  resource: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 50,
-    overflow: "hidden",
+  rankRow: {
+    minHeight: 18,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#211006",
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#120700",
+    gap: 3,
+  },
+  rank: {
+    fontFamily: fonts.heavy,
+    fontSize: 15,
+    color: colors.gold,
+    textShadowColor: "#120703",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  rankCompact: { fontSize: 12 },
+  resources: {
+    flexShrink: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  resource: {
+    height: 38,
+    flexDirection: "row",
+    alignItems: "center",
   },
   resourceIcon: {
-    alignSelf: "stretch",
+    position: "relative",
+    zIndex: 2,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
   },
-  resourceValue: {
+  resourcePill: {
     flex: 1,
-    paddingHorizontal: 3,
-    fontFamily: fonts.label,
+    height: 34,
+    marginLeft: -8,
+    paddingLeft: 6,
+    paddingRight: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#160b06",
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: "#0b0402",
+  },
+  resourceValue: {
+    fontFamily: fonts.heavy,
     fontSize: 10,
-    color: "#fff2d9",
+    letterSpacing: -0.2,
+    color: "#fff7e4",
     textAlign: "center",
   },
+  resourceValueCompact: { fontSize: 9 },
 });

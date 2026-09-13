@@ -184,7 +184,7 @@ export function InventoryScreen({ notify }: ScreenProps) {
                 : "Use Item"
           }
           icon="check-circle-outline"
-          tone="teal"
+          tone="gold"
           onPress={() => {
             setEquipped(selected.name);
             notify(`${selected.name} dipilih untuk preview loadout.`);

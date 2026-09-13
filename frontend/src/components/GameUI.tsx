@@ -1,5 +1,11 @@
-import type { ComponentProps, PropsWithChildren } from "react";
 import {
+  useEffect,
+  useState,
+  type ComponentProps,
+  type PropsWithChildren,
+} from "react";
+import {
+  Animated,
   Image,
   Pressable,
   Text,
@@ -10,6 +16,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { gui } from "../assets";
 import { colors, ui } from "../theme";
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -30,6 +37,54 @@ export function Panel({
 }: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
   return <View style={[ui.panel, style]}>{children}</View>;
 }
+
+function GoldButtonSurface() {
+  const [shine] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.delay(1200),
+        Animated.timing(shine, {
+          toValue: 1,
+          duration: 850,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1500),
+      ]),
+      { resetBeforeIteration: true },
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [shine]);
+
+  return (
+    <View pointerEvents="none" style={s.goldSurface}>
+      <Image
+        source={gui.goldButton}
+        resizeMode="stretch"
+        style={s.goldSurfaceImage}
+      />
+      <Animated.View
+        style={[
+          s.shine,
+          {
+            transform: [
+              { rotate: "18deg" },
+              {
+                translateX: shine.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-120, 540],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
 export function Button({
   label,
   icon,
@@ -66,9 +121,11 @@ export function Button({
           opacity: disabled ? 0.5 : 1,
           transform: [{ translateY: pressed ? 2 : 0 }],
         },
+        tone === "gold" && s.goldButton,
         style,
       ]}
     >
+      {tone === "gold" && <GoldButtonSurface />}
       {icon && <Icon name={icon} size={20} color={color} />}
       <Text
         style={[
@@ -152,18 +209,26 @@ export function SectionTitle({
   title,
   aside,
   icon,
+  color,
 }: {
   title: string;
   aside?: string;
   icon?: IconName;
+  color?: string;
 }) {
   return (
     <View style={ui.between}>
       <View style={[ui.row, ui.flex]}>
-        {icon && <Icon name={icon} color={colors.teal} size={20} />}
-        <Text style={[ui.heading, { flexShrink: 1 }]}>{title}</Text>
+        {icon && <Icon name={icon} color={color ?? colors.teal} size={20} />}
+        <Text
+          style={[ui.heading, { flexShrink: 1 }, color ? { color } : undefined]}
+        >
+          {title}
+        </Text>
       </View>
-      {aside && <Text style={ui.label}>{aside}</Text>}
+      {aside && (
+        <Text style={[ui.label, color ? { color } : undefined]}>{aside}</Text>
+      )}
     </View>
   );
 }
@@ -219,6 +284,33 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
+  },
+  goldButton: {
+    overflow: "hidden",
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
+  },
+  goldSurface: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  goldSurfaceImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+  },
+  shine: {
+    position: "absolute",
+    top: -24,
+    left: -40,
+    width: 30,
+    height: 96,
+    backgroundColor: "#ffffff66",
   },
   badge: {
     flexDirection: "row",
