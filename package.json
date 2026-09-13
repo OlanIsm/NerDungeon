@@ -1,0 +1,17 @@
+{
+  "name": "nerdungeon",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend start",
+    "start": "npm --prefix frontend start",
+    "web": "npm --prefix frontend run web",
+    "android": "npm --prefix frontend run android",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "lint": "npm --prefix frontend run lint",
+    "build": "npm --prefix frontend run build",
+    "backend:dev": "npm --prefix backend run dev"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

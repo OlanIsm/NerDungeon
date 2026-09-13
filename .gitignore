@@ -1,0 +1,25 @@
+node_modules/
+.expo/
+dist/
+.impeccable/review/
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local configuration and credentials. Only the template belongs in Git.
+.env*
+!.env.example
+*.pem
+.vercel/
+
+# Local tooling
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

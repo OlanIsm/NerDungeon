@@ -7,6 +7,7 @@ This repository is developed milestone-by-milestone. Do not implement multiple m
 Work on exactly one milestone at a time.
 
 For every milestone:
+
 1. Read `.agents/context.md`
 2. Read `.agents/roadmap.md`
 3. Read the current task file in `.agents/tasks/`
@@ -23,6 +24,7 @@ For every milestone:
 Agents may prepare commits, but must not push unless explicitly asked.
 
 Recommended branch format:
+
 - `feat/m00-foundation`
 - `feat/m01-auth`
 - `feat/m02-upload-parser`
@@ -52,6 +54,7 @@ Do not invent facts outside the uploaded source when generating questions.
 Every wrong answer should be explainable.
 
 The MVP must support:
+
 - PDF and DOCX only
 - individual learning
 - 3-option multiple choice
@@ -69,6 +72,7 @@ The MVP must support:
 ## Definition of done
 
 A milestone is done only when:
+
 - acceptance criteria pass
 - lint/typecheck pass
 - relevant tests pass
@@ -78,3 +82,34 @@ A milestone is done only when:
 - the diff is reviewed
 - documentation is updated if contracts changed
 - the agent stops for human approval
+
+
+
+## Visual design rule
+
+Nerdungeon is visually a game product, not a SaaS product.
+
+Any user-facing page should follow the Nerdungeon RPG/dungeon visual identity unless the active milestone explicitly requires an unstyled technical prototype.
+
+Do not default to:
+
+- white SaaS dashboards
+
+- generic startup cards
+
+- corporate gradients
+
+- admin-panel layouts
+
+Prefer:
+
+- dungeon/fantasy game framing
+
+- RPG HUD patterns
+
+- game-like cards and buttons
+
+- mobile-first game navigation
+
+- immersive but readable styling
+
