@@ -13,6 +13,7 @@ type BottomNavItemProps = {
   screen: Screen;
   icon: ImageSourcePropType;
   size: number;
+  iconOffsetX?: number;
   selected: boolean;
   onPress: () => void;
 };
@@ -21,6 +22,7 @@ export function BottomNavItem({
   screen,
   icon,
   size,
+  iconOffsetX = 0,
   selected,
   onPress,
 }: BottomNavItemProps) {
@@ -61,6 +63,7 @@ export function BottomNavItem({
           outputRange: [0.88, 1],
         }),
       },
+      { translateX: iconOffsetX },
     ],
   };
   const iconStyle = {
@@ -68,7 +71,7 @@ export function BottomNavItem({
       {
         translateY: reveal.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, -6],
+          outputRange: [0, -9],
         }),
       },
       {
@@ -97,14 +100,14 @@ export function BottomNavItem({
       accessibilityLabel={screen}
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.item, selected && styles.itemSelected]}
+      style={styles.item}
     >
       <Animated.View
         pointerEvents="none"
         style={[styles.activeFrame, frameStyle]}
       >
         <LinearGradient
-          colors={["#dfa014", "#ffc52d"]}
+          colors={["#f0ad12", "#ffda55"]}
           locations={[0, 1]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
@@ -128,32 +131,34 @@ export function BottomNavItem({
 
 const styles = StyleSheet.create({
   item: {
-    width: 64,
-    height: 76,
+    flex: 1,
+    height: "100%",
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
-  itemSelected: { width: 92 },
   activeFrame: {
     position: "absolute",
     overflow: "hidden",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: -24,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    top: 5,
+    left: 12,
+    right: 12,
+    bottom: 5,
+    borderWidth: 3,
+    borderBottomWidth: 5,
+    borderColor: "#ffe16b",
+    borderBottomColor: "#a95b05",
+    borderRadius: 16,
     backgroundColor: colors.gold,
   },
   label: {
     position: "absolute",
     left: 4,
     right: 4,
-    bottom: 5,
-    fontFamily: fonts.label,
-    fontSize: 10,
-    lineHeight: 12,
+    bottom: 11,
+    fontFamily: fonts.heavy,
+    fontSize: 12,
+    lineHeight: 14,
     color: colors.wood,
     textAlign: "center",
   },

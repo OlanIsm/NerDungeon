@@ -26,7 +26,30 @@ export const icons = {
 };
 
 export const gui = {
-  background: require("../assets/GUI/background.png"),
-  goldButton: require("../assets/GUI/gold button.png"),
-  woodenRectangle: require("../assets/GUI/wooden rectangle.png"),
+  background: require("../assets/GUI/background.webp"),
+  header: require("../assets/GUI/header.webp"),
+  navbar: require("../assets/GUI/navbar.webp"),
+  scroll9: {
+    topLeft: require("../assets/GUI/scroll-9/top-left.webp"),
+    top: require("../assets/GUI/scroll-9/top.webp"),
+    topRight: require("../assets/GUI/scroll-9/top-right.webp"),
+    left: require("../assets/GUI/scroll-9/left.webp"),
+    center: require("../assets/GUI/scroll-9/center.webp"),
+    right: require("../assets/GUI/scroll-9/right.webp"),
+    bottomLeft: require("../assets/GUI/scroll-9/bottom-left.webp"),
+    bottom: require("../assets/GUI/scroll-9/bottom.webp"),
+    bottomRight: require("../assets/GUI/scroll-9/bottom-right.webp"),
+  },
+  expeditionCard9: {
+    topLeft: require("../assets/GUI/expedition-card-9/top-left.webp"),
+    top: require("../assets/GUI/expedition-card-9/top.webp"),
+    topRight: require("../assets/GUI/expedition-card-9/top-right.webp"),
+    left: require("../assets/GUI/expedition-card-9/left.webp"),
+    center: require("../assets/GUI/expedition-card-9/center.webp"),
+    right: require("../assets/GUI/expedition-card-9/right.webp"),
+    bottomLeft: require("../assets/GUI/expedition-card-9/bottom-left.webp"),
+    bottom: require("../assets/GUI/expedition-card-9/bottom.webp"),
+    bottomRight: require("../assets/GUI/expedition-card-9/bottom-right.webp"),
+  },
+  sectionTitle: require("../assets/GUI/text placeholder.png"),
 };

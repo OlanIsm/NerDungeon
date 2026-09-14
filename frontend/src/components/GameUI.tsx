@@ -16,8 +16,8 @@ import {
   type ViewStyle,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { gui } from "../assets";
-import { colors, ui } from "../theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, fonts, ui } from "../theme";
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 export function Icon({
@@ -60,11 +60,14 @@ function GoldButtonSurface() {
 
   return (
     <View pointerEvents="none" style={s.goldSurface}>
-      <Image
-        source={gui.goldButton}
-        resizeMode="stretch"
+      <LinearGradient
+        colors={["#e39a0b", "#ffc42c", "#ffd960"]}
+        locations={[0, 0.58, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={s.goldSurfaceImage}
       />
+      <View style={s.goldTopGlow} />
       <Animated.View
         style={[
           s.shine,
@@ -106,7 +109,12 @@ export function Button({
     teal: colors.teal,
     quiet: colors.inset,
   }[tone];
-  const color = tone === "wood" || tone === "teal" ? colors.white : colors.ink;
+  const color =
+    tone === "wood" || tone === "teal"
+      ? colors.white
+      : tone === "gold"
+        ? "#6b3509"
+        : colors.ink;
   return (
     <Pressable
       accessibilityRole="button"
@@ -126,11 +134,17 @@ export function Button({
       ]}
     >
       {tone === "gold" && <GoldButtonSurface />}
-      {icon && <Icon name={icon} size={20} color={color} />}
+      {icon && tone !== "gold" && <Icon name={icon} size={20} color={color} />}
       <Text
         style={[
           ui.title,
-          { color, fontSize: 14, textAlign: "center", flexShrink: 1 },
+          {
+            color,
+            fontFamily: tone === "gold" ? fonts.heavy : ui.title.fontFamily,
+            fontSize: 14,
+            textAlign: "center",
+            flexShrink: 1,
+          },
         ]}
       >
         {label}
@@ -287,8 +301,15 @@ const s = StyleSheet.create({
   },
   goldButton: {
     overflow: "hidden",
-    backgroundColor: "transparent",
-    borderBottomWidth: 0,
+    width: "100%",
+    minHeight: 58,
+    borderWidth: 3,
+    borderBottomWidth: 5,
+    borderColor: "#a95b05",
+    borderBottomColor: "#713300",
+    borderRadius: 18,
+    backgroundColor: colors.gold,
+    paddingVertical: 10,
   },
   goldSurface: {
     position: "absolute",
@@ -304,13 +325,22 @@ const s = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  goldTopGlow: {
+    position: "absolute",
+    top: 3,
+    right: 10,
+    left: 10,
+    height: 13,
+    borderRadius: 9,
+    backgroundColor: "#fff4a54d",
+  },
   shine: {
     position: "absolute",
     top: -24,
     left: -40,
     width: 30,
     height: 96,
-    backgroundColor: "#ffffff66",
+    backgroundColor: "#ffffff52",
   },
   badge: {
     flexDirection: "row",

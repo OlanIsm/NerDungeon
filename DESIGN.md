@@ -27,18 +27,25 @@ wood-framed three-option question.
 The shared HUD follows the supplied game-status reference on every screen:
 profile portrait on the left; level, player name, XP progress and rank in the
 middle; then coin and gems in dark resource capsules. The shared header uses
-the wooden rectangle artwork from `frontend/assets/GUI`, with high-contrast
-gold and teal status values layered above it.
+the proportionally contained `frontend/assets/GUI/header.webp` frame, with its
+compact profile and resources centered inside the wooden bounds.
 
 Scrollable page content uses the blue patterned background artwork from
-`frontend/assets/GUI/background.png` instead of a flat application color.
+`frontend/assets/GUI/background.webp` instead of a flat application color.
 
 Bottom navigation is icon-only at rest. The selected destination reveals a
-filled gold bookmark from below, animates its label into view and gives the
-larger icon a contained pop in scale without crossing into page content.
+rounded gold tile from below around its icon, animates its label into view and
+gives the larger icon a contained pop in scale without crossing into page
+content. The inactive destinations sit on the supplied four-slot wooden
+`frontend/assets/GUI/navbar.webp` artwork, cropped proportionally rather than
+stretched. The bar overlays scrolling content so the artwork's transparent
+areas reveal the page beneath it.
 
-Primary gold actions use the supplied `gold button.png` surface with a subtle,
-periodic shine pass rather than a flat fill.
+The Study Forge uses `frontend/assets/GUI/scroll.webp` as its primary frame;
+upload and action controls stay inside the parchment safe area.
+
+Primary gold actions are resolution-independent layered gradients with a
+subtle, periodic shine pass, heavy brown-gold labels and no leading icon.
 
 ## Implementation boundaries
 Actual React Native primitives, no embedded HTML or WebView. Preview state
