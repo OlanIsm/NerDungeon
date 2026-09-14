@@ -51,5 +51,6 @@ export const gui = {
     bottom: require("../assets/GUI/expedition-card-9/bottom.webp"),
     bottomRight: require("../assets/GUI/expedition-card-9/bottom-right.webp"),
   },
+  claimed: require("../assets/GUI/claimed.webp"),
   sectionTitle: require("../assets/GUI/text placeholder.png"),
 };

@@ -100,7 +100,7 @@ function GameApp() {
           style={s.content}
           contentContainerStyle={{
             padding: 12,
-            paddingTop: 120,
+            paddingTop: 118,
             paddingBottom: 124,
           }}
           showsVerticalScrollIndicator={false}

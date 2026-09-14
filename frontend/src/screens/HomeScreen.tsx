@@ -8,7 +8,6 @@ import {
   Icon,
   ImageBadge,
   Meter,
-  Panel,
 } from "../components/GameUI";
 import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
@@ -152,7 +151,13 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
           />
         </View>
       ))}
-      <Panel>
+      <View style={styles.questCard}>
+        <NineSliceFrame
+          images={gui.expeditionCard9}
+          top={25}
+          bottom={31}
+          side={62}
+        />
         <View style={ui.row}>
           <Icon name="check-decagram" size={30} />
           <View style={ui.flex}>
@@ -167,9 +172,22 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
           icon="check"
           tone="quiet"
           disabled
+          style={styles.questButton}
           onPress={() => {}}
         />
-      </Panel>
+        <View
+          accessibilityLabel="Claimed expedition"
+          pointerEvents="none"
+          style={styles.claimedOverlay}
+        >
+          <Image
+            accessibilityIgnoresInvertColors
+            source={gui.claimed}
+            resizeMode="contain"
+            style={styles.claimedBadge}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -328,4 +346,18 @@ const styles = StyleSheet.create({
     minHeight: 48,
     alignSelf: "center",
   },
+  claimedOverlay: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    bottom: 8,
+    left: 8,
+    zIndex: 3,
+    overflow: "hidden",
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(67, 210, 42, 0.52)",
+  },
+  claimedBadge: { width: 140, height: 140 },
 });

@@ -11,12 +11,14 @@ const path = require('node:path');
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://localhost:8081', { waitUntil: 'networkidle', timeout: 120000 });
   await page.getByRole('tab', { name: 'Hub', exact: true }).waitFor();
+  await page.getByLabel('Claimed expedition').waitFor();
   await page.evaluate(() => document.fonts.ready);
   for (const screen of ['Hub','Map','Bazaar','Armory']) {
     await page.getByRole('tab', { name: screen, exact: true }).click();
     await page.waitForFunction(() => [...document.images].every(image => image.complete));
     await page.waitForTimeout(250);
     await page.screenshot({ path: path.join(out, `web-phone-${screen.toLowerCase()}.png`) });
+    if (screen === 'Hub') await page.getByLabel('Claimed expedition').screenshot({ path: path.join(out, 'web-phone-claimed.png') });
     if (screen === 'Armory') {
       await page.getByRole('button', { name: 'Rune Quill', exact: true }).click();
       await page.getByRole('button', { name: 'Equip Item', exact: true }).click();
