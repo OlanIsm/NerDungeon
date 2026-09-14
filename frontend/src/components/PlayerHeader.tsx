@@ -1,11 +1,4 @@
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { art, gui, icons } from "../assets";
 import { colors, fonts } from "../theme";
 
@@ -13,31 +6,15 @@ type ResourceKind = "coins" | "gems";
 
 const resourceImages = { coins: icons.coins, gems: icons.gems } as const;
 
-function Resource({
-  kind,
-  label,
-  compact,
-}: {
-  kind: ResourceKind;
-  label: string;
-  compact: boolean;
-}) {
-  const iconSize = compact ? 23 : 28;
+function Resource({ kind, label }: { kind: ResourceKind; label: string }) {
   return (
-    <View
-      style={[
-        styles.resource,
-        {
-          width: kind === "coins" ? (compact ? 60 : 64) : compact ? 52 : 56,
-        },
-      ]}
-    >
-      <View style={[styles.resourceIcon, { width: compact ? 23 : 28 }]}>
+    <View style={styles.resource}>
+      <View style={styles.resourceIcon}>
         <Image
           accessibilityIgnoresInvertColors
           source={resourceImages[kind]}
           resizeMode="contain"
-          style={{ width: iconSize, height: iconSize }}
+          style={styles.resourceImage}
         />
       </View>
       <View style={styles.resourcePill}>
@@ -45,7 +22,7 @@ function Resource({
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.65}
-          style={[styles.resourceValue, compact && styles.resourceValueCompact]}
+          style={styles.resourceValue}
         >
           {label}
         </Text>
@@ -59,81 +36,78 @@ export function PlayerHeader({
 }: {
   onPressProfile: () => void;
 }) {
-  const { width } = useWindowDimensions();
-  const compact = width <= 350;
-  const portraitSize = compact ? 50 : 60;
+  const portraitSize = 50;
   return (
-    <View style={[styles.header, compact && styles.headerCompact]}>
-      <Image
-        accessibilityIgnoresInvertColors
-        source={gui.woodenRectangle}
-        resizeMode="stretch"
-        style={[
-          styles.woodenBackground,
-          compact && styles.woodenBackgroundCompact,
-        ]}
-      />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open player profile"
-        onPress={onPressProfile}
-        style={[
-          styles.portraitFrame,
-          {
-            width: portraitSize,
-            height: portraitSize,
-            borderRadius: compact ? 12 : 15,
-          },
-        ]}
-      >
+    <View pointerEvents="box-none" style={styles.header}>
+      <View pointerEvents="none" style={styles.headerBackground}>
         <Image
           accessibilityIgnoresInvertColors
-          source={art.avatar}
-          resizeMode="cover"
+          source={gui.header}
+          resizeMode="contain"
+          style={styles.headerBackgroundImage}
+        />
+      </View>
+      <View pointerEvents="box-none" style={styles.headerContent}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open player profile"
+          onPress={onPressProfile}
           style={[
-            styles.portrait,
+            styles.portraitFrame,
             {
-              width: portraitSize - 10,
-              height: portraitSize - 10,
-              borderRadius: compact ? 9 : 12,
+              width: portraitSize,
+              height: portraitSize,
+              borderRadius: 12,
             },
           ]}
-        />
-      </Pressable>
-      <View style={styles.playerInfo}>
-        <View style={styles.nameRow}>
-          <Text style={[styles.level, compact && styles.levelCompact]}>5</Text>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.72}
-            style={[styles.playerName, compact && styles.playerNameCompact]}
-          >
-            NERD MAGE
-          </Text>
-        </View>
-        <View style={styles.rankRow}>
+        >
           <Image
             accessibilityIgnoresInvertColors
-            source={icons.exp}
-            resizeMode="contain"
-            style={{ width: compact ? 17 : 20, height: compact ? 17 : 20 }}
+            source={art.avatar}
+            resizeMode="cover"
+            style={[
+              styles.portrait,
+              {
+                width: portraitSize - 10,
+                height: portraitSize - 10,
+                borderRadius: 9,
+              },
+            ]}
           />
-          <Text style={[styles.rank, compact && styles.rankCompact]}>
-            1,771
-          </Text>
+        </Pressable>
+        <View pointerEvents="none" style={styles.playerInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.level}>5</Text>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.72}
+              style={styles.playerName}
+            >
+              NERD MAGE
+            </Text>
+          </View>
+          <View style={styles.rankRow}>
+            <Image
+              accessibilityIgnoresInvertColors
+              source={icons.exp}
+              resizeMode="contain"
+              style={{ width: 17, height: 17 }}
+            />
+            <Text style={styles.rank}>1,771</Text>
+          </View>
+          <View
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 2000, now: 1250 }}
+            style={[styles.expTrack, { width: 72 }]}
+          >
+            <View style={styles.expFill} />
+          </View>
         </View>
-        <View
-          accessibilityRole="progressbar"
-          accessibilityValue={{ min: 0, max: 2000, now: 1250 }}
-          style={[styles.expTrack, { width: compact ? 72 : 104 }]}
-        >
-          <View style={styles.expFill} />
+        <View pointerEvents="none" style={styles.resources}>
+          <Resource kind="coins" label="1,450" />
+          <Resource kind="gems" label="320" />
         </View>
-      </View>
-      <View style={styles.resources}>
-        <Resource kind="coins" label="1,450" compact={compact} />
-        <Resource kind="gems" label="320" compact={compact} />
       </View>
     </View>
   );
@@ -141,30 +115,32 @@ export function PlayerHeader({
 
 const styles = StyleSheet.create({
   header: {
-    position: "relative",
-    minHeight: 82,
-    overflow: "hidden",
-    paddingHorizontal: 8,
-    paddingVertical: 9,
-    flexDirection: "row",
+    position: "absolute",
+    top: -8,
+    right: 0,
+    left: 0,
+    zIndex: 20,
+    height: 133,
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
     backgroundColor: "transparent",
   },
-  headerCompact: {
-    minHeight: 74,
-    paddingHorizontal: 6,
-    paddingVertical: 7,
+  headerBackground: {
+    position: "absolute",
+    width: "100%",
+    maxWidth: 378,
+    aspectRatio: 2117 / 743,
+  },
+  headerBackgroundImage: { width: "100%", height: "100%" },
+  headerContent: {
+    width: "83%",
+    maxWidth: 342,
+    height: 70,
+    paddingHorizontal: 7,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
-  woodenBackground: {
-    position: "absolute",
-    top: -22,
-    left: "-4%",
-    width: "108%",
-    height: 128,
-  },
-  woodenBackgroundCompact: { top: -20, height: 116 },
   portraitFrame: {
     padding: 3,
     alignItems: "center",
@@ -192,21 +168,19 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   level: {
     fontFamily: fonts.heavy,
-    fontSize: 18,
+    fontSize: 14,
     color: colors.gold,
     textShadowColor: "#120703",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 1,
   },
-  levelCompact: { fontSize: 14 },
   playerName: {
     flex: 1,
     fontFamily: fonts.heading,
-    fontSize: 13,
+    fontSize: 11,
     color: "#fff7e4",
     letterSpacing: 0.5,
   },
-  playerNameCompact: { fontSize: 11 },
   expTrack: {
     height: 6,
     marginLeft: 22,
@@ -232,13 +206,12 @@ const styles = StyleSheet.create({
   },
   rank: {
     fontFamily: fonts.heavy,
-    fontSize: 15,
+    fontSize: 12,
     color: colors.gold,
     textShadowColor: "#120703",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   },
-  rankCompact: { fontSize: 12 },
   resources: {
     flexShrink: 0,
     flexDirection: "row",
@@ -246,29 +219,36 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   resource: {
+    position: "relative",
+    width: 70,
     height: 38,
-    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
   resourceIcon: {
-    position: "relative",
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
     zIndex: 2,
-    height: 34,
+    width: 36,
     alignItems: "center",
     justifyContent: "center",
   },
+  resourceImage: { width: 36, height: 36 },
   resourcePill: {
-    flex: 1,
-    height: 34,
-    marginLeft: -8,
-    paddingLeft: 6,
-    paddingRight: 3,
+    position: "absolute",
+    left: 18,
+    right: 0,
+    height: 27,
+    paddingLeft: 13,
+    paddingRight: 5,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#160b06",
-    borderRadius: 13,
+    backgroundColor: "#4b2814",
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#0b0402",
+    borderColor: "#321709",
   },
   resourceValue: {
     fontFamily: fonts.heavy,
@@ -277,5 +257,4 @@ const styles = StyleSheet.create({
     color: "#fff7e4",
     textAlign: "center",
   },
-  resourceValueCompact: { fontSize: 9 },
 });

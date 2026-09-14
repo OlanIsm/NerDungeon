@@ -1,22 +1,18 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { icons } from "../assets";
+import { gui, icons } from "../assets";
 import {
   Badge,
   Button,
   Icon,
   ImageBadge,
   Meter,
-  Panel,
-  SectionTitle,
-  Tabs,
 } from "../components/GameUI";
-import { colors, ui } from "../theme";
+import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
 
 export function HomeScreen({ navigate, notify }: ScreenProps) {
-  const [strategy, setStrategy] = useState("Tactical (3 Stages)");
   const [file, setFile] = useState<string>();
   async function pickFile() {
     try {
@@ -42,39 +38,30 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
     }
   }
   return (
-    <View style={{ gap: 20 }}>
-      <Panel>
-        <View style={ui.between}>
-          <View style={ui.row}>
-            <Icon name="book-open-page-variant" size={20} />
-            <Text style={ui.label}>THE STUDY FORGE</Text>
-          </View>
-          <Badge text="Tome LVL 1" />
+    <View>
+      <View style={styles.forgeCard}>
+        <ScrollFrame />
+        <View style={styles.forgeHeading}>
+          <Text style={styles.forgeTitle}>THE STUDY FORGE</Text>
         </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Browse study files"
           onPress={pickFile}
-          style={{
-            minHeight: 172,
-            borderWidth: 2,
-            borderStyle: "dashed",
-            borderColor: "#c5a77c",
-            borderRadius: 8,
-            padding: 16,
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
+          style={({ pressed }) => [
+            styles.dropZone,
+            pressed && { transform: [{ scale: 0.99 }], opacity: 0.94 },
+          ]}
         >
           <Icon
             name={file ? "file-check-outline" : "file-plus-outline"}
-            size={36}
+            size={46}
+            color="#5d2d0b"
           />
-          <Text style={[ui.title, { textAlign: "center" }]}>
+          <Text numberOfLines={2} style={styles.uploadTitle}>
             {file ?? "Drop study scroll here"}
           </Text>
-          <Text style={ui.body}>
+          <Text style={styles.uploadSubtitle}>
             {file ? "Tap to choose another file" : "or tap to Browse Files"}
           </Text>
           <View style={ui.row}>
@@ -82,31 +69,31 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
             <Badge text="MAX 25MB" icon="scale-balance" />
           </View>
         </Pressable>
-        <Text style={ui.label}>ENCOUNTER STRATEGY</Text>
-        <Tabs
-          values={["Tactical (3 Stages)", "Boss Rush"]}
-          selected={strategy}
-          onChange={setStrategy}
-        />
-        <Button
-          label="Forge Adventure"
-          icon="lightning-bolt"
-          tone="gold"
-          onPress={() => {
-            if (!file) {
-              notify("Pilih study scroll terlebih dahulu.");
-              return;
-            }
-            notify("Preview adventure dibuka. Dokumen belum diproses.");
-            navigate("Map");
-          }}
-        />
-      </Panel>
-      <SectionTitle
-        title="Active Expeditions"
-        aside="2 In Progress"
-        color={colors.white}
-      />
+        {file && (
+          <Button
+            label="Forge Adventure"
+            tone="gold"
+            style={styles.forgeButton}
+            onPress={() => {
+              notify("Preview adventure dibuka. Dokumen belum diproses.");
+              navigate("Map");
+            }}
+          />
+        )}
+      </View>
+      <View style={styles.expeditionHeader}>
+        <View style={styles.expeditionTitle}>
+          <Image
+            accessibilityIgnoresInvertColors
+            source={gui.sectionTitle}
+            resizeMode="contain"
+            style={styles.expeditionBackground}
+          />
+          <Text numberOfLines={1} adjustsFontSizeToFit style={styles.expeditionText}>
+            Active Expeditions
+          </Text>
+        </View>
+      </View>
       {[
         {
           title: "Biologi — Fotosintesis",
@@ -125,7 +112,13 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
           icon: "earth" as const,
         },
       ].map((quest) => (
-        <Panel key={quest.title}>
+        <View key={quest.title} style={styles.questCard}>
+          <NineSliceFrame
+            images={gui.expeditionCard9}
+            top={25}
+            bottom={31}
+            side={62}
+          />
           <View style={ui.row}>
             <View
               style={{
@@ -137,10 +130,10 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
               <Icon name={quest.icon} color={colors.white} />
             </View>
             <View style={ui.flex}>
-              <Text style={ui.title}>{quest.title}</Text>
+              <Text style={[ui.title, styles.questTitle]}>{quest.title}</Text>
               <Text style={ui.label}>{quest.stage}</Text>
             </View>
-            <ImageBadge text={quest.xp} source={icons.exp} size={22} />
+            <ImageBadge text={quest.xp} source={icons.exp} size={18} />
           </View>
           <View style={ui.between}>
             <Text style={[ui.label, ui.flex]}>
@@ -153,11 +146,18 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
             label="Continue Quest"
             icon="play"
             tone="gold"
+            style={styles.questButton}
             onPress={() => navigate("Map")}
           />
-        </Panel>
+        </View>
       ))}
-      <Panel>
+      <View style={styles.questCard}>
+        <NineSliceFrame
+          images={gui.expeditionCard9}
+          top={25}
+          bottom={31}
+          side={62}
+        />
         <View style={ui.row}>
           <Icon name="check-decagram" size={30} />
           <View style={ui.flex}>
@@ -172,9 +172,192 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
           icon="check"
           tone="quiet"
           disabled
+          style={styles.questButton}
           onPress={() => {}}
         />
-      </Panel>
+        <View
+          accessibilityLabel="Claimed expedition"
+          pointerEvents="none"
+          style={styles.claimedOverlay}
+        >
+          <Image
+            accessibilityIgnoresInvertColors
+            source={gui.claimed}
+            resizeMode="contain"
+            style={styles.claimedBadge}
+          />
+        </View>
+      </View>
     </View>
   );
 }
+
+function ScrollFrame() {
+  return <NineSliceFrame images={gui.scroll9} top={46} bottom={52} side={46} />;
+}
+
+function NineSliceFrame({
+  images,
+  top,
+  bottom,
+  side,
+}: {
+  images: typeof gui.scroll9;
+  top: number;
+  bottom: number;
+  side: number;
+}) {
+  const piece = (
+    source: (typeof images)[keyof typeof images],
+    style: object,
+  ) => (
+    <Image
+      accessibilityIgnoresInvertColors
+      source={source}
+      resizeMode="stretch"
+      style={style}
+    />
+  );
+  return (
+    <View pointerEvents="none" style={styles.scrollFrame}>
+      <View style={[styles.sliceRow, { height: top }]}>
+        {piece(images.topLeft, { width: side, height: top })}
+        {piece(images.top, styles.sliceFill)}
+        {piece(images.topRight, { width: side, height: top })}
+      </View>
+      <View style={[styles.sliceRow, styles.sliceMiddle]}>
+        {piece(images.left, { width: side, height: "100%" })}
+        {piece(images.center, styles.sliceCenter)}
+        {piece(images.right, { width: side, height: "100%" })}
+      </View>
+      <View style={[styles.sliceRow, { height: bottom }]}>
+        {piece(images.bottomLeft, { width: side, height: bottom })}
+        {piece(images.bottom, styles.sliceFill)}
+        {piece(images.bottomRight, { width: side, height: bottom })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  forgeCard: {
+    minHeight: 310,
+    marginHorizontal: -6,
+    paddingHorizontal: 14,
+    paddingTop: 30,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  scrollFrame: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  sliceRow: { flexDirection: "row" },
+  sliceMiddle: { flex: 1 },
+  sliceCenter: { flex: 1, height: "100%" },
+  sliceFill: { flex: 1, height: "100%" },
+  forgeHeading: { alignItems: "center", transform: [{ translateY: 5 }] },
+  forgeTitle: {
+    fontFamily: fonts.heavy,
+    fontSize: 19,
+    color: "#4a2108",
+    letterSpacing: 0.8,
+    textShadowColor: "#fff2c7",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 2,
+  },
+  dropZone: {
+    minHeight: 160,
+    marginHorizontal: 10,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#fff2cf",
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#d59a42",
+    borderRadius: 14,
+  },
+  uploadTitle: {
+    fontFamily: fonts.heavy,
+    fontSize: 19,
+    lineHeight: 24,
+    color: "#3b1b06",
+    textAlign: "center",
+  },
+  uploadSubtitle: {
+    fontFamily: fonts.heading,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#69401f",
+    textAlign: "center",
+  },
+  forgeButton: {
+    width: "52%",
+    minHeight: 46,
+    alignSelf: "center",
+  },
+  expeditionHeader: {
+    height: 76,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  expeditionTitle: {
+    width: "82%",
+    maxWidth: 300,
+    aspectRatio: 2175 / 723,
+    justifyContent: "center",
+  },
+  expeditionBackground: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+  },
+  expeditionText: {
+    marginLeft: "27%",
+    marginRight: 8,
+    paddingBottom: 2,
+    fontFamily: fonts.heavy,
+    fontSize: 16,
+    color: colors.white,
+    textShadowColor: "#06235e",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 1,
+  },
+  questCard: {
+    position: "relative",
+    marginBottom: 12,
+    paddingTop: 26,
+    paddingHorizontal: 30,
+    paddingBottom: 38,
+    gap: 10,
+  },
+  questTitle: { fontSize: 15, lineHeight: 20 },
+  questButton: {
+    width: "82%",
+    minHeight: 48,
+    alignSelf: "center",
+  },
+  claimedOverlay: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    bottom: 8,
+    left: 8,
+    zIndex: 3,
+    overflow: "hidden",
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(67, 210, 42, 0.52)",
+  },
+  claimedBadge: { width: 140, height: 140 },
+});

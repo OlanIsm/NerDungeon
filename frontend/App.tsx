@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   BackHandler,
+  Image,
   ImageBackground,
   Modal,
   ScrollView,
@@ -29,10 +30,10 @@ import { colors, ui } from "./src/theme";
 import type { Screen } from "./src/types";
 
 const navigation = [
-  { screen: "Hub", icon: icons.hub, size: 52 },
-  { screen: "Map", icon: icons.map, size: 51 },
-  { screen: "Bazaar", icon: icons.bazaar, size: 56 },
-  { screen: "Armory", icon: icons.armory, size: 57 },
+  { screen: "Hub", icon: icons.hub, size: 52, iconOffsetX: 4 },
+  { screen: "Map", icon: icons.map, size: 51, iconOffsetX: 1 },
+  { screen: "Bazaar", icon: icons.bazaar, size: 56, iconOffsetX: -1 },
+  { screen: "Armory", icon: icons.armory, size: 57, iconOffsetX: -4 },
 ] as const;
 export default function App() {
   const [loaded, error] = useFonts({
@@ -97,7 +98,11 @@ function GameApp() {
         <ScrollView
           ref={scroll}
           style={s.content}
-          contentContainerStyle={{ padding: 12, paddingBottom: 28 }}
+          contentContainerStyle={{
+            padding: 12,
+            paddingTop: 118,
+            paddingBottom: 124,
+          }}
           showsVerticalScrollIndicator={false}
         >
           {screen === "Hub" && <HomeScreen {...props} />}
@@ -108,12 +113,19 @@ function GameApp() {
         </ScrollView>
         {screen !== "Battle" && (
           <View style={s.nav}>
+            <Image
+              accessibilityIgnoresInvertColors
+              source={gui.navbar}
+              resizeMode="cover"
+              style={s.navBackground}
+            />
             {navigation.map((item) => (
               <BottomNavItem
                 key={item.screen}
                 screen={item.screen}
                 icon={item.icon}
                 size={item.size}
+                iconOffsetX={item.iconOffsetX}
                 selected={screen === item.screen}
                 onPress={() => navigate(item.screen)}
               />
@@ -165,15 +177,25 @@ const s = StyleSheet.create({
   },
   content: { flex: 1, backgroundColor: "transparent" },
   nav: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: 16,
-    height: 76,
+    height: 96,
     overflow: "hidden",
-    backgroundColor: "#fff2d9f2",
-    borderTopWidth: 1,
-    borderTopColor: "#e8d9b6",
+    backgroundColor: "transparent",
+  },
+  navBackground: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
   },
   overlay: {
     flex: 1,
