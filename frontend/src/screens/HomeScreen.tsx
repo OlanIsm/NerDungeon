@@ -9,6 +9,7 @@ import {
   ImageBadge,
   Meter,
 } from "../components/GameUI";
+import { NineSliceFrame } from "../components/NineSliceFrame";
 import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
 
@@ -196,49 +197,6 @@ function ScrollFrame() {
   return <NineSliceFrame images={gui.scroll9} top={46} bottom={52} side={46} />;
 }
 
-function NineSliceFrame({
-  images,
-  top,
-  bottom,
-  side,
-}: {
-  images: typeof gui.scroll9;
-  top: number;
-  bottom: number;
-  side: number;
-}) {
-  const piece = (
-    source: (typeof images)[keyof typeof images],
-    style: object,
-  ) => (
-    <Image
-      accessibilityIgnoresInvertColors
-      source={source}
-      resizeMode="stretch"
-      style={style}
-    />
-  );
-  return (
-    <View pointerEvents="none" style={styles.scrollFrame}>
-      <View style={[styles.sliceRow, { height: top }]}>
-        {piece(images.topLeft, { width: side, height: top })}
-        {piece(images.top, styles.sliceFill)}
-        {piece(images.topRight, { width: side, height: top })}
-      </View>
-      <View style={[styles.sliceRow, styles.sliceMiddle]}>
-        {piece(images.left, { width: side, height: "100%" })}
-        {piece(images.center, styles.sliceCenter)}
-        {piece(images.right, { width: side, height: "100%" })}
-      </View>
-      <View style={[styles.sliceRow, { height: bottom }]}>
-        {piece(images.bottomLeft, { width: side, height: bottom })}
-        {piece(images.bottom, styles.sliceFill)}
-        {piece(images.bottomRight, { width: side, height: bottom })}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   forgeCard: {
     minHeight: 310,
@@ -248,17 +206,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 12,
   },
-  scrollFrame: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  sliceRow: { flexDirection: "row" },
-  sliceMiddle: { flex: 1 },
-  sliceCenter: { flex: 1, height: "100%" },
-  sliceFill: { flex: 1, height: "100%" },
   forgeHeading: { alignItems: "center", transform: [{ translateY: 5 }] },
   forgeTitle: {
     fontFamily: fonts.heavy,

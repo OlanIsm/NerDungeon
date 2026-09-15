@@ -1,82 +1,36 @@
-import type { IconName } from "../components/GameUI";
-export type Item = {
-  name: string;
-  short: string;
-  icon: IconName;
-  category: string;
-  level: string;
-  description: string;
-};
+export type Item = { name: string; category: "Equipment" | "Potions"; image: number };
+
 export const inventory: Item[] = [
-  {
-    name: "Rune Quill",
-    short: "Quill",
-    icon: "fountain-pen-tip",
-    category: "Equipment",
-    level: "L.5",
-    description:
-      "A sharpened scholar quill carved from ancient elderwood. Writes answers in blinding light.",
-  },
-  {
-    name: "Bronze Dagger",
-    short: "Dagger",
-    icon: "sword",
-    category: "Equipment",
-    level: "L.3",
-    description: "Quick for slashing down rogue misspellings in dungeon texts.",
-  },
-  {
-    name: "Oak Tome",
-    short: "Oak Tome",
-    icon: "book-open-variant",
-    category: "Equipment",
-    level: "L.2",
-    description:
-      "Sturdy wood-bound grimoire containing basic grammatical incantations.",
-  },
-  {
-    name: "Starlight Gem",
-    short: "Star Gem",
-    icon: "diamond-stone",
-    category: "Equipment",
-    level: "L.4",
-    description:
-      "Faintly illuminates tricky dungeon questions with cosmic hints.",
-  },
-  {
-    name: "Scholar’s Spectacles",
-    short: "Spectacles",
-    icon: "glasses",
-    category: "Equipment",
-    level: "L.5",
-    description:
-      "Ground and polished by ancient academy tutors. Automatically eliminates one incorrect answer choice during multiple-choice boss trivia battles.",
-  },
-  {
-    name: "Iron Shield",
-    short: "Shield",
-    icon: "shield-outline",
-    category: "Equipment",
-    level: "L.1",
-    description:
-      "Heavy slab of beaten iron. Mitigates penalty damage from wrong answers.",
-  },
-  {
-    name: "HP Elixir",
-    short: "HP Elixir",
-    icon: "bottle-tonic-plus-outline",
-    category: "Potions",
-    level: "×5",
-    description:
-      "Instantly restores 250 Health points when trivia traps trigger.",
-  },
-  {
-    name: "Retry Scroll",
-    short: "Retry",
-    icon: "script-text-outline",
-    category: "Spells",
-    level: "×2",
-    description:
-      "Grants a second attempt at any failed riddle without losing a heart.",
-  },
+  { name: "Blue Mage Robe", category: "Equipment", image: require("../../assets/item/sliced/armor/blue-mage-robe.png") },
+  { name: "Flame Mage Robe", category: "Equipment", image: require("../../assets/item/sliced/armor/flame-mage-robe.png") },
+  { name: "Forest Mage Robe", category: "Equipment", image: require("../../assets/item/sliced/armor/forest-mage-robe.png") },
+  { name: "Celestial Mage Robe", category: "Equipment", image: require("../../assets/item/sliced/armor/celestial-mage-robe.png") },
+  { name: "Scholar Armor", category: "Equipment", image: require("../../assets/item/sliced/armor/scholar-armor.png") },
+  { name: "Shadow Armor", category: "Equipment", image: require("../../assets/item/sliced/armor/shadow-armor.png") },
+  { name: "Ranger Armor", category: "Equipment", image: require("../../assets/item/sliced/armor/ranger-armor.png") },
+  { name: "Royal Armor", category: "Equipment", image: require("../../assets/item/sliced/armor/royal-armor.png") },
+  { name: "Quill Staff", category: "Equipment", image: require("../../assets/item/sliced/weapon/quill-staff.png") },
+  { name: "Scholar Sword", category: "Equipment", image: require("../../assets/item/sliced/weapon/scholar-sword.png") },
+  { name: "Crystal Staff", category: "Equipment", image: require("../../assets/item/sliced/weapon/crystal-staff.png") },
+  { name: "Training Sword", category: "Equipment", image: require("../../assets/item/sliced/weapon/training-sword.png") },
+  { name: "Astral Staff", category: "Equipment", image: require("../../assets/item/sliced/weapon/astral-staff.png") },
+  { name: "Oak Tome", category: "Equipment", image: require("../../assets/item/sliced/weapon/oak-tome.png") },
+  { name: "Flame Quill", category: "Equipment", image: require("../../assets/item/sliced/weapon/flame-quill.png") },
+  { name: "Orb Staff", category: "Equipment", image: require("../../assets/item/sliced/weapon/orb-staff.png") },
+  { name: "Arcane Amulet", category: "Equipment", image: require("../../assets/item/sliced/accessories/arcane-amulet.png") },
+  { name: "Spectacles", category: "Equipment", image: require("../../assets/item/sliced/accessories/spectacles.png") },
+  { name: "Star Gem", category: "Equipment", image: require("../../assets/item/sliced/accessories/star-gem.png") },
+  { name: "Sapphire Ring", category: "Equipment", image: require("../../assets/item/sliced/accessories/sapphire-ring.png") },
+  { name: "Scholar Ribbon", category: "Equipment", image: require("../../assets/item/sliced/accessories/scholar-ribbon.png") },
+  { name: "Moon Bracelet", category: "Equipment", image: require("../../assets/item/sliced/accessories/moon-bracelet.png") },
+  { name: "Prism Pendant", category: "Equipment", image: require("../../assets/item/sliced/accessories/prism-pendant.png") },
+  { name: "Clock Amulet", category: "Equipment", image: require("../../assets/item/sliced/accessories/clock-amulet.png") },
+  { name: "HP Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/hp-elixir.png") },
+  { name: "MP Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/mp-elixir.png") },
+  { name: "Nature Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/nature-elixir.png") },
+  { name: "Gold Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/gold-elixir.png") },
+  { name: "Revival Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/revival-elixir.png") },
+  { name: "Mind Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/mind-elixir.png") },
+  { name: "Attack Elixir", category: "Potions", image: require("../../assets/item/sliced/potion/attack-elixir.png") },
+  { name: "Healing Pouch", category: "Potions", image: require("../../assets/item/sliced/potion/healing-pouch.png") },
 ];

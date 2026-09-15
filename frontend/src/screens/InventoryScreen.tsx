@@ -1,211 +1,181 @@
 import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
-import { art } from "../assets";
-import { Badge, Button, Icon, Meter, Panel, Tabs } from "../components/GameUI";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { gui, miniIcons } from "../assets";
+import { Icon } from "../components/GameUI";
+import { NineSliceFrame } from "../components/NineSliceFrame";
 import { inventory } from "../data/inventory";
-import { colors, ui } from "../theme";
+import { colors, fonts } from "../theme";
 import type { ScreenProps } from "../types";
 
+type Category = "Equipment" | "Potions";
+
 export function InventoryScreen({ notify }: ScreenProps) {
-  const [category, setCategory] = useState("Equipment");
-  const [selected, setSelected] = useState(inventory[4]);
-  const [equipped, setEquipped] = useState<string>();
+  const [category, setCategory] = useState<Category>("Equipment");
+  const [selected, setSelected] = useState<string>();
+  const items = inventory.filter((item) => item.category === category);
+  const equipped = [inventory[17], inventory[8], inventory[0], inventory[16]];
+
   return (
-    <View style={{ gap: 16 }}>
-      <Panel>
-        <View style={ui.row}>
-          <Image
-            source={art.avatar}
-            style={{ width: 48, height: 48, borderRadius: 8 }}
-          />
-          <View style={ui.flex}>
-            <Text style={ui.heading}>Nerd Mage</Text>
-            <Text style={ui.label}>Scholar Class • Arcane Library</Text>
-          </View>
-          <View>
-            <Text style={ui.label}>RATING</Text>
-            <Badge text="1,420" icon="lightning-bolt" />
-          </View>
-        </View>
-        <View style={ui.between}>
-          <Text style={ui.label}>Vigor HP</Text>
-          <Text style={ui.label}>850 / 850</Text>
-        </View>
-        <Meter value={100} color="#29802a" />
-        <View style={ui.between}>
-          <Text style={ui.label}>Trivia MP</Text>
-          <Text style={ui.label}>320 / 320</Text>
-        </View>
-        <Meter value={100} />
-        <View style={ui.row}>
+    <View style={styles.screen}>
+      <View accessibilityLabel="Bag profile panel" style={styles.profile}>
+        <NineSliceFrame images={gui.bagTop9} top={40} bottom={40} side={40} />
+        <View style={styles.vitals}>
           {[
-            { image: art.cap, name: "Scholar Cap" },
-            { image: art.staff, name: "Quill Staff" },
-            { image: art.noviceRobe, name: "Novice Robe" },
-            { image: art.amulet, name: "Mem. Amulet" },
-          ].map((item, index) => (
-            <View
-              key={item.name}
-              style={[
-                ui.flex,
-                ui.center,
-                {
-                  backgroundColor: index === 3 ? colors.mint : "#fff2d9",
-                  padding: 5,
-                  borderRadius: 6,
-                  gap: 5,
-                },
-              ]}
-            >
-              <Text style={ui.label}>{["I", "II", "III", "IV"][index]}</Text>
-              <Image source={item.image} style={{ width: 38, height: 38 }} />
-              <Text style={[ui.label, { fontSize: 9, textAlign: "center" }]}>
-                {item.name}
-              </Text>
+            { name: "HP", value: "850/850", icon: miniIcons.heart, fill: styles.hpFill },
+            { name: "MP", value: "320/320", icon: miniIcons.water, fill: styles.mpFill },
+          ].map((meter) => (
+            <View key={meter.name} style={styles.meterBox}>
+              <View style={styles.statRow}>
+                <Image source={meter.icon} resizeMode="contain" style={styles.vitalIcon} />
+                <Text style={styles.statLabel}>{meter.name}</Text>
+                <Text style={styles.statValue}>{meter.value}</Text>
+              </View>
+              <View style={styles.meterTrack}><View style={meter.fill} /></View>
             </View>
           ))}
         </View>
-        <View style={ui.row}>
-          {[
-            ["Quiz ATK", "185 +28"],
-            ["Ward DEF", "42 +6"],
-            ["Free Clues", "2 /run"],
-          ].map(([label, value]) => (
-            <View key={label} style={[ui.inset, ui.flex, { padding: 9 }]}>
-              <Text style={ui.label}>{label}</Text>
-              <Text style={ui.title}>{value}</Text>
-            </View>
-          ))}
-        </View>
-      </Panel>
-      <Panel>
-        <Tabs
-          values={["Equipment", "Spells", "Potions"]}
-          selected={category}
-          onChange={setCategory}
-        />
-        <View style={ui.between}>
-          <Text style={ui.label}>24/40</Text>
-          <Button
-            label="Expand"
-            icon="plus"
-            tone="quiet"
-            onPress={() =>
-              notify("Haversack expansion preview. Kapasitas belum berubah.")
-            }
-          />
-        </View>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {inventory
-            .filter(
-              (item) => category === "Equipment" || item.category === category,
-            )
-            .map((item) => (
-              <Pressable
-                key={item.name}
-                accessibilityRole="button"
-                accessibilityLabel={item.name}
-                accessibilityState={{ selected: selected.name === item.name }}
-                onPress={() => setSelected(item)}
-                style={{
-                  width: "23%",
-                  minHeight: 76,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 3,
-                  backgroundColor:
-                    selected.name === item.name ? colors.mint : colors.inset,
-                  borderWidth: selected.name === item.name ? 2 : 0,
-                  borderColor: colors.teal,
-                  borderBottomWidth: 3,
-                  borderBottomColor: colors.edge,
-                  borderRadius: 10,
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  size={25}
-                  color={
-                    selected.name === item.name ? colors.teal : colors.wood
-                  }
-                />
-                <Text style={[ui.label, { fontSize: 10 }]}>{item.short}</Text>
-                <Text style={[ui.label, { fontSize: 9 }]}>{item.level}</Text>
-              </Pressable>
+        <View style={styles.profileBody}>
+          <View style={styles.stats}>
+            {[
+              { label: "Quiz ATK", value: "185 +28", icon: miniIcons.goldenSwords },
+              { label: "Ward DEF", value: "42 +6", icon: miniIcons.shield },
+              { label: "Free Clues", value: "2 /run", icon: miniIcons.clueBulb },
+            ].map((stat) => (
+              <View key={stat.label} accessibilityLabel={`${stat.label} stat`} style={styles.statTile}>
+                <Image source={stat.icon} resizeMode="contain" style={styles.tileIcon} />
+                <Text style={styles.tileLabel}>{stat.label}</Text>
+                <Text style={styles.tileValue}>{stat.value}</Text>
+              </View>
             ))}
-        </View>
-      </Panel>
-      <Panel>
-        <View style={ui.row}>
-          <View
-            style={{
-              backgroundColor: colors.mint,
-              borderRadius: 10,
-              padding: 10,
-            }}
-          >
-            <Icon name={selected.icon} color={colors.teal} size={28} />
           </View>
-          <View style={ui.flex}>
-            <Text style={ui.title}>{selected.name}</Text>
-            <Text style={ui.label}>
-              {selected.category === "Equipment"
-                ? "EPIC RELIC HEAD · 500 Gold"
-                : selected.category}
-            </Text>
-          </View>
-          <Badge text="RANK S" />
-        </View>
-        <View style={ui.inset}>
-          <Text style={ui.label}>Passive Effect: Deductive Focus</Text>
-          <Text style={ui.body}>{selected.description}</Text>
-        </View>
-        <View style={ui.row}>
-          {[
-            ["Mana Max", "+35 MP"],
-            ["Think Time", "+3.5s"],
-            ["Crit Clue", "+12%"],
-          ].map(([label, value]) => (
-            <View
-              key={label}
-              style={[ui.inset, ui.flex, ui.center, { padding: 8 }]}
-            >
-              <Text style={ui.label}>{label}</Text>
-              <Text style={ui.title}>{value}</Text>
+          <View style={styles.character}>
+            <View style={styles.equipmentColumn}>
+              {equipped.slice(0, 2).map((item) => (
+                <View key={item.name} style={styles.equipmentSlot}>
+                  <Image source={item.image} resizeMode="contain" style={styles.equipmentImage} />
+                  <Text numberOfLines={1} style={styles.slotName}>{item.name}</Text>
+                </View>
+              ))}
             </View>
+            <View style={styles.characterPlaceholder}>
+              <Icon name="account-outline" size={37} color="#8c6b43" />
+              <Text style={styles.characterPlaceholderText}>Character art</Text>
+            </View>
+            <View style={styles.equipmentColumn}>
+              {equipped.slice(2).map((item) => (
+                <View key={item.name} style={styles.equipmentSlot}>
+                  <Image source={item.image} resizeMode="contain" style={styles.equipmentImage} />
+                  <Text numberOfLines={1} style={styles.slotName}>{item.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View accessibilityLabel="Bag inventory panel" style={styles.bag}>
+        <NineSliceFrame images={gui.bagBottom9} top={40} bottom={40} side={40} />
+        <View style={styles.tabs}>
+          {(["Equipment", "Potions"] as const).map((value) => (
+            <Pressable
+              key={value}
+              accessibilityRole="tab"
+              accessibilityLabel={value}
+              accessibilityState={{ selected: category === value }}
+              onPress={() => { setCategory(value); setSelected(undefined); }}
+              style={[styles.tab, category === value && styles.activeTab]}
+            >
+              <Image source={value === "Equipment" ? miniIcons.crossedSwords : miniIcons.hpPotion} resizeMode="contain" style={styles.tabIcon} />
+              <Text style={[styles.tabText, category === value && styles.activeTabText]}>{value}</Text>
+            </Pressable>
           ))}
         </View>
-        <Button
-          label={
-            equipped === selected.name
-              ? "Equipped"
-              : selected.category === "Equipment"
-                ? "Equip Item"
-                : "Use Item"
-          }
-          icon="check-circle-outline"
-          tone="gold"
-          onPress={() => {
-            setEquipped(selected.name);
-            notify(`${selected.name} dipilih untuk preview loadout.`);
-          }}
-        />
-        <View style={ui.row}>
-          <Button
-            label="Upgrade (250g)"
-            icon="upload"
-            style={ui.flex}
-            onPress={() => notify("Upgrade preview. Gold tidak dipotong.")}
-          />
-          <Button
-            label="Sell · 50g"
-            tone="quiet"
-            onPress={() =>
-              notify("Selling preview. Item tetap ada di inventory.")
-            }
-          />
+        <View style={styles.bagHeading}>
+          <View style={styles.bagTitle}>
+            <Image source={miniIcons.chest} resizeMode="contain" style={styles.bagIcon} />
+            <Text style={styles.bagTitleText}>Bag</Text>
+          </View>
+          <Text style={styles.capacity}>24/40</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Expand"
+            onPress={() => notify("Bag expansion preview. Kapasitas belum berubah.")}
+            style={styles.expand}
+          >
+            <Image source={miniIcons.healPlus} resizeMode="contain" style={styles.expandIcon} />
+            <Text style={styles.expandText}>Expand</Text>
+          </Pressable>
         </View>
-      </Panel>
+        <ScrollView
+          key={category}
+          accessibilityLabel="Bag items"
+          style={styles.itemsScroll}
+          contentContainerStyle={styles.itemsGrid}
+          showsVerticalScrollIndicator={false}
+        >
+          {items.map((item) => (
+            <Pressable
+              key={item.name}
+              accessibilityRole="button"
+              accessibilityLabel={item.name}
+              accessibilityState={{ selected: selected === item.name }}
+              onPress={() => setSelected(item.name)}
+              style={[styles.itemSlot, selected === item.name && styles.selectedSlot]}
+            >
+              <Image source={item.image} resizeMode="contain" style={styles.itemImage} />
+              <Text numberOfLines={3} style={styles.itemName}>{item.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, paddingHorizontal: 12, paddingBottom: 100, gap: 8 },
+  profile: { height: 292, paddingHorizontal: 27, paddingTop: 31, paddingBottom: 29, gap: 7 },
+  vitals: { height: 66, flexDirection: "row", gap: 8 },
+  meterBox: { flex: 1, padding: 8, gap: 7, borderRadius: 10, backgroundColor: "#f7dfad", justifyContent: "center" },
+  statRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  vitalIcon: { width: 25, height: 25 },
+  statLabel: { flex: 1, fontFamily: fonts.heavy, fontSize: 12, color: "#513623" },
+  statValue: { fontFamily: fonts.heavy, fontSize: 10, color: "#513623" },
+  meterTrack: { height: 11, borderRadius: 8, borderWidth: 1, borderColor: "#68411b", backgroundColor: "#d0ba8f", overflow: "hidden" },
+  hpFill: { height: "100%", width: "100%", backgroundColor: "#23b336" },
+  mpFill: { height: "100%", width: "100%", backgroundColor: "#009eab" },
+  profileBody: { flex: 1, flexDirection: "row", gap: 8 },
+  stats: { width: "19%", alignItems: "center", justifyContent: "space-between", gap: 2 },
+  statTile: { width: "100%", maxWidth: 52, aspectRatio: 1, padding: 2, justifyContent: "center", alignItems: "center", borderRadius: 7, backgroundColor: "#f4dbaa" },
+  tileIcon: { width: 15, height: 15 },
+  tileLabel: { fontFamily: fonts.heading, fontSize: 8, color: "#513623", textAlign: "center" },
+  tileValue: { width: "100%", fontFamily: fonts.heavy, fontSize: 10, color: "#513623", textAlign: "center" },
+  character: { flex: 1, flexDirection: "row", alignItems: "center", gap: 3 },
+  equipmentColumn: { width: "30%", height: "100%", justifyContent: "space-around" },
+  equipmentSlot: { height: "45%", alignItems: "center", justifyContent: "center", padding: 3, borderRadius: 8, borderWidth: 2, borderColor: "#d6b183", backgroundColor: "#f9e8ca" },
+  equipmentImage: { width: "100%", height: "70%" },
+  slotName: { fontFamily: fonts.heading, fontSize: 8, color: "#4b321e" },
+  characterPlaceholder: { flex: 1, height: "72%", alignItems: "center", justifyContent: "center", borderRadius: 9, borderWidth: 2, borderStyle: "dashed", borderColor: "#c89d67", backgroundColor: "#fff0cf" },
+  characterPlaceholderText: { fontFamily: fonts.heading, fontSize: 9, color: "#7d5b37", textAlign: "center" },
+  bag: { flex: 1, minHeight: 0, paddingHorizontal: 27, paddingTop: 30, paddingBottom: 29 },
+  tabs: { height: 48, flexDirection: "row", gap: 6 },
+  tab: { flex: 1, minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, borderWidth: 2, borderColor: "#b88b56", backgroundColor: "#f5dfb6" },
+  tabIcon: { width: 25, height: 25 },
+  activeTab: { borderColor: "#9f5a13", backgroundColor: "#6c3c18" },
+  tabText: { fontFamily: fonts.heavy, fontSize: 14, color: "#68431f" },
+  activeTabText: { color: "#fff1ce" },
+  bagHeading: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 8 },
+  bagTitle: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+  bagIcon: { width: 28, height: 28 },
+  bagTitleText: { fontFamily: fonts.heavy, fontSize: 19, color: "#4e2b14" },
+  capacity: { fontFamily: fonts.heavy, fontSize: 12, color: "#765538" },
+  expand: { minHeight: 48, paddingHorizontal: 8, flexDirection: "row", alignItems: "center", gap: 2, borderRadius: 10, borderWidth: 2, borderColor: "#cda675", backgroundColor: "#ffe4af" },
+  expandIcon: { width: 19, height: 19 },
+  expandText: { fontFamily: fonts.heavy, fontSize: 11, color: "#4e2b14" },
+  itemsScroll: { flex: 1, minHeight: 0 },
+  itemsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingBottom: 12 },
+  itemSlot: { width: "23%", minHeight: 108, padding: 4, alignItems: "center", gap: 2, borderWidth: 2, borderBottomWidth: 4, borderColor: "#e6c18b", borderBottomColor: "#8c5c31", borderRadius: 11, backgroundColor: "#fff6df" },
+  selectedSlot: { borderColor: colors.teal, backgroundColor: colors.mint },
+  itemImage: { width: "90%", height: 65 },
+  itemName: { fontFamily: fonts.heading, fontSize: 9, color: "#5a3a21", textAlign: "center" },
+});

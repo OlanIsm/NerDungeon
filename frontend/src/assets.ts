@@ -25,6 +25,21 @@ export const icons = {
   exp: require("../assets/icon/exp.png"),
 };
 
+export const miniIcons = {
+  crossedSwords: require("../assets/mini icon/sliced/crossed-swords.png"),
+  oakTome: require("../assets/mini icon/sliced/oak-tome.png"),
+  hpPotion: require("../assets/mini icon/sliced/hp-potion.png"),
+  chest: require("../assets/mini icon/sliced/chest.png"),
+  heart: require("../assets/mini icon/sliced/heart.png"),
+  water: require("../assets/mini icon/sliced/water.png"),
+  goldenSwords: require("../assets/mini icon/sliced/golden-swords.png"),
+  shield: require("../assets/mini icon/sliced/shield.png"),
+  clueBulb: require("../assets/mini icon/sliced/clue-bulb.png"),
+  attackBolt: require("../assets/mini icon/sliced/attack-bolt.png"),
+  healPlus: require("../assets/mini icon/sliced/heal-plus.png"),
+  retryScroll: require("../assets/mini icon/sliced/retry-scroll.png"),
+};
+
 export const gui = {
   background: require("../assets/GUI/background.webp"),
   header: require("../assets/GUI/header.webp"),
@@ -39,6 +54,28 @@ export const gui = {
     bottomLeft: require("../assets/GUI/scroll-9/bottom-left.webp"),
     bottom: require("../assets/GUI/scroll-9/bottom.webp"),
     bottomRight: require("../assets/GUI/scroll-9/bottom-right.webp"),
+  },
+  bagTop9: {
+    topLeft: require("../assets/GUI/bag-scroll-top-9/top-left.png"),
+    top: require("../assets/GUI/bag-scroll-top-9/top.png"),
+    topRight: require("../assets/GUI/bag-scroll-top-9/top-right.png"),
+    left: require("../assets/GUI/bag-scroll-top-9/left.png"),
+    center: require("../assets/GUI/bag-scroll-top-9/center.png"),
+    right: require("../assets/GUI/bag-scroll-top-9/right.png"),
+    bottomLeft: require("../assets/GUI/bag-scroll-top-9/bottom-left.png"),
+    bottom: require("../assets/GUI/bag-scroll-top-9/bottom.png"),
+    bottomRight: require("../assets/GUI/bag-scroll-top-9/bottom-right.png"),
+  },
+  bagBottom9: {
+    topLeft: require("../assets/GUI/bag-scroll-bottom-9/top-left.png"),
+    top: require("../assets/GUI/bag-scroll-bottom-9/top.png"),
+    topRight: require("../assets/GUI/bag-scroll-bottom-9/top-right.png"),
+    left: require("../assets/GUI/bag-scroll-bottom-9/left.png"),
+    center: require("../assets/GUI/bag-scroll-bottom-9/center.png"),
+    right: require("../assets/GUI/bag-scroll-bottom-9/right.png"),
+    bottomLeft: require("../assets/GUI/bag-scroll-bottom-9/bottom-left.png"),
+    bottom: require("../assets/GUI/bag-scroll-bottom-9/bottom.png"),
+    bottomRight: require("../assets/GUI/bag-scroll-bottom-9/bottom-right.png"),
   },
   expeditionCard9: {
     topLeft: require("../assets/GUI/expedition-card-9/top-left.webp"),

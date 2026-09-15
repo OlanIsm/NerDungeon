@@ -1,0 +1,99 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const ts = require("typescript");
+
+// Run the renderer-independent TypeScript simulation with the installed compiler.
+require.extensions[".ts"] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename, "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText, filename);
+const { FantasyGame } = require("../frontend/src/game/FantasyGame.ts");
+const { WORLD } = require("../frontend/src/game/level.ts");
+const { depthAt, projectedX } = require("../frontend/src/game/projection.ts");
+
+assert(depthAt(50, 780) < depthAt(700, 780), "distant sprites smaller");
+assert(projectedX(300, 50, 780) < projectedX(300, 700, 780), "near sprites spread farther from the road center");
+
+function advance(game, seconds) {
+  for (let tick = 0; tick < seconds * 60; tick++) game.update(1 / 60);
+}
+function coverage(game) {
+  const ordered = [...game.chunks.pool].sort((a, b) => a.y - b.y);
+  assert(ordered[0].y <= 0, "camera top covered");
+  assert(ordered.at(-1).y + WORLD.chunkHeight >= game.chunks.viewportHeight - 0.001, "camera bottom covered");
+  for (let i = 1; i < ordered.length; i++) assert(Math.abs(ordered[i].y - ordered[i - 1].y - WORLD.chunkHeight) < 0.001, "chunks join without gaps");
+}
+
+const game = new FantasyGame(780);
+const slots = [...game.chunks.pool];
+const hero = game.playerY;
+const counts = [];
+let stoppedAt = 0;
+for (let frame = 0; frame < 30000 && game.state !== "result"; frame++) {
+  const state = game.state;
+  const distance = game.distance;
+  game.update(1 / 60);
+  coverage(game);
+  assert.equal(game.playerY, hero, "hero stays fixed");
+  if (state !== "walking") assert.equal(game.distance, distance, "world frozen outside walking");
+  if (game.state === "encounterStarting") {
+    const arena = game.chunks.pool.find((chunk) => chunk.canContainEncounter && chunk.encounterConsumed && Math.abs(chunk.y + chunk.definition.triggerY - hero) < 0.03);
+    assert(arena, "arena stops on the player's trigger line");
+  }
+  if (game.state === "encounter" || game.state === "bossEncounter") {
+    counts.push(game.encounter.count);
+    stoppedAt = game.distance;
+    const positions = game.chunks.pool.map((chunk) => chunk.y);
+    advance(game, 1);
+    assert.deepEqual(game.chunks.pool.map((chunk) => chunk.y), positions, "encounter cannot drift");
+    game.completeEncounter();
+    game.completeEncounter();
+  }
+}
+assert.deepEqual(counts, [1, 2, 1], "first encounter, second encounter, boss");
+assert.equal(game.state, "result");
+assert.equal(game.cleared, 3, "duplicate completion ignored");
+assert.equal(game.distance, stoppedAt);
+game.continueTrail();
+advance(game, 300);
+coverage(game);
+assert.equal(game.state, "walking", "normal trail loops after boss");
+assert(game.chunks.recycled > 50, "pool cycles repeatedly");
+game.chunks.pool.forEach((chunk, index) => assert.equal(chunk, slots[index], "same chunk objects reused"));
+game.togglePause();
+const paused = game.distance;
+advance(game, 2);
+assert.equal(game.distance, paused);
+game.togglePause();
+game.triggerEncounter();
+advance(game, 2);
+assert.equal(game.state, "encounter", "debug encounter reaches same FSM");
+game.completeEncounter();
+advance(game, 2);
+assert.equal(game.state, "walking");
+game.setSpeed(Infinity);
+assert.equal(game.speed, WORLD.speed);
+game.setSpeed(999);
+assert.equal(game.speed, WORLD.maxSpeed);
+game.setSpeed(-9);
+assert.equal(game.speed, WORLD.minSpeed);
+const beforeSpike = game.distance;
+game.update(30);
+assert(game.distance - beforeSpike <= WORLD.maxSpeed * WORLD.maxDelta, "suspended frame cannot teleport world");
+const size = game.chunks.pool.length;
+for (let n = 0; n < 20; n++) {
+  game.resize(n % 2 ? 780 : 900);
+  advance(game, 2);
+  coverage(game);
+}
+assert(game.chunks.pool.length <= size + 2, "viewport resizing does not leak pooled chunks");
+const braking = new FantasyGame(780);
+while (braking.chunks.nextEncounter(braking.playerY).distance > 20) braking.update(1 / 60);
+braking.setSpeed(WORLD.maxSpeed);
+for (let frame = 0; frame < 300 && braking.state === "walking"; frame++) {
+  const distance = braking.distance;
+  const velocity = braking.velocity;
+  braking.update(1 / 60);
+  assert(braking.distance - distance <= velocity / 60 + 0.03, "changing speed while braking cannot snap to the arena");
+}
+assert.equal(braking.state, "encounterStarting");
+console.log("Traversal: direction, fixed hero, seamless pooling, 1/2/boss encounters, freeze, completion, pause, speed, long frames and resize passed.");

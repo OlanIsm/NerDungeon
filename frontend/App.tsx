@@ -33,7 +33,7 @@ const navigation = [
   { screen: "Hub", icon: icons.hub, size: 52, iconOffsetX: 4 },
   { screen: "Map", icon: icons.map, size: 51, iconOffsetX: 1 },
   { screen: "Bazaar", icon: icons.bazaar, size: 56, iconOffsetX: -1 },
-  { screen: "Armory", icon: icons.armory, size: 57, iconOffsetX: -4 },
+  { screen: "Bag", icon: icons.armory, size: 57, iconOffsetX: -4 },
 ] as const;
 export default function App() {
   const [loaded, error] = useFonts({
@@ -88,29 +88,35 @@ function GameApp() {
           resizeMode="cover"
           style={s.appBackground}
         />
-        <PlayerHeader
+        {screen !== "Battle" && <PlayerHeader
           onPressProfile={() =>
             setMessage(
               "Nerd Mage · Level 5 Scholar. UI preview — data demonstrasi lokal.",
             )
           }
-        />
-        <ScrollView
-          ref={scroll}
-          style={s.content}
-          contentContainerStyle={{
-            padding: 12,
-            paddingTop: 118,
-            paddingBottom: 124,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {screen === "Hub" && <HomeScreen {...props} />}
-          {screen === "Map" && <AdventureScreen {...props} />}
-          {screen === "Bazaar" && <GachaScreen {...props} />}
-          {screen === "Armory" && <InventoryScreen {...props} />}
-          {screen === "Battle" && <BattleScreen {...props} />}
-        </ScrollView>
+        />}
+        {screen === "Battle" ? (
+          <BattleScreen {...props} />
+        ) : screen === "Bag" ? (
+          <View style={s.fixedContent}>
+            <InventoryScreen {...props} />
+          </View>
+        ) : (
+          <ScrollView
+            ref={scroll}
+            style={s.content}
+            contentContainerStyle={{
+              padding: 12,
+              paddingTop: 118,
+              paddingBottom: 124,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            {screen === "Hub" && <HomeScreen {...props} />}
+            {screen === "Map" && <AdventureScreen {...props} />}
+            {screen === "Bazaar" && <GachaScreen {...props} />}
+          </ScrollView>
+        )}
         {screen !== "Battle" && (
           <View style={s.nav}>
             <Image
@@ -176,6 +182,7 @@ const s = StyleSheet.create({
     left: 0,
   },
   content: { flex: 1, backgroundColor: "transparent" },
+  fixedContent: { flex: 1, paddingTop: 108 },
   nav: {
     position: "absolute",
     right: 0,
