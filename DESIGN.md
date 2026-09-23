@@ -51,3 +51,36 @@ subtle, periodic shine pass, heavy brown-gold labels and no leading icon.
 Actual React Native primitives, no embedded HTML or WebView. Preview state
 is local; backend rules and purchases are not implemented. Larger widths
 center the portrait game frame. This release targets phones.
+
+
+## September 2026: expedition, vault, and armory redesign
+
+The supplied fantasy RPG references supersede the Stitch look for Expedition,
+Region Detail, Bazaar, and Bag. Hub retains its existing blue background and
+Study Forge parchment artwork. The illustrated region map remains intact.
+
+These redesigned surfaces use charcoal timber (#211c19, #352b25), warm ivory
+text (#f5e7c7), muted parchment (#cbb797), and brass edging (#967047, #dfb66d).
+Framed briefing panels use inset borders and corner rivets. Primary actions
+use a restrained brass bevel, an icon, and a diamond stud. Existing bundled
+Rubik, Epilogue, and Space Grotesk fonts remain in use.
+
+Expedition entries show region illustrations, source filenames, and segmented
+chapter progress. The vault centers an isolated chest illustration above
+summon actions, with relic previews and disclosed demo odds below. The armory
+uses the MC artwork between equipment slots and a dark inventory tray rather
+than scroll frames. Region briefing includes the selected region illustration,
+readable objectives, encounter counts, and a Start Adventure action.
+
+Verification: React Native Web captures at 320px and 520px; expedition-to-fight
+navigation passed without browser page errors. Native rendering has not been
+visually verified for this redesign.
+
+
+### Warm fantasy correction
+The user rejected the dark palette. Redesigned screens now use a repeating
+map-paper background with a light cream wash, parchment panels, dark brown
+text, honey-gold buttons, and olive equipment accents. Region briefing keeps
+its approved composition. Hub shares the map-paper background, and its active
+expeditions use the same card component and data as the Expedition list. Shared
+RealmFrame and RealmButton components own the lighter palette.

@@ -2,12 +2,21 @@ import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { art, gui, icons } from "../assets";
-import { Badge, Button, Icon, ImageBadge, Meter } from "../components/GameUI";
+import { Badge, Button, Icon, Meter } from "../components/GameUI";
 import { NineSliceFrame } from "../components/NineSliceFrame";
 import { colors, fonts, ui } from "../theme";
+import {
+  ExpeditionCard,
+  expeditions,
+  type Expedition,
+} from "./AdventureScreen";
 import type { ScreenProps } from "../types";
 
-export function HomeScreen({ navigate, notify }: ScreenProps) {
+export function HomeScreen({
+  navigate,
+  notify,
+  onSelectExpedition,
+}: ScreenProps & { onSelectExpedition: (expedition: Expedition) => void }) {
   const [file, setFile] = useState<string>();
   const [forging, setForging] = useState(false);
   async function pickFile() {
@@ -129,62 +138,12 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
           </Text>
         </View>
       </View>
-      {[
-        {
-          title: "Biologi — Fotosintesis",
-          stage: "Stage 2/3 • 18/30 Questions",
-          xp: "+350 EXP",
-          encounter: "Calvin Cycle Golem",
-          progress: 60,
-          icon: "head-lightbulb-outline" as const,
-        },
-        {
-          title: "Fisika Dasar — Gravitasi",
-          stage: "Stage 1/3 • 8/30 Questions",
-          xp: "+200 EXP",
-          encounter: "Newton’s Apple Slime",
-          progress: 27,
-          icon: "earth" as const,
-        },
-      ].map((quest) => (
-        <View key={quest.title} style={styles.questCard}>
-          <NineSliceFrame
-            images={gui.expeditionCard9}
-            top={25}
-            bottom={31}
-            side={62}
-          />
-          <View style={ui.row}>
-            <View
-              style={{
-                backgroundColor: colors.teal,
-                padding: 9,
-                borderRadius: 10,
-              }}
-            >
-              <Icon name={quest.icon} color={colors.white} />
-            </View>
-            <View style={ui.flex}>
-              <Text style={[ui.title, styles.questTitle]}>{quest.title}</Text>
-              <Text style={ui.label}>{quest.stage}</Text>
-            </View>
-            <ImageBadge text={quest.xp} source={icons.exp} size={18} />
-          </View>
-          <View style={ui.between}>
-            <Text style={[ui.label, ui.flex]}>
-              Encounter: {quest.encounter}
-            </Text>
-            <Text style={ui.label}>{quest.progress}% Cleared</Text>
-          </View>
-          <Meter value={quest.progress} />
-          <Button
-            label="Continue Quest"
-            icon="play"
-            tone="gold"
-            style={styles.questButton}
-            onPress={() => navigate("Expedition")}
-          />
-        </View>
+      {expeditions.slice(0, 2).map((expedition) => (
+        <ExpeditionCard
+          key={expedition.title}
+          expedition={expedition}
+          onPress={() => onSelectExpedition(expedition)}
+        />
       ))}
       <View style={styles.questCard}>
         <NineSliceFrame
@@ -344,7 +303,6 @@ const styles = StyleSheet.create({
     paddingBottom: 38,
     gap: 10,
   },
-  questTitle: { fontSize: 15, lineHeight: 20 },
   questButton: {
     width: "82%",
     minHeight: 48,

@@ -129,7 +129,7 @@ export default function App() {
             ))}
             <Image
               source={art.nerdLoading}
-              resizeMode="contain"
+              resizeMode="cover"
               style={s.introNerd}
             />
             <Image
@@ -214,11 +214,18 @@ function GameApp() {
       <StatusBar style="light" />
       <View style={s.app}>
         <ImageBackground
-          accessibilityIgnoresInvertColors
-          source={gui.background}
-          resizeMode="cover"
-          style={s.appBackground}
-        />
+          source={mapArt.background}
+          resizeMode="repeat"
+          style={[s.appBackground, { backgroundColor: "#dfc38c" }]}
+          imageStyle={{ opacity: 0.28 }}
+        >
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: "rgba(255,240,199,0.32)" },
+            ]}
+          />
+        </ImageBackground>
         {!(["Region", "RegionDetail", "Battle"] as Screen[]).includes(
           screen,
         ) && (
@@ -266,7 +273,14 @@ function GameApp() {
               contentContainerStyle={s.scrollContent}
               showsVerticalScrollIndicator={false}
             >
-              <HomeScreen {...props} />
+              <HomeScreen
+                {...props}
+                onSelectExpedition={(expedition) => {
+                  setSelectedExpedition(expedition);
+                  setSelectedRegion(expedition.regions[0]);
+                  navigate("Region");
+                }}
+              />
             </ScrollView>
           )}
           {visited.has("Expedition") && (
@@ -375,7 +389,7 @@ const s = StyleSheet.create({
     width: "100%",
     maxWidth: 520,
     alignSelf: "center",
-    overflow: "visible",
+    overflow: "hidden",
     backgroundColor: colors.background,
   },
   introLoading: {
@@ -441,11 +455,12 @@ const s = StyleSheet.create({
   },
   navBackground: {
     position: "absolute",
+    top: 0,
     right: 0,
     bottom: 0,
     left: 0,
     width: "100%",
-    aspectRatio: 1200 / 289,
+    height: "100%",
   },
   overlay: {
     flex: 1,

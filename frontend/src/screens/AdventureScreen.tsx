@@ -7,9 +7,14 @@ import {
   Text,
   View,
 } from "react-native";
-import { gui, mapArt } from "../assets";
-import { Badge, Button, Icon } from "../components/GameUI";
-import { NineSliceFrame } from "../components/NineSliceFrame";
+import { mapArt } from "../assets";
+import { Badge, Icon } from "../components/GameUI";
+import {
+  RealmFrame,
+  RealmButton,
+  fantasy,
+  realm,
+} from "../components/FantasyUI";
 import { colors, fonts, ui } from "../theme";
 
 export type Region = {
@@ -80,47 +85,48 @@ export function AdventureScreen({
   return (
     <View style={s.list}>
       <View style={s.pageHeading}>
-        <Text style={s.eyebrow}>ADVENTURE LIBRARY</Text>
         <Text style={s.heading}>Your Expeditions</Text>
         <Text style={s.intro}>
           Choose a study scroll and continue its quest.
         </Text>
       </View>
       {expeditions.map((expedition) => (
-        <Pressable
+        <ExpeditionCard
           key={expedition.title}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${expedition.title}`}
+          expedition={expedition}
           onPress={() => onSelect(expedition)}
-          style={({ pressed }) => [s.expeditionCard, pressed && s.pressed]}
-        >
-          <NineSliceFrame
-            images={gui.expeditionCard9}
-            top={25}
-            bottom={31}
-            side={62}
-          />
-          <View style={s.cardIcon}>
-            <Icon
-              name="book-open-page-variant"
-              color={colors.white}
-              size={25}
-            />
-          </View>
-          <View style={ui.flex}>
-            <Text style={s.cardTitle}>{expedition.title}</Text>
-            <Text numberOfLines={1} style={s.fileName}>
-              {expedition.file}
-            </Text>
-            <View style={s.cardMeta}>
-              <Badge text={`${expedition.regions.length} REGIONS`} />
-              <Text style={s.progress}>{expedition.progress}% cleared</Text>
-            </View>
-          </View>
-          <Icon name="chevron-right" size={30} color={colors.wood} />
-        </Pressable>
+        />
       ))}
     </View>
+  );
+}
+
+export function ExpeditionCard({
+  expedition,
+  onPress,
+}: {
+  expedition: Expedition;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${expedition.title}`}
+      onPress={onPress}
+      style={({ pressed }) => [s.expeditionCard, pressed && s.pressed]}
+    >
+      <View pointerEvents="none" style={s.cardInset} />
+      <View style={ui.flex}>
+        <Text style={s.cardTitle}>{expedition.title}</Text>
+        <Text numberOfLines={1} style={s.fileName}>
+          {expedition.file}
+        </Text>
+        <View style={s.cardMeta}>
+          <Text style={s.progress}>{expedition.progress}% cleared</Text>
+        </View>
+      </View>
+      <Icon name="chevron-right" size={25} color={realm.gold} />
+    </Pressable>
   );
 }
 
@@ -210,8 +216,14 @@ export function RegionDetailScreen({
           Chapter {region.chapter}: {region.title}
         </Text>
       </View>
-      <View style={s.detailCard}>
-        <NineSliceFrame images={gui.scroll9} top={46} bottom={52} side={46} />
+      <Image
+        source={
+          [mapArt.desert, mapArt.volcano, mapArt.kingdom][region.chapter - 1]
+        }
+        resizeMode="contain"
+        style={{ width: "100%", height: 190 }}
+      />
+      <RealmFrame>
         <Text style={s.summaryLabel}>REGION BRIEFING</Text>
         <Text style={s.summary}>{region.summary}</Text>
         <View style={s.topicList}>
@@ -228,15 +240,13 @@ export function RegionDetailScreen({
           <Badge text={`${region.questions} QUESTIONS`} icon="help-circle" />
           <Badge text={`${region.enemies} ENEMIES`} icon="sword-cross" />
         </View>
-      </View>
+      </RealmFrame>
       <View style={s.readyBlock}>
         <Text style={s.readyTitle}>Are you ready?</Text>
         <Text style={s.readyCopy}>Your answers decide every encounter.</Text>
-        <Button
+        <RealmButton
           label="Start Adventure"
           icon="sword-cross"
-          tone="gold"
-          style={s.startButton}
           onPress={onStart}
         />
       </View>
@@ -264,33 +274,45 @@ const s = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.teal,
+    color: "#795029",
   },
-  heading: { fontFamily: fonts.heavy, fontSize: 28, color: colors.wood },
-  intro: { fontFamily: fonts.body, fontSize: 13, color: colors.ink },
+  heading: { ...fantasy.title },
+  intro: { ...fantasy.body },
   expeditionCard: {
-    minHeight: 116,
-    paddingHorizontal: 30,
-    paddingVertical: 25,
+    minHeight: 108,
+    backgroundColor: "#fff0cf",
+    borderWidth: 2,
+    borderColor: "#967047",
+    borderBottomWidth: 5,
+    borderRadius: 9,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   pressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
-  cardIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.teal,
+  cardInset: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    right: 5,
+    bottom: 5,
+    borderWidth: 1,
+    borderColor: "#604a35",
+    borderRadius: 4,
   },
-  cardTitle: { fontFamily: fonts.heavy, fontSize: 16, color: colors.wood },
+  cardTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 17,
+    lineHeight: 23,
+    color: realm.ink,
+  },
   fileName: {
     marginTop: 3,
     fontFamily: fonts.body,
     fontSize: 11,
-    color: colors.ink,
+    color: realm.muted,
   },
   cardMeta: {
     marginTop: 8,
@@ -298,7 +320,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  progress: { fontFamily: fonts.heading, fontSize: 10, color: colors.teal },
+  progress: { fontFamily: fonts.heading, fontSize: 10, color: realm.gold },
   fullPage: { flex: 1, padding: 14, paddingTop: 70, overflow: "hidden" },
   back: {
     position: "absolute",
@@ -307,12 +329,12 @@ const s = StyleSheet.create({
     zIndex: 10,
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
     borderColor: "#8e541c",
-    backgroundColor: "#ffd45b",
+    backgroundColor: "#e6c58a",
   },
   regionHeader: {
     alignSelf: "center",
@@ -358,8 +380,9 @@ const s = StyleSheet.create({
     width: "48%",
     paddingHorizontal: 11,
     paddingVertical: 9,
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 2,
+    borderBottomWidth: 5,
     borderColor: "#6f421f",
     backgroundColor: "#fff0cff2",
   },
@@ -368,7 +391,7 @@ const s = StyleSheet.create({
   mapChapter: {
     fontFamily: fonts.heading,
     fontSize: 9,
-    color: colors.teal,
+    color: "#795029",
     letterSpacing: 1,
   },
   mapTitle: {
@@ -395,20 +418,20 @@ const s = StyleSheet.create({
     fontFamily: fonts.heavy,
     fontSize: 25,
     lineHeight: 31,
-    color: colors.wood,
+    color: realm.ink,
   },
   detailCard: { minHeight: 390, padding: 38, gap: 14 },
   summaryLabel: {
     fontFamily: fonts.heading,
     fontSize: 11,
     letterSpacing: 1.3,
-    color: colors.teal,
+    color: "#795029",
   },
   summary: {
     fontFamily: fonts.body,
     fontSize: 14,
     lineHeight: 21,
-    color: colors.ink,
+    color: realm.ink,
   },
   topicList: { gap: 11, marginTop: 3 },
   topicRow: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -418,7 +441,7 @@ const s = StyleSheet.create({
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.teal,
+    backgroundColor: "#775335",
   },
   topicNumberText: {
     fontFamily: fonts.heavy,
@@ -429,7 +452,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontFamily: fonts.heading,
     fontSize: 13,
-    color: colors.wood,
+    color: realm.ink,
   },
   encounterMeta: {
     flexDirection: "row",
@@ -438,7 +461,7 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   readyBlock: { alignItems: "center", gap: 7 },
-  readyTitle: { fontFamily: fonts.heavy, fontSize: 23, color: colors.wood },
-  readyCopy: { fontFamily: fonts.body, fontSize: 13, color: colors.ink },
+  readyTitle: { fontFamily: fonts.heading, fontSize: 22, color: realm.ink },
+  readyCopy: { ...fantasy.body },
   startButton: { width: "78%", marginTop: 8 },
 });
