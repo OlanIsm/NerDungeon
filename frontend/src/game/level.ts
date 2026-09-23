@@ -8,6 +8,7 @@ export const WORLD = {
   minSpeed: 48,
   maxSpeed: 288,
   speedStep: 48,
+  walkSeconds: 2,
   brakeSeconds: 0.55,
   revealSeconds: 0.35,
   completeSeconds: 0.65,
@@ -55,3 +56,8 @@ export const chunks: Record<ChunkType, ChunkDefinition> = {
   encounterArena: { type: "encounterArena", label: "Sunlit Clearing", props: arena, triggerY: 320, spawn: { count: 1, boss: false, name: "Forest Imps" } },
   bossArena: { type: "bossArena", label: "Guardian's Grove", props: [...arena, { kind: "ruins", x: 75, y: 185 }, { kind: "ruins", x: 288, y: 185 }], triggerY: 320, spawn: { count: 1, boss: true, name: "Grove Guardian" } },
 };
+
+export const encounters = level.flatMap((step) => {
+  const spawn = chunks[step.type].spawn;
+  return spawn ? [{ ...spawn, count: step.enemyCount ?? spawn.count }] : [];
+});

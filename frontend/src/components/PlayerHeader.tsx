@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { art, gui, icons } from "../assets";
+import { gui, icons } from "../assets";
+import { Icon } from "./GameUI";
 import { colors, fonts } from "../theme";
 
 type ResourceKind = "coins" | "gems";
@@ -61,19 +62,7 @@ export function PlayerHeader({
             },
           ]}
         >
-          <Image
-            accessibilityIgnoresInvertColors
-            source={art.avatar}
-            resizeMode="cover"
-            style={[
-              styles.portrait,
-              {
-                width: portraitSize - 10,
-                height: portraitSize - 10,
-                borderRadius: 9,
-              },
-            ]}
-          />
+          <Icon name="account" size={portraitSize - 16} color="#fff1ce" />
         </Pressable>
         <View pointerEvents="none" style={styles.playerInfo}>
           <View style={styles.nameRow}>
@@ -153,11 +142,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55,
     shadowRadius: 2,
     elevation: 5,
-  },
-  portrait: {
-    backgroundColor: colors.wood,
-    borderWidth: 1,
-    borderColor: "#6d390f",
   },
   playerInfo: {
     flex: 1.12,

@@ -1,20 +1,15 @@
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { gui, icons } from "../assets";
-import {
-  Badge,
-  Button,
-  Icon,
-  ImageBadge,
-  Meter,
-} from "../components/GameUI";
+import { art, gui, icons } from "../assets";
+import { Badge, Button, Icon, ImageBadge, Meter } from "../components/GameUI";
 import { NineSliceFrame } from "../components/NineSliceFrame";
 import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
 
 export function HomeScreen({ navigate, notify }: ScreenProps) {
   const [file, setFile] = useState<string>();
+  const [forging, setForging] = useState(false);
   async function pickFile() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -38,8 +33,40 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
       notify("File belum bisa dibuka. Coba pilih lagi.");
     }
   }
+
+  async function forgeAdventure() {
+    if (forging) return;
+    setForging(true);
+    await new Promise((resolve) => setTimeout(resolve, 1800));
+    setForging(false);
+    navigate("Expedition");
+  }
+
   return (
     <View>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => {}}
+        statusBarTranslucent
+        transparent
+        visible={forging}
+      >
+        <View accessibilityViewIsModal style={styles.forgeOverlay}>
+          <Image
+            accessible
+            accessibilityLabel="Nerd eating PDF"
+            source={art.nerdEatPdf}
+            resizeMode="contain"
+            style={styles.loadingGif}
+          />
+          <Text accessibilityLiveRegion="polite" style={styles.loadingTitle}>
+            FORGING YOUR ADVENTURE...
+          </Text>
+          <Text numberOfLines={1} style={styles.loadingFile}>
+            Extracting {file}
+          </Text>
+        </View>
+      </Modal>
       <View style={styles.forgeCard}>
         <ScrollFrame />
         <View style={styles.forgeHeading}>
@@ -54,11 +81,17 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
             pressed && { transform: [{ scale: 0.99 }], opacity: 0.94 },
           ]}
         >
-          <Icon
-            name={file ? "file-check-outline" : "file-plus-outline"}
-            size={46}
-            color="#5d2d0b"
-          />
+          {file ? (
+            <Image
+              accessible
+              accessibilityLabel="Selected PDF"
+              source={icons.pdf}
+              resizeMode="contain"
+              style={styles.pdfIcon}
+            />
+          ) : (
+            <Icon name="file-plus-outline" size={46} color="#5d2d0b" />
+          )}
           <Text numberOfLines={2} style={styles.uploadTitle}>
             {file ?? "Drop study scroll here"}
           </Text>
@@ -75,10 +108,7 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
             label="Forge Adventure"
             tone="gold"
             style={styles.forgeButton}
-            onPress={() => {
-              notify("Preview adventure dibuka. Dokumen belum diproses.");
-              navigate("Map");
-            }}
+            onPress={forgeAdventure}
           />
         )}
       </View>
@@ -90,7 +120,11 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
             resizeMode="contain"
             style={styles.expeditionBackground}
           />
-          <Text numberOfLines={1} adjustsFontSizeToFit style={styles.expeditionText}>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={styles.expeditionText}
+          >
             Active Expeditions
           </Text>
         </View>
@@ -148,7 +182,7 @@ export function HomeScreen({ navigate, notify }: ScreenProps) {
             icon="play"
             tone="gold"
             style={styles.questButton}
-            onPress={() => navigate("Map")}
+            onPress={() => navigate("Expedition")}
           />
         </View>
       ))}
@@ -198,6 +232,28 @@ function ScrollFrame() {
 }
 
 const styles = StyleSheet.create({
+  forgeOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: "rgba(15, 27, 55, 0.92)",
+  },
+  loadingGif: { width: 240, height: 240 },
+  loadingTitle: {
+    marginTop: 16,
+    fontFamily: fonts.heavy,
+    fontSize: 18,
+    color: "#ffd35a",
+    textAlign: "center",
+  },
+  loadingFile: {
+    maxWidth: 300,
+    marginTop: 7,
+    fontFamily: fonts.heading,
+    fontSize: 14,
+    color: "#fff2cf",
+  },
   forgeCard: {
     minHeight: 310,
     marginHorizontal: -6,
@@ -243,6 +299,7 @@ const styles = StyleSheet.create({
     color: "#69401f",
     textAlign: "center",
   },
+  pdfIcon: { width: 68, height: 68 },
   forgeButton: {
     width: "52%",
     minHeight: 46,

@@ -1,6 +1,6 @@
 import { ChunkManager } from "./ChunkManager";
-import { WORLD } from "./level";
-import { GameState, type GamePhase, type ActiveEncounter, type Chunk } from "./types";
+import { encounters, WORLD } from "./level";
+import { GameState, type GamePhase, type ActiveEncounter } from "./types";
 
 const transitions: Record<GamePhase, readonly GamePhase[]> = {
   walking: [GameState.encounterStarting],
@@ -25,6 +25,7 @@ export class FantasyGame {
   encounter: ActiveEncounter | null = null;
   private elapsed = 0;
   private debugStop: number | null = null;
+  private nextEncounter = 0;
 
   constructor(height: number) {
     this.playerY = height * WORLD.playerRatio;
@@ -60,9 +61,7 @@ export class FantasyGame {
     this.revision++;
   }
 
-  private beginEncounter(chunk?: Chunk) {
-    if (chunk) chunk.encounterConsumed = true;
-    const spawn = chunk?.spawn;
+  private beginEncounter(spawn?: Omit<ActiveEncounter, "debug">) {
     this.encounter = spawn
       ? { ...spawn, debug: false }
       : { count: 1, boss: false, name: "Forest Imp", debug: true };
@@ -95,9 +94,8 @@ export class FantasyGame {
       return;
     }
 
-    const next = this.chunks.nextEncounter(this.playerY);
-    const debugDistance = this.debugStop === null ? Infinity : Math.max(0, this.debugStop - this.distance);
-    const remaining = Math.min(next.distance, debugDistance);
+    this.elapsed += dt;
+    const remaining = this.debugStop === null ? Infinity : Math.max(0, this.debugStop - this.distance);
     const brakingDistance = this.speed * WORLD.brakeSeconds / 2;
     let movement: number;
     let reached = false;
@@ -116,6 +114,9 @@ export class FantasyGame {
     this.chunks.advance(movement);
     this.distance += movement;
     this.walkTime += dt;
-    if (reached) this.beginEncounter(next.distance <= debugDistance ? next.chunk : undefined);
+    if (reached) this.beginEncounter();
+    else if (this.debugStop === null && this.elapsed >= WORLD.walkSeconds && this.nextEncounter < encounters.length) {
+      this.beginEncounter(encounters[this.nextEncounter++]);
+    }
   }
 }

@@ -28,16 +28,18 @@ const slots = [...game.chunks.pool];
 const hero = game.playerY;
 const counts = [];
 let stoppedAt = 0;
+let walkingFrames = 0;
 for (let frame = 0; frame < 30000 && game.state !== "result"; frame++) {
   const state = game.state;
   const distance = game.distance;
+  if (state === "walking") walkingFrames++;
   game.update(1 / 60);
   coverage(game);
   assert.equal(game.playerY, hero, "hero stays fixed");
   if (state !== "walking") assert.equal(game.distance, distance, "world frozen outside walking");
-  if (game.state === "encounterStarting") {
-    const arena = game.chunks.pool.find((chunk) => chunk.canContainEncounter && chunk.encounterConsumed && Math.abs(chunk.y + chunk.definition.triggerY - hero) < 0.03);
-    assert(arena, "arena stops on the player's trigger line");
+  if (state === "walking" && game.state === "encounterStarting") {
+    assert(Math.abs(walkingFrames / 60 - WORLD.walkSeconds) <= 1 / 60, "encounters start after two seconds of walking");
+    walkingFrames = 0;
   }
   if (game.state === "encounter" || game.state === "bossEncounter") {
     counts.push(game.encounter.count);
@@ -86,14 +88,4 @@ for (let n = 0; n < 20; n++) {
   coverage(game);
 }
 assert(game.chunks.pool.length <= size + 2, "viewport resizing does not leak pooled chunks");
-const braking = new FantasyGame(780);
-while (braking.chunks.nextEncounter(braking.playerY).distance > 20) braking.update(1 / 60);
-braking.setSpeed(WORLD.maxSpeed);
-for (let frame = 0; frame < 300 && braking.state === "walking"; frame++) {
-  const distance = braking.distance;
-  const velocity = braking.velocity;
-  braking.update(1 / 60);
-  assert(braking.distance - distance <= velocity / 60 + 0.03, "changing speed while braking cannot snap to the arena");
-}
-assert.equal(braking.state, "encounterStarting");
-console.log("Traversal: direction, fixed hero, seamless pooling, 1/2/boss encounters, freeze, completion, pause, speed, long frames and resize passed.");
+console.log("Traversal: fixed hero, two-second walks, seamless pooling, 1/2/boss encounters, freeze, completion, pause, speed, long frames and resize passed.");

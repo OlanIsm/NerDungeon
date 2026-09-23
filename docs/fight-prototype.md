@@ -14,18 +14,18 @@ Open **Map → Start Stage 2 (Battle!)** or **Replay**. The fight uses the full 
 
 ## Camera and rendering
 
-This is a 2D, three-quarter rear view. The blue hero has a back-facing cloak, pack and boots. The hero's foot anchor stays at 70% of viewport height. Chunks move down to suggest walking north.
+This is a 2D side view. The hero stays at a fixed horizontal anchor with feet at 70% of viewport height while the world scrolls left to suggest walking east. `game.distance` drives one `Animated.Value`; each layer derives a wrapped offset from that value, so the 11 supplied images loop at independent speeds without React rendering every frame. All images retain one shared scale and vertical offset, preserving their authored alignment.
 
-`projection.ts` defines depth: sprites scale from 0.65 at the top to 1.15 at the bottom; horizontal placement spreads from 0.42 to 1.16 around the road center. `DepthSprite` anchors scaling at the sprite's bottom center. Enemies use the same projection. The dirt road is a viewport-level trapezoid, 56 logical units wide at the top and 254 at the bottom. Keeping this road in camera space prevents its taper from resetting at chunk seams. Moving dirt marks, terrain features and props belong to recycled chunks.
+The hero uses `assets/character/mc.png`. Regular and boss encounters use the transparent `assets/character/soda-cutout.png` at different sizes. The static hero art gets a small walking bob and lean while traversal runs, then freezes with the world during encounters.
 
 The renderer uses React Native `View`, `Image` and `Animated.View` with a `requestAnimationFrame` simulation. Existing Expo 57, React Native, fonts and buttons are reused. No engine, physics, 3D geometry or new package is required.
 
 Rendering order:
 
-1. Grass, trapezoid road and distant forest (16% scroll speed).
-2. Arena, river, bridge and path marks.
-3. Props, player and enemies sorted by foot Y. Actor draw order updates as props pass their feet.
-4. Foreground bushes, optional debug lines, then UI.
+1. Sky, clouds, hills, bushes, trees and ground from `_11_background.png` through `_01_ground.png`.
+2. Optional chunk bounds and encounter trigger lines.
+3. Hero and encounter sprites.
+4. Battle HUD and controls.
 
 ## Files and ownership
 
@@ -37,13 +37,8 @@ Rendering order:
 | `game/ChunkManager.ts` | Bounded pool, positions, recycling and trigger lookup |
 | `game/FantasyGame.ts` | State transitions, braking, encounters and result |
 | `game/useFantasyGame.ts` | Animation values, frame loop and app visibility lifecycle |
-| `game/projection.ts` | Depth scale and horizontal spread |
-| `game/FantasyScene.tsx` | Scene composition and Y ordering |
-| `game/ChunkView.tsx` | Moving terrain features and chunk debug visualization |
-| `game/environment/DepthSprite.tsx` | Animated 2D perspective with a bottom-center anchor |
-| `game/environment/Placeholders.tsx` | Reusable prop/terrain shapes and image replacement registry |
-| `game/environment/PerspectiveGround.tsx` | Grass, persistent trapezoid road and far parallax |
-| `game/Actors.tsx` | Back-facing player, imps and guardian placeholders |
+| `game/FantasyScene.tsx` | Full-screen scene wrapper |
+| `game/side/SideScene.tsx` | Parallax loop, actor placement and debug visualization |
 | `game/DebugControls.tsx` | Temporary traversal controls |
 
 `frontend/App.tsx` mounts Battle outside the page ScrollView. Existing Hub, Bag and navigation behavior is preserved.
@@ -73,35 +68,15 @@ Debug controls: pause/resume, increase/decrease speed, trigger encounter, chunk 
 
 ## Replace the art
 
-Place PNG/WebP files in `frontend/assets/fight/`, then add static `require` entries to `spriteArt` in `game/environment/Placeholders.tsx`, for example:
-
-```ts
-export const spriteArt = {
-  tree: require("../../../assets/fight/tree.webp"),
-  player: require("../../../assets/fight/player-back.webp"),
-};
-```
-
-Preserve the existing type annotation on the registry. Unknown entries use shapes. Draw the player from behind with a visible upright torso/cape, never as an overhead head icon. Prop and actor images use `contain`; transparent padding should be minimal. Their anchor is **bottom-center**, so the feet/trunk base belongs at the bottom center of the source image.
-
-| Sprite | Logical box (width × height) |
-| --- | --- |
-| Player | 52 × 72 |
-| Enemy / boss | 44 × 42 / 86 × 98 |
-| Tree / bush | 84 × 100 / 58 × 36 |
-| Rock / flower | 30 × 25 / 20 × 22 |
-| Ruins / signpost | 54 × 70 / 38 × 43 |
-| Arena / bridge / river | 295 × 250 / 215 × 111 / 720 × 92 |
-
-Terrain image boxes are projected from their bottom-center anchors too. Grass uses `cover`. Keep the road's camera-space trapezoid when adding road textures; do not give each chunk its own independently tapered path.
+Keep parallax replacements on the same canvas size and alignment as the current pack, then update the static `require` entries in `game/side/SideScene.tsx`. Character PNGs need transparent backgrounds and feet near the bottom edge because actors anchor to the ground line.
 
 ## Add a chunk
 
 1. Add its name to `ChunkType` in `types.ts`.
 2. Add its `chunks` entry in `level.ts`, using existing prop kinds and local bottom-center coordinates. Keep props within the 360 × 420 logical chunk.
 3. For an encounter, provide `triggerY` and spawn metadata. Each level step can override `enemyCount`.
-4. Add special ground features to `ChunkView` only if existing components cannot express them.
-5. Insert the type in `level` or `loop`. The pool, depth scaling, Y ordering and trigger flow work automatically.
+4. Add new terrain art only when the supplied parallax pack cannot express the region.
+5. Insert the type in `level` or `loop`. Pooling and encounter triggers work automatically.
 
 ## Verification and scope
 

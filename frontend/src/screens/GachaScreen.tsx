@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
-import { art } from "../assets";
-import { Badge, Button, Meter, Panel, Tabs } from "../components/GameUI";
+import { Pressable, Text, View } from "react-native";
+import { Badge, Button, Icon, Meter, Panel, Tabs } from "../components/GameUI";
 import { colors, ui } from "../theme";
 import type { ScreenProps } from "../types";
 
@@ -32,17 +31,17 @@ export function GachaScreen({ notify }: ScreenProps) {
         </View>
         <View
           style={{
+            height: 184,
+            alignItems: "center",
+            justifyContent: "center",
             borderWidth: 3,
             borderColor: colors.edge,
             borderRadius: 8,
             overflow: "hidden",
+            backgroundColor: "#f1d49c",
           }}
         >
-          <Image
-            source={art.chest}
-            style={{ width: "100%", height: 184 }}
-            resizeMode="cover"
-          />
+          <Icon name="treasure-chest" size={92} color={colors.wood} />
           <View style={{ position: "absolute", top: 8, left: 8 }}>
             <Badge text="FEATURED CACHE" icon="creation" />
           </View>
@@ -74,9 +73,17 @@ export function GachaScreen({ notify }: ScreenProps) {
         </View>
         <View style={ui.row}>
           {[
-            { name: "Sunfire Robe", image: art.robe, odds: "2% LEG" },
-            { name: "Wisdom Quill", image: art.quill, odds: "8% EPIC" },
-            { name: "Scholar Aegis", image: art.shield, odds: "35% RARE" },
+            { name: "Sunfire Robe", icon: "account" as const, odds: "2% LEG" },
+            {
+              name: "Wisdom Quill",
+              icon: "book-open-page-variant" as const,
+              odds: "8% EPIC",
+            },
+            {
+              name: "Scholar Aegis",
+              icon: "shield-check-outline" as const,
+              odds: "35% RARE",
+            },
           ].map((item) => (
             <Pressable
               key={item.name}
@@ -98,10 +105,9 @@ export function GachaScreen({ notify }: ScreenProps) {
                 },
               ]}
             >
-              <Image
-                source={item.image}
-                style={{ width: 58, height: 58, borderRadius: 6 }}
-              />
+              <View style={[ui.center, { width: 58, height: 58 }]}>
+                <Icon name={item.icon} size={42} color={colors.wood} />
+              </View>
               <Text style={[ui.label, { textAlign: "center" }]}>
                 {item.name}
               </Text>
