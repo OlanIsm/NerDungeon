@@ -1,52 +1,53 @@
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { miniIcons } from "../assets";
+import { icons, miniIcons } from "../assets";
 import { inventory } from "../data/inventory";
 import {
-  RealmButton,
-  RealmFrame,
-  fantasy,
-  realm,
-} from "../components/FantasyUI";
-import { fonts } from "../theme";
+  Button,
+  Icon,
+  ImageBadge,
+  Meter,
+  RarityBadge,
+  Tabs,
+} from "../components/GameUI";
+import { RealmFrame, fantasy } from "../components/FantasyUI";
+import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
+
+const vaults = ["Armory & Relics", "Spell Scrolls"] as const;
 export function GachaScreen({ notify }: ScreenProps) {
-  const [tab, setTab] = useState("Armory & Relics");
+  const [tab, setTab] = useState<(typeof vaults)[number]>("Armory & Relics");
   return (
     <View style={s.page}>
       <View style={s.heading}>
         <Text style={fantasy.title}>The Relic Vault</Text>
-        <Text style={fantasy.body}>A little luck. A legendary discovery.</Text>
       </View>
-      <View style={s.tabs}>
-        {["Armory & Relics", "Spell Scrolls"].map((value) => (
-          <Pressable
-            key={value}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === value }}
-            onPress={() => setTab(value)}
-            style={[s.tab, tab === value && s.active]}
-          >
-            <Text style={[s.tabText, tab === value && { color: realm.ink }]}>
-              {value}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={s.stage}>
-        <View pointerEvents="none" style={s.halo} />
-        <View pointerEvents="none" style={s.haloInner} />
-        <Text style={s.vaultName}>
-          {tab === "Spell Scrolls"
-            ? "Grand Scholar Scrolls"
-            : "Grand Scholar Cache"}
-        </Text>
+      <Tabs values={vaults} selected={tab} onChange={setTab} />
+
+      <View style={s.showcase}>
+        <View pointerEvents="none" style={s.arch} />
+        <View style={s.banner}>
+          <Text style={s.bannerText}>
+            {tab === "Spell Scrolls"
+              ? "Grand Scholar Scrolls"
+              : "Grand Scholar Cache"}
+          </Text>
+        </View>
+        <View pointerEvents="none" style={s.ground} />
+        <View pointerEvents="none" style={s.starLeft}>
+          <Icon name="star-four-points" color="#aa863d" size={19} />
+        </View>
+        <View pointerEvents="none" style={s.starRight}>
+          <Icon name="star-four-points" color="#aa863d" size={12} />
+        </View>
         <Image
+          accessibilityLabel={
+            tab === "Spell Scrolls" ? "Scholar tome" : "Scholar treasure chest"
+          }
           source={tab === "Spell Scrolls" ? miniIcons.oakTome : miniIcons.chest}
           resizeMode="contain"
           style={s.chest}
         />
-        <View style={s.pedestal} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Inspect Lore"
@@ -55,165 +56,198 @@ export function GachaScreen({ notify }: ScreenProps) {
           }
           style={s.lore}
         >
-          <Text style={s.tabText}>Inspect Lore</Text>
+          <Icon name="information-outline" size={22} color={colors.teal} />
         </Pressable>
       </View>
-      <RealmButton
-        label="Summon 1"
-        icon="creation"
-        onPress={() =>
-          notify(
-            "Preview summon: Quill of Wisdom (Epic). Tidak ada currency yang dipotong.",
-          )
-        }
-      />
-      <Text style={s.cost}>100 Gems or 1,000 Gold</Text>
-      <RealmButton
-        label="Summon 10"
-        icon="treasure-chest"
-        onPress={() =>
-          notify(
-            "Preview ?10 summon. Summoning dan pembelian belum terhubung ke backend.",
-          )
-        }
-      />
-      <Text style={s.cost}>900 Gems ? Save 10%</Text>
-      <View style={s.favor}>
-        <Text style={fantasy.body}>Scholar?s Favor</Text>
-        <Text style={fantasy.label}>3 / 10</Text>
-      </View>
-      <View style={s.track}>
-        <View style={s.fill} />
-      </View>
-      <Text style={s.cost}>Epic or higher guaranteed within 7 summons.</Text>
-      <View style={fantasy.divider} />
-      <Text style={fantasy.label}>TREASURES WITHIN</Text>
-      <View style={s.relics}>
-        {[
-          { name: "Sunfire Robe", item: inventory[8], odds: "2% LEG" },
-          { name: "Wisdom Quill", item: inventory[0], odds: "8% EPIC" },
-          { name: "Scholar Aegis", item: inventory[17], odds: "35% RARE" },
-        ].map((relic) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Inspect ${relic.name}`}
-            key={relic.name}
-            onPress={() =>
-              notify(`${relic.name} ? ${relic.odds}. Relic preview.`)
-            }
-            style={s.relic}
-          >
-            <Image
-              source={relic.item.image}
-              style={s.relicImage}
-              resizeMode="contain"
+
+      <RealmFrame style={s.information}>
+        <View style={ui.between}>
+          <Text style={s.contains}>Treasures within</Text>
+          <Text style={s.preview}>Preview</Text>
+        </View>
+        <View style={s.relics}>
+          {[inventory[8], inventory[0], inventory[17]].map((item) => (
+            <Pressable
+              key={item.name}
+              accessibilityRole="button"
+              accessibilityLabel={`Inspect ${item.name}`}
+              onPress={() => notify(`${item.name} · Relic preview.`)}
+              style={({ pressed }) => [
+                s.relic,
+                pressed && { backgroundColor: colors.inset },
+              ]}
+            >
+              <Image
+                source={item.image}
+                resizeMode="contain"
+                style={s.relicImage}
+              />
+              <Text style={s.relicName}>{item.name}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View accessibilityLabel="Loot probabilities" style={s.rarities}>
+          <RarityBadge name="Common" detail="55%" />
+          <RarityBadge name="Rare" detail="35%" />
+          <RarityBadge name="Epic" detail="8%" />
+          <RarityBadge name="Legendary" detail="2%" />
+        </View>
+        <View style={s.costRow}>
+          <ImageBadge source={icons.gems} text="100" size={24} />
+          <Text style={ui.label}>or</Text>
+          <ImageBadge source={icons.coins} text="1,000" size={24} />
+        </View>
+        <Button
+          label="Summon 1"
+          icon="treasure-chest"
+          tone="gold"
+          onPress={() =>
+            notify(
+              "Preview summon: Quill of Wisdom (Epic). Tidak ada currency yang dipotong.",
+            )
+          }
+        />
+        <View style={s.multiPull}>
+          <View style={ui.flex}>
+            <Button
+              label="Summon 10"
+              tone="teal"
+              onPress={() =>
+                notify(
+                  "Preview ×10 summon. Summoning dan pembelian belum terhubung ke backend.",
+                )
+              }
             />
-            <Text style={s.relicName}>{relic.name}</Text>
-            <Text style={fantasy.label}>{relic.odds}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <RealmFrame>
-        <Text style={fantasy.label}>LOOT PROBABILITIES</Text>
-        <Text style={fantasy.body}>
-          Common 55% ? Rare 35% ? Epic 8% ? Legendary 2%
-        </Text>
-        <Text style={s.cost}>Preview only ? No currency is spent.</Text>
+          </View>
+          <View style={s.multiCost}>
+            <Text style={s.gemCost}>900 Gems</Text>
+            <Text style={ui.label}>Save 10%</Text>
+          </View>
+        </View>
+        <Text style={s.disclosure}>Preview only · No currency is spent.</Text>
       </RealmFrame>
+
+      <View style={s.favor}>
+        <View style={ui.between}>
+          <Text style={s.favorTitle}>Scholar’s Favor</Text>
+          <Text style={ui.label}>3 / 10</Text>
+        </View>
+        <Meter value={30} color={colors.teal} label="Summon progress" />
+        <Text style={ui.body}>Epic or higher guaranteed within 7 summons.</Text>
+      </View>
     </View>
   );
 }
 const s = StyleSheet.create({
-  page: { gap: 10, paddingHorizontal: 8 },
-  heading: { gap: 5, alignItems: "center", paddingVertical: 14 },
-  tabs: { flexDirection: "row", borderBottomWidth: 1, borderColor: realm.edge },
-  tab: {
-    flex: 1,
-    minHeight: 48,
+  page: { gap: 10 },
+  heading: { gap: 4, alignItems: "center", paddingTop: 4, paddingBottom: 2 },
+  showcase: {
+    minHeight: 192,
     alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 3,
-    borderBottomColor: "transparent",
+    paddingTop: 7,
+    paddingBottom: 8,
   },
-  active: { borderBottomColor: realm.gold },
-  tabText: { fontFamily: fonts.heading, fontSize: 12, color: realm.muted },
-  stage: {
-    height: 235,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
+  arch: {
+    position: "absolute",
+    width: 214,
+    height: 184,
+    borderTopLeftRadius: 110,
+    borderTopRightRadius: 110,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    backgroundColor: colors.sage,
+    top: 7,
+    borderWidth: 1,
+    borderColor: "#b7c6a6",
   },
-  vaultName: {
+  banner: {
+    alignSelf: "center",
+    maxWidth: "100%",
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    borderColor: colors.edge,
+    borderRadius: 9,
+    borderBottomRightRadius: 16,
+    backgroundColor: colors.teal,
+    zIndex: 1,
+  },
+  bannerText: {
     fontFamily: fonts.heading,
-    fontSize: 19,
-    color: realm.ink,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.parchment,
     textAlign: "center",
-    position: "absolute",
-    top: 18,
   },
-  halo: {
+  chest: { width: 166, height: 130, marginTop: 5 },
+  ground: {
     position: "absolute",
-    width: 185,
-    height: 185,
-    borderRadius: 93,
-    borderWidth: 1,
-    borderColor: "#705436",
-    backgroundColor: "#e9c379",
-    top: 52,
-  },
-  haloInner: {
-    position: "absolute",
-    width: 155,
-    height: 155,
-    borderRadius: 78,
-    borderWidth: 1,
-    borderColor: "#8d6c43",
-    top: 67,
-  },
-  chest: { width: 160, height: 140, marginTop: 24, zIndex: 2 },
-  pedestal: {
-    width: 170,
+    bottom: 9,
+    width: 154,
     height: 18,
     borderRadius: 90,
-    backgroundColor: "#b58b55",
-    borderBottomWidth: 2,
-    borderBottomColor: "#6b5135",
-    marginTop: -12,
+    backgroundColor: "#bdc8a5",
   },
-  lore: { minHeight: 48, justifyContent: "center", paddingHorizontal: 20 },
-  cost: {
-    fontFamily: fonts.body,
-    fontSize: 11,
-    lineHeight: 17,
-    color: realm.muted,
-    textAlign: "center",
-  },
-  favor: {
+  starLeft: { position: "absolute", left: "21%", top: 93 },
+  starRight: { position: "absolute", right: "23%", top: 72 },
+  lore: {
+    position: "absolute",
+    right: 2,
+    bottom: 2,
+    width: 48,
+    minHeight: 48,
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 6,
   },
-  track: {
-    height: 8,
-    backgroundColor: "#b58b55",
-    borderRadius: 4,
-    overflow: "hidden",
+  information: { gap: 8, padding: 12 },
+  contains: { ...ui.title, fontSize: 17 },
+  preview: {
+    ...ui.label,
+    backgroundColor: colors.inset,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  fill: { width: "30%", height: "100%", backgroundColor: realm.gold },
-  relics: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  relics: { flexDirection: "row", gap: 8 },
   relic: {
     flex: 1,
+    minWidth: 0,
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderBottomWidth: 2,
-    borderColor: realm.edge,
+    gap: 3,
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 2,
   },
-  relicImage: { width: 70, height: 70 },
+  relicImage: { width: 44, height: 41 },
   relicName: {
     fontFamily: fonts.heading,
     fontSize: 11,
-    color: realm.ink,
+    lineHeight: 14,
+    color: colors.ink,
     textAlign: "center",
   },
+  rarities: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 2,
+  },
+  costRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 2,
+  },
+  multiPull: { flexDirection: "row", alignItems: "center", gap: 15 },
+  multiCost: { alignItems: "center", gap: 4 },
+  gemCost: { fontFamily: fonts.heading, fontSize: 13, color: colors.ink },
+  disclosure: { ...ui.label, textAlign: "center", fontSize: 11 },
+  favor: { padding: 8, gap: 8 },
+  favorTitle: { ...ui.title, fontSize: 15 },
 });

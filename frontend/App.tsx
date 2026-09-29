@@ -4,7 +4,6 @@ import {
   BackHandler,
   Easing,
   Image,
-  ImageBackground,
   Modal,
   ScrollView,
   Text,
@@ -19,8 +18,8 @@ import { Rubik_700Bold } from "@expo-google-fonts/rubik/700Bold";
 import { Rubik_900Black } from "@expo-google-fonts/rubik/900Black";
 import { Epilogue_500Medium } from "@expo-google-fonts/epilogue/500Medium";
 import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk/700Bold";
-import { art, gui, icons, mapArt } from "./src/assets";
-import { Button } from "./src/components/GameUI";
+import { art, icons } from "./src/assets";
+import { Button, useReducedMotion } from "./src/components/GameUI";
 import { BottomNavItem } from "./src/components/BottomNavItem";
 import { PlayerHeader } from "./src/components/PlayerHeader";
 import { HomeScreen } from "./src/screens/HomeScreen";
@@ -46,25 +45,18 @@ const navigation = [
 ] as const;
 
 const shellAssets = [
-  gui.background,
-  gui.header,
-  gui.navbar,
   icons.hub,
   icons.map,
   icons.bazaar,
   icons.armory,
   icons.coins,
   icons.gems,
-  icons.exp,
-  art.nerdLoading,
+  art.character,
   art.nerdiusTitle,
-  mapArt.background,
-  mapArt.desert,
-  mapArt.volcano,
-  mapArt.kingdom,
 ];
 
 export default function App() {
+  const reducedMotion = useReducedMotion();
   const [loaded, error] = useFonts({
     Rubik_700Bold,
     Rubik_900Black,
@@ -87,11 +79,11 @@ export default function App() {
     if (!ready) return;
     Animated.timing(introExit, {
       toValue: 1,
-      duration: 420,
+      duration: reducedMotion ? 0 : 220,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(() => setIntroDone(true));
-  }, [introExit, ready]);
+  }, [introExit, ready, reducedMotion]);
 
   return (
     <SafeAreaProvider>
@@ -128,8 +120,8 @@ export default function App() {
               />
             ))}
             <Image
-              source={art.nerdLoading}
-              resizeMode="cover"
+              source={art.character}
+              resizeMode="contain"
               style={s.introNerd}
             />
             <Image
@@ -150,6 +142,8 @@ export default function App() {
   );
 }
 function GameApp() {
+  const reducedMotion = useReducedMotion();
+  const { width } = useWindowDimensions();
   const [screen, setScreen] = useState<Screen>("Hub");
   const [message, setMessage] = useState<string>();
   const [selectedExpedition, setSelectedExpedition] = useState<Expedition>(
@@ -158,6 +152,10 @@ function GameApp() {
   const [selectedRegion, setSelectedRegion] = useState<Region>(
     expeditions[0].regions[0],
   );
+  const [lastAdventure, setLastAdventure] = useState({
+    expedition: expeditions[0],
+    region: expeditions[0].regions[1],
+  });
   const [visited, setVisited] = useState(() => new Set<Screen>(["Hub"]));
   const scrolls = useRef<Partial<Record<Screen, ScrollView | null>>>({});
   const [pageReveal] = useState(() => new Animated.Value(1));
@@ -171,7 +169,7 @@ function GameApp() {
             ? 0
             : 26,
       );
-      pageReveal.setValue(0);
+      pageReveal.setValue(reducedMotion ? 1 : 0);
       setVisited((current) =>
         current.has(next) ? current : new Set(current).add(next),
       );
@@ -179,12 +177,12 @@ function GameApp() {
       scrolls.current[next]?.scrollTo({ y: 0, animated: false });
       Animated.timing(pageReveal, {
         toValue: 1,
-        duration: 210,
+        duration: reducedMotion ? 0 : 180,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
     },
-    [pageReveal],
+    [pageReveal, reducedMotion],
   );
   useEffect(() => {
     const handler = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -211,21 +209,10 @@ function GameApp() {
   const props = { navigate, notify: setMessage };
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <StatusBar style="light" />
-      <View style={s.app}>
-        <ImageBackground
-          source={mapArt.background}
-          resizeMode="repeat"
-          style={[s.appBackground, { backgroundColor: "#dfc38c" }]}
-          imageStyle={{ opacity: 0.28 }}
-        >
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: "rgba(255,240,199,0.32)" },
-            ]}
-          />
-        </ImageBackground>
+      <StatusBar style="dark" />
+      <View pointerEvents="none" style={s.environmentLeft} />
+      <View pointerEvents="none" style={s.environmentRight} />
+      <View style={[s.app, width >= 700 && s.desktopApp]}>
         {!(["Region", "RegionDetail", "Battle"] as Screen[]).includes(
           screen,
         ) && (
@@ -275,6 +262,12 @@ function GameApp() {
             >
               <HomeScreen
                 {...props}
+                lastAdventure={lastAdventure}
+                onContinue={() => {
+                  setSelectedExpedition(lastAdventure.expedition);
+                  setSelectedRegion(lastAdventure.region);
+                  navigate("RegionDetail");
+                }}
                 onSelectExpedition={(expedition) => {
                   setSelectedExpedition(expedition);
                   setSelectedRegion(expedition.regions[0]);
@@ -293,10 +286,17 @@ function GameApp() {
               showsVerticalScrollIndicator={false}
             >
               <AdventureScreen
-                onSelect={(expedition) => {
+                onInspect={() =>
+                  requestAnimationFrame(() =>
+                    scrolls.current.Expedition?.scrollToEnd({
+                      animated: !reducedMotion,
+                    }),
+                  )
+                }
+                onSelect={(expedition, region) => {
                   setSelectedExpedition(expedition);
-                  setSelectedRegion(expedition.regions[0]);
-                  navigate("Region");
+                  setSelectedRegion(region ?? expedition.regions[0]);
+                  navigate(region ? "RegionDetail" : "Region");
                 }}
               />
             </ScrollView>
@@ -328,7 +328,13 @@ function GameApp() {
               expedition={selectedExpedition}
               region={selectedRegion}
               onBack={() => navigate("Region")}
-              onStart={() => navigate("Battle")}
+              onStart={() => {
+                setLastAdventure({
+                  expedition: selectedExpedition,
+                  region: selectedRegion,
+                });
+                navigate("Battle");
+              }}
             />
           )}
           {screen === "Battle" && <BattleScreen {...props} />}
@@ -336,13 +342,11 @@ function GameApp() {
         {!(["Region", "RegionDetail", "Battle"] as Screen[]).includes(
           screen,
         ) && (
-          <View style={s.nav}>
-            <Image
-              accessibilityIgnoresInvertColors
-              source={gui.navbar}
-              resizeMode="contain"
-              style={s.navBackground}
-            />
+          <View
+            accessibilityRole="tablist"
+            accessibilityLabel="Main navigation"
+            style={s.nav}
+          >
             {navigation.map((item) => (
               <BottomNavItem
                 key={item.screen}
@@ -359,7 +363,7 @@ function GameApp() {
         <Modal
           visible={!!message}
           transparent
-          animationType="fade"
+          animationType={reducedMotion ? "none" : "fade"}
           onRequestClose={() => setMessage(undefined)}
         >
           <View style={s.overlay}>
@@ -382,15 +386,44 @@ function GameApp() {
   );
 }
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#10284e" },
-  safe: { flex: 1, backgroundColor: "#e8d9b6" },
+  root: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: "#dce3ce", overflow: "hidden" },
   app: {
     flex: 1,
     width: "100%",
-    maxWidth: 520,
+    maxWidth: 540,
     alignSelf: "center",
     overflow: "hidden",
     backgroundColor: colors.background,
+  },
+  desktopApp: {
+    marginVertical: 20,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: "#b1bda0",
+    shadowColor: colors.edge,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+  },
+  environmentLeft: {
+    position: "absolute",
+    width: 620,
+    height: 620,
+    borderRadius: 310,
+    backgroundColor: "#cdd9bc",
+    left: -240,
+    bottom: -200,
+    transform: [{ scaleX: 1.5 }],
+  },
+  environmentRight: {
+    position: "absolute",
+    width: 450,
+    height: 450,
+    borderRadius: 225,
+    backgroundColor: "#e8e9d6",
+    right: -160,
+    top: -140,
   },
   introLoading: {
     position: "absolute",
@@ -402,7 +435,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "#10284e",
+    backgroundColor: colors.background,
   },
   introNerd: { width: 230, height: 230 },
   introTitle: { width: "100%", maxWidth: 320, height: 150, marginTop: -52 },
@@ -426,41 +459,26 @@ const s = StyleSheet.create({
     marginTop: 12,
     fontFamily: "Rubik_700Bold",
     fontSize: 13,
-    color: "#fff1c7",
+    color: colors.wood,
   },
   shellAsset: { position: "absolute", width: 1, height: 1, opacity: 0 },
-  appBackground: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
   pages: { flex: 1 },
   content: { flex: 1, backgroundColor: "transparent" },
-  scrollContent: { padding: 12, paddingTop: 118, paddingBottom: 124 },
-  fixedContent: { flex: 1, paddingTop: 108 },
+  scrollContent: { padding: 16, paddingTop: 14, paddingBottom: 28 },
+  fixedContent: { flex: 1 },
   hidden: { display: "none" },
   nav: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    left: 0,
     zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    height: 96,
-    overflow: "hidden",
-    backgroundColor: "transparent",
-  },
-  navBackground: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
+    minHeight: 84,
+    paddingTop: 5,
+    paddingBottom: 6,
+    paddingHorizontal: 8,
+    gap: 4,
+    borderTopWidth: 3,
+    borderTopColor: colors.edge,
+    backgroundColor: colors.wood,
   },
   overlay: {
     flex: 1,

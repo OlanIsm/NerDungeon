@@ -1,31 +1,33 @@
 import type { PropsWithChildren } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Icon, type IconName } from "./GameUI";
-import { fonts } from "../theme";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { Button, type IconName } from "./GameUI";
+import { colors, fonts, outline, radii } from "../theme";
+
 export const realm = {
-  ink: "#43291b",
-  muted: "#705039",
-  gold: "#825018",
-  edge: "#967047",
-  dark: "#211c19",
-  panel: "#fff0cb",
+  ink: colors.ink,
+  muted: colors.muted,
+  gold: colors.wood,
+  edge: colors.edge,
+  dark: colors.ink,
+  panel: colors.parchment,
 };
-export function RealmFrame({ children }: PropsWithChildren) {
+
+export function RealmFrame({
+  children,
+  style,
+  variant = "parchment",
+}: PropsWithChildren<{
+  style?: StyleProp<ViewStyle>;
+  variant?: "parchment" | "sage";
+}>) {
   return (
-    <View style={f.frame}>
-      <LinearGradient
-        colors={["#fff6db", "#efd5a0"]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View pointerEvents="none" style={f.inner} />
+    <View style={[f.frame, { backgroundColor: colors[variant] }, style]}>
+      <View pointerEvents="none" style={f.highlight} />
       {children}
-      {[f.tl, f.tr, f.bl, f.br].map((position, i) => (
-        <View pointerEvents="none" key={i} style={[f.rivet, position]} />
-      ))}
     </View>
   );
 }
+
 export function RealmButton({
   label,
   onPress,
@@ -35,29 +37,14 @@ export function RealmButton({
   onPress: () => void;
   icon?: IconName;
 }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [
-        f.button,
-        pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-      ]}
-    >
-      <LinearGradient colors={["#ffe09a", "#e7a83f"]} style={f.buttonFill}>
-        <Icon name={icon} color="#362415" size={22} />
-        <Text style={f.buttonText}>{label}</Text>
-        <View style={f.stud} />
-      </LinearGradient>
-    </Pressable>
-  );
+  return <Button label={label} onPress={onPress} icon={icon} tone="gold" />;
 }
+
 export const fantasy = StyleSheet.create({
   title: {
-    fontFamily: fonts.heading,
-    fontSize: 26,
-    lineHeight: 33,
+    fontFamily: fonts.heavy,
+    fontSize: 27,
+    lineHeight: 34,
     color: realm.ink,
   },
   body: {
@@ -68,76 +55,29 @@ export const fantasy = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.label,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 17,
     color: realm.gold,
-    letterSpacing: 1,
   },
-  divider: {
-    height: 1,
-    backgroundColor: realm.edge,
-    opacity: 0.6,
-    marginVertical: 12,
-  },
+  divider: { height: 1, backgroundColor: "#d6c8aa", marginVertical: 12 },
 });
 const f = StyleSheet.create({
   frame: {
-    borderWidth: 2,
-    borderColor: realm.edge,
-    borderRadius: 12,
-    padding: 20,
+    borderWidth: outline.standard,
+    borderBottomWidth: outline.base,
+    borderColor: colors.edge,
+    borderRadius: radii.panel,
+    borderTopRightRadius: 12,
+    padding: 16,
     gap: 12,
-    overflow: "hidden",
   },
-  inner: {
+  highlight: {
     position: "absolute",
-    top: 5,
-    left: 5,
-    right: 5,
-    bottom: 5,
-    borderWidth: 1,
-    borderColor: "#70553b",
-    borderRadius: 7,
-  },
-  rivet: {
-    position: "absolute",
-    width: 5,
-    height: 5,
+    top: 3,
+    left: 14,
+    right: 14,
+    height: 3,
     borderRadius: 3,
-    backgroundColor: realm.gold,
-  },
-  tl: { top: 9, left: 9 },
-  tr: { top: 9, right: 9 },
-  bl: { bottom: 9, left: 9 },
-  br: { bottom: 9, right: 9 },
-  button: {
-    borderWidth: 2,
-    borderColor: "#684725",
-    borderBottomWidth: 5,
-    borderRadius: 9,
-    overflow: "hidden",
-  },
-  buttonFill: {
-    minHeight: 52,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: "#f6dfaa",
-    borderRadius: 6,
-  },
-  buttonText: {
-    fontFamily: fonts.heading,
-    fontSize: 15,
-    color: "#362415",
-    flexShrink: 1,
-  },
-  stud: {
-    width: 5,
-    height: 5,
-    backgroundColor: "#74502b",
-    transform: [{ rotate: "45deg" }],
+    backgroundColor: "#ffffff99",
   },
 });

@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { art, gui, icons } from "../assets";
-import { Badge, Button, Icon, Meter } from "../components/GameUI";
-import { NineSliceFrame } from "../components/NineSliceFrame";
+import { art } from "../assets";
+import {
+  Button,
+  Icon,
+  Meter,
+  SectionTitle,
+  useReducedMotion,
+} from "../components/GameUI";
+import { RealmFrame } from "../components/FantasyUI";
 import { colors, fonts, ui } from "../theme";
 import {
   ExpeditionCard,
   expeditions,
   type Expedition,
+  type Region,
 } from "./AdventureScreen";
 import type { ScreenProps } from "../types";
 
@@ -16,9 +23,16 @@ export function HomeScreen({
   navigate,
   notify,
   onSelectExpedition,
-}: ScreenProps & { onSelectExpedition: (expedition: Expedition) => void }) {
+  onContinue,
+  lastAdventure,
+}: ScreenProps & {
+  onSelectExpedition: (expedition: Expedition) => void;
+  onContinue: () => void;
+  lastAdventure: { expedition: Expedition; region: Region };
+}) {
   const [file, setFile] = useState<string>();
   const [forging, setForging] = useState(false);
+  const reducedMotion = useReducedMotion();
   async function pickFile() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -52,274 +66,318 @@ export function HomeScreen({
   }
 
   return (
-    <View>
+    <View style={s.page}>
       <Modal
-        animationType="fade"
+        animationType={reducedMotion ? "none" : "fade"}
         onRequestClose={() => {}}
         statusBarTranslucent
         transparent
         visible={forging}
       >
-        <View accessibilityViewIsModal style={styles.forgeOverlay}>
+        <View accessibilityViewIsModal style={s.forgeOverlay}>
           <Image
             accessible
             accessibilityLabel="Nerd eating PDF"
-            source={art.nerdEatPdf}
+            source={reducedMotion ? art.character : art.nerdEatPdf}
             resizeMode="contain"
-            style={styles.loadingGif}
+            style={s.loadingArt}
           />
-          <Text accessibilityLiveRegion="polite" style={styles.loadingTitle}>
-            FORGING YOUR ADVENTURE...
+          <Text accessibilityLiveRegion="polite" style={s.loadingTitle}>
+            Forging your adventure…
           </Text>
-          <Text numberOfLines={1} style={styles.loadingFile}>
-            Extracting {file}
+          <Text numberOfLines={2} style={s.loadingFile}>
+            {file}
           </Text>
         </View>
       </Modal>
-      <View style={styles.forgeCard}>
-        <ScrollFrame />
-        <View style={styles.forgeHeading}>
-          <Text style={styles.forgeTitle}>THE STUDY FORGE</Text>
+
+      <View style={s.scroll}>
+        <View pointerEvents="none" style={[s.scrollRoll, s.rollTop]}>
+          <View style={s.rollHighlight} />
         </View>
+        <View pointerEvents="none" style={[s.scrollRoll, s.rollBottom]}>
+          <View style={s.rollHighlight} />
+        </View>
+        <View style={s.forgeHeading}>
+          <Icon name="feather" size={23} color={colors.wood} />
+          <Text style={s.forgeTitle}>The Study Forge</Text>
+        </View>
+        <Text style={s.forgeSubtitle}>
+          Every great quest starts with a little knowledge.
+        </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Browse study files"
           onPress={pickFile}
           style={({ pressed }) => [
-            styles.dropZone,
-            pressed && { transform: [{ scale: 0.99 }], opacity: 0.94 },
+            s.dropZone,
+            pressed && { backgroundColor: "#f7e8c1" },
           ]}
         >
-          {file ? (
-            <Image
-              accessible
-              accessibilityLabel="Selected PDF"
-              source={icons.pdf}
-              resizeMode="contain"
-              style={styles.pdfIcon}
+          <View
+            accessibilityLabel={file ? "Selected PDF" : undefined}
+            style={s.documentEmblem}
+          >
+            <Icon
+              name={file ? "file-check-outline" : "file-plus-outline"}
+              size={30}
+              color={colors.teal}
             />
-          ) : (
-            <Icon name="file-plus-outline" size={46} color="#5d2d0b" />
-          )}
-          <Text numberOfLines={2} style={styles.uploadTitle}>
-            {file ?? "Drop study scroll here"}
-          </Text>
-          <Text style={styles.uploadSubtitle}>
-            {file ? "Tap to choose another file" : "or tap to Browse Files"}
-          </Text>
-          <View style={ui.row}>
-            <Badge text="PDF / DOCX" icon="file-document-outline" />
-            <Badge text="MAX 25MB" icon="scale-balance" />
           </View>
+          <Text numberOfLines={2} style={s.uploadTitle}>
+            {file ?? "Turn your notes into an adventure"}
+          </Text>
+          <Text style={s.uploadSubtitle}>
+            {file ? "Tap to choose another file" : "Upload your study material"}
+          </Text>
+          {!file && (
+            <View style={s.browse}>
+              <Text style={s.browseText}>Browse files</Text>
+              <Icon name="upload" size={18} color={colors.ink} />
+            </View>
+          )}
+          <Text style={s.formats}>PDF / DOCX · Max 25 MB</Text>
         </Pressable>
         {file && (
           <Button
             label="Forge Adventure"
             tone="gold"
-            style={styles.forgeButton}
+            icon="creation"
             onPress={forgeAdventure}
+            disabled={forging}
           />
         )}
       </View>
-      <View style={styles.expeditionHeader}>
-        <View style={styles.expeditionTitle}>
-          <Image
-            accessibilityIgnoresInvertColors
-            source={gui.sectionTitle}
-            resizeMode="contain"
-            style={styles.expeditionBackground}
-          />
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            style={styles.expeditionText}
-          >
-            Active Expeditions
+
+      <RealmFrame variant="sage" style={s.continueCard}>
+        <View style={ui.row}>
+          <Icon name="flag-variant" size={21} color={colors.teal} />
+          <Text style={s.continueHeading}>Continue Adventure</Text>
+        </View>
+        <Text style={s.questTitle}>{lastAdventure.expedition.title}</Text>
+        <Text style={ui.body}>
+          Chapter {lastAdventure.region.chapter} · {lastAdventure.region.title}
+        </Text>
+        <View style={s.progressRow}>
+          <View style={ui.flex}>
+            <Meter
+              value={lastAdventure.expedition.progress}
+              label="Expedition progress"
+            />
+          </View>
+          <Text style={s.progressValue}>
+            {lastAdventure.expedition.progress}%
           </Text>
         </View>
-      </View>
-      {expeditions.slice(0, 2).map((expedition) => (
-        <ExpeditionCard
-          key={expedition.title}
-          expedition={expedition}
-          onPress={() => onSelectExpedition(expedition)}
-        />
-      ))}
-      <View style={styles.questCard}>
-        <NineSliceFrame
-          images={gui.expeditionCard9}
-          top={25}
-          bottom={31}
-          side={62}
-        />
-        <View style={ui.row}>
-          <Icon name="check-decagram" size={30} />
-          <View style={ui.flex}>
-            <Text style={ui.title}>Daily Guild Harvest</Text>
-            <Text style={ui.label}>Resets in 06h 42m</Text>
-          </View>
-          <Badge text="+450 Gold" />
-        </View>
-        <Meter value={100} label="Complete 1 Biology Stage · 1 / 1 Completed" />
         <Button
-          label="Claimed"
-          icon="check"
-          tone="quiet"
-          disabled
-          style={styles.questButton}
-          onPress={() => {}}
+          label="Continue Adventure"
+          tone="gold"
+          icon="play"
+          onPress={onContinue}
         />
-        <View
-          accessibilityLabel="Claimed expedition"
-          pointerEvents="none"
-          style={styles.claimedOverlay}
+      </RealmFrame>
+
+      <View style={s.materialHeading}>
+        <View style={ui.flex}>
+          <SectionTitle title="Study scrolls" />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View all expeditions"
+          onPress={() => navigate("Expedition")}
+          style={s.allLink}
         >
-          <Image
-            accessibilityIgnoresInvertColors
-            source={gui.claimed}
-            resizeMode="contain"
-            style={styles.claimedBadge}
+          <Text style={s.allText}>View all</Text>
+          <Icon name="chevron-right" size={18} color={colors.teal} />
+        </Pressable>
+      </View>
+      <View style={s.materials}>
+        {expeditions.slice(0, 2).map((expedition) => (
+          <ExpeditionCard
+            key={expedition.title}
+            expedition={expedition}
+            onPress={() => onSelectExpedition(expedition)}
           />
+        ))}
+      </View>
+      <View accessibilityLabel="Claimed expedition" style={s.harvest}>
+        <View style={s.harvestSeal}>
+          <Icon name="check" color={colors.teal} size={22} />
+        </View>
+        <View style={ui.flex}>
+          <Text style={s.harvestTitle}>Daily Guild Harvest</Text>
+          <Text style={ui.label}>1 Biology stage completed · +450 Gold</Text>
+          <Text style={ui.label}>Claimed · Resets in 06h 42m</Text>
         </View>
       </View>
     </View>
   );
 }
-
-function ScrollFrame() {
-  return <NineSliceFrame images={gui.scroll9} top={46} bottom={52} side={46} />;
-}
-
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
+  page: { gap: 20 },
+  scroll: {
+    backgroundColor: "#f9edcd",
+    borderWidth: 2,
+    borderColor: "#9a794b",
+    marginHorizontal: 4,
+    marginTop: 8,
+    padding: 16,
+    paddingTop: 23,
+    paddingBottom: 22,
+    gap: 10,
+    borderRadius: 10,
+  },
+  scrollRoll: {
+    position: "absolute",
+    left: -8,
+    right: -8,
+    height: 17,
+    backgroundColor: "#dec08a",
+    borderWidth: 2,
+    borderBottomWidth: 3,
+    borderColor: colors.wood,
+    borderRadius: 12,
+  },
+  rollTop: { top: -9 },
+  rollBottom: { bottom: -9 },
+  rollHighlight: {
+    height: 3,
+    marginTop: 2,
+    marginHorizontal: 10,
+    backgroundColor: "#fff2ce",
+    borderRadius: 3,
+  },
+  forgeHeading: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  forgeTitle: { fontFamily: fonts.heading, fontSize: 22, color: colors.ink },
+  forgeSubtitle: {
+    ...ui.body,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  dropZone: {
+    alignItems: "center",
+    gap: 8,
+    padding: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#b49b71",
+    borderRadius: 14,
+    backgroundColor: "#fff8e5",
+  },
+  documentEmblem: {
+    width: 49,
+    height: 49,
+    borderRadius: 16,
+    backgroundColor: colors.sage,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#a8b594",
+  },
+  uploadTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 17,
+    lineHeight: 23,
+    textAlign: "center",
+    color: colors.ink,
+    maxWidth: 290,
+  },
+  uploadSubtitle: { ...ui.body, fontSize: 12, textAlign: "center" },
+  browse: {
+    minHeight: 44,
+    width: "100%",
+    maxWidth: 230,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.gold,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    borderColor: colors.edge,
+    borderRadius: 12,
+  },
+  browseText: { fontFamily: fonts.heading, fontSize: 14, color: colors.ink },
+  formats: { ...ui.label, fontSize: 11, textAlign: "center" },
+  continueCard: { gap: 8, marginTop: 6 },
+  continueHeading: {
+    fontFamily: fonts.heading,
+    fontSize: 16,
+    color: colors.teal,
+  },
+  questTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.ink,
+  },
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 4,
+  },
+  progressValue: {
+    fontFamily: fonts.heading,
+    fontSize: 14,
+    color: colors.teal,
+  },
+  materialHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: -14,
+  },
+  allLink: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 8,
+  },
+  allText: { fontFamily: fonts.heading, fontSize: 12, color: colors.teal },
+  materials: { gap: 10 },
+  harvest: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderColor: "#cdbf9e",
+  },
+  harvestSeal: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.sage,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  harvestTitle: { ...ui.title, fontSize: 14, marginBottom: 3 },
   forgeOverlay: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "rgba(15, 27, 55, 0.92)",
+    backgroundColor: "rgba(35,45,35,0.96)",
   },
-  loadingGif: { width: 240, height: 240 },
+  loadingArt: { width: 220, height: 220 },
   loadingTitle: {
-    marginTop: 16,
-    fontFamily: fonts.heavy,
-    fontSize: 18,
-    color: "#ffd35a",
+    fontFamily: fonts.heading,
+    fontSize: 22,
     textAlign: "center",
+    color: colors.gold,
+    marginTop: 16,
   },
   loadingFile: {
-    maxWidth: 300,
-    marginTop: 7,
-    fontFamily: fonts.heading,
-    fontSize: 14,
-    color: "#fff2cf",
-  },
-  forgeCard: {
-    minHeight: 310,
-    marginHorizontal: -6,
-    paddingHorizontal: 14,
-    paddingTop: 30,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  forgeHeading: { alignItems: "center", transform: [{ translateY: 5 }] },
-  forgeTitle: {
-    fontFamily: fonts.heavy,
-    fontSize: 19,
-    color: "#4a2108",
-    letterSpacing: 0.8,
-    textShadowColor: "#fff2c7",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 2,
-  },
-  dropZone: {
-    minHeight: 160,
-    marginHorizontal: 10,
-    padding: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#fff2cf",
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "#d59a42",
-    borderRadius: 14,
-  },
-  uploadTitle: {
-    fontFamily: fonts.heavy,
-    fontSize: 19,
-    lineHeight: 24,
-    color: "#3b1b06",
+    ...ui.body,
+    color: colors.parchment,
     textAlign: "center",
+    marginTop: 10,
   },
-  uploadSubtitle: {
-    fontFamily: fonts.heading,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#69401f",
-    textAlign: "center",
-  },
-  pdfIcon: { width: 68, height: 68 },
-  forgeButton: {
-    width: "52%",
-    minHeight: 46,
-    alignSelf: "center",
-  },
-  expeditionHeader: {
-    height: 76,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  expeditionTitle: {
-    width: "82%",
-    maxWidth: 300,
-    aspectRatio: 2175 / 723,
-    justifyContent: "center",
-  },
-  expeditionBackground: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  expeditionText: {
-    marginLeft: "27%",
-    marginRight: 8,
-    paddingBottom: 2,
-    fontFamily: fonts.heavy,
-    fontSize: 16,
-    color: colors.white,
-    textShadowColor: "#06235e",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 1,
-  },
-  questCard: {
-    position: "relative",
-    marginBottom: 12,
-    paddingTop: 26,
-    paddingHorizontal: 30,
-    paddingBottom: 38,
-    gap: 10,
-  },
-  questButton: {
-    width: "82%",
-    minHeight: 48,
-    alignSelf: "center",
-  },
-  claimedOverlay: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    bottom: 8,
-    left: 8,
-    zIndex: 3,
-    overflow: "hidden",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(67, 210, 42, 0.52)",
-  },
-  claimedBadge: { width: 140, height: 140 },
 });

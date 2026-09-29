@@ -5,7 +5,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import {
-  Animated,
+  AccessibilityInfo,
   Image,
   Pressable,
   Text,
@@ -16,8 +16,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { LinearGradient } from "expo-linear-gradient";
-import { colors, fonts, ui } from "../theme";
+import { colors, fonts, outline, radii, rarity, ui } from "../theme";
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 export function Icon({
@@ -38,54 +37,25 @@ export function Panel({
   return <View style={[ui.panel, style]}>{children}</View>;
 }
 
-function GoldButtonSurface() {
-  const [shine] = useState(() => new Animated.Value(0));
-
+export function useReducedMotion() {
+  const [reduced, setReduced] = useState(true);
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.delay(1200),
-        Animated.timing(shine, {
-          toValue: 1,
-          duration: 850,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1500),
-      ]),
-      { resetBeforeIteration: true },
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => {
+        if (active) setReduced(value);
+      })
+      .catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduced,
     );
-    animation.start();
-    return () => animation.stop();
-  }, [shine]);
-
-  return (
-    <View pointerEvents="none" style={s.goldSurface}>
-      <LinearGradient
-        colors={["#e39a0b", "#ffc42c", "#ffd960"]}
-        locations={[0, 0.58, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={s.goldSurfaceImage}
-      />
-      <View style={s.goldTopGlow} />
-      <Animated.View
-        style={[
-          s.shine,
-          {
-            transform: [
-              { rotate: "18deg" },
-              {
-                translateX: shine.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-120, 540],
-                }),
-              },
-            ],
-          },
-        ]}
-      />
-    </View>
-  );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+  return reduced;
 }
 
 export function Button({
@@ -109,12 +79,7 @@ export function Button({
     teal: colors.teal,
     quiet: colors.inset,
   }[tone];
-  const color =
-    tone === "wood" || tone === "teal"
-      ? colors.white
-      : tone === "gold"
-        ? "#6b3509"
-        : colors.ink;
+  const color = tone === "wood" || tone === "teal" ? colors.white : colors.ink;
   return (
     <Pressable
       accessibilityRole="button"
@@ -124,17 +89,18 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         s.button,
+        tone === "gold" && s.goldButton,
         {
           backgroundColor,
           opacity: disabled ? 0.5 : 1,
           transform: [{ translateY: pressed ? 2 : 0 }],
+          borderBottomWidth: pressed ? outline.standard : outline.base,
         },
-        tone === "gold" && s.goldButton,
         style,
       ]}
     >
-      {tone === "gold" && <GoldButtonSurface />}
-      {icon && tone !== "gold" && <Icon name={icon} size={20} color={color} />}
+      <View pointerEvents="none" style={s.buttonHighlight} />
+      {icon && <Icon name={icon} size={20} color={color} />}
       <Text
         style={[
           ui.title,
@@ -190,6 +156,26 @@ export function ImageBadge({
     </View>
   );
 }
+export function RarityBadge({
+  name,
+  detail,
+}: {
+  name: keyof typeof rarity;
+  detail?: string;
+}) {
+  const tone = rarity[name];
+  return (
+    <View
+      style={[s.rarity, { backgroundColor: tone.fill, borderColor: tone.edge }]}
+    >
+      <View style={[s.rarityDot, { backgroundColor: tone.edge }]} />
+      <Text style={[ui.label, { color: tone.ink }]}>
+        {name}
+        {detail ? ` ${detail}` : ""}
+      </Text>
+    </View>
+  );
+}
 export function Meter({
   value,
   color = colors.teal,
@@ -204,6 +190,7 @@ export function Meter({
       {label && <Text style={ui.label}>{label}</Text>}
       <View
         accessibilityRole="progressbar"
+        accessibilityLabel={label ?? "Progress"}
         accessibilityValue={{ min: 0, max: 100, now: value }}
         style={s.track}
       >
@@ -256,17 +243,19 @@ export function Tabs<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <View style={ui.row}>
+    <View accessibilityRole="tablist" style={s.tabs}>
       {values.map((value) => (
         <Pressable
           key={value}
           accessibilityRole="tab"
+          accessibilityLabel={value}
           accessibilityState={{ selected: value === selected }}
           onPress={() => onChange(value)}
           style={[
             s.tab,
             {
-              backgroundColor: selected === value ? colors.wood : colors.inset,
+              backgroundColor: selected === value ? colors.teal : "transparent",
+              borderColor: selected === value ? colors.edge : "transparent",
             },
           ]}
         >
@@ -291,9 +280,11 @@ const s = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 10,
-    borderBottomWidth: 4,
-    borderBottomColor: colors.edge,
+    borderRadius: radii.slot,
+    borderBottomRightRadius: 18,
+    borderWidth: outline.standard,
+    borderBottomWidth: outline.base,
+    borderColor: colors.edge,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -302,45 +293,23 @@ const s = StyleSheet.create({
   goldButton: {
     overflow: "hidden",
     width: "100%",
-    minHeight: 58,
-    borderWidth: 3,
+    minHeight: 52,
+    borderWidth: 2,
     borderBottomWidth: 5,
-    borderColor: "#a95b05",
-    borderBottomColor: "#713300",
-    borderRadius: 18,
+    borderColor: colors.edge,
+    borderRadius: 14,
+    borderBottomRightRadius: 20,
     backgroundColor: colors.gold,
     paddingVertical: 10,
   },
-  goldSurface: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  goldSurfaceImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  goldTopGlow: {
+  buttonHighlight: {
     position: "absolute",
     top: 3,
     right: 10,
     left: 10,
-    height: 13,
+    height: 3,
     borderRadius: 9,
-    backgroundColor: "#fff4a54d",
-  },
-  shine: {
-    position: "absolute",
-    top: -24,
-    left: -40,
-    width: 30,
-    height: 96,
-    backgroundColor: "#ffffff52",
+    backgroundColor: "#ffffff66",
   },
   badge: {
     flexDirection: "row",
@@ -349,21 +318,42 @@ const s = StyleSheet.create({
     backgroundColor: colors.inset,
     paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 5,
+    borderRadius: radii.banner,
   },
+  rarity: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  rarityDot: { width: 6, height: 6, borderRadius: 3 },
   track: {
-    height: 9,
-    borderRadius: 6,
-    backgroundColor: "#dbc6a0",
+    height: 10,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: "#b0a386",
+    padding: 1,
+    backgroundColor: colors.inset,
     overflow: "hidden",
+  },
+  tabs: {
+    flexDirection: "row",
+    gap: 4,
+    padding: 4,
+    backgroundColor: colors.inset,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#c1b294",
   },
   tab: {
     flex: 1,
     minHeight: 48,
     justifyContent: "center",
     padding: 8,
-    borderRadius: 8,
-    borderBottomWidth: 3,
-    borderBottomColor: "#bba689",
+    borderRadius: 10,
+    borderWidth: 2,
   },
 });

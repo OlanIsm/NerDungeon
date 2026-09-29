@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Image,
   Pressable,
@@ -7,408 +7,388 @@ import {
   Text,
   View,
 } from "react-native";
-import { miniIcons } from "../assets";
-
-import { inventory } from "../data/inventory";
-import { fonts } from "../theme";
+import {
+  Button,
+  Icon,
+  Meter,
+  Tabs,
+  useReducedMotion,
+} from "../components/GameUI";
+import { art } from "../assets";
+import { inventory, type Item } from "../data/inventory";
+import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
 
 type Category = "Equipment" | "Potions";
 
+const loadout = [
+  { item: inventory[17], label: "Accessory" },
+  { item: inventory[8], label: "Weapon" },
+  { item: inventory[0], label: "Armor" },
+  { item: inventory[16], label: "Accessory" },
+];
+
 export function InventoryScreen({ notify }: ScreenProps) {
+  const scroll = useRef<ScrollView>(null);
+  const bagY = useRef(0);
+  const reducedMotion = useReducedMotion();
   const [category, setCategory] = useState<Category>("Equipment");
   const [selected, setSelected] = useState<string>();
   const items = inventory.filter((item) => item.category === category);
-  const equipped = [inventory[17], inventory[8], inventory[0], inventory[16]];
+  const selectedItem = items.find((item) => item.name === selected);
+  function inspectItem(item: Item) {
+    setCategory(item.category);
+    setSelected(item.name);
+    requestAnimationFrame(() =>
+      scroll.current?.scrollTo({ y: bagY.current, animated: !reducedMotion }),
+    );
+  }
 
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      ref={scroll}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.heading}>
+        <Text style={ui.hero}>The Armory</Text>
+      </View>
+
       <View accessibilityLabel="Bag profile panel" style={styles.profile}>
-        <Text style={styles.armoryTitle}>The Armory</Text>
-        <View style={styles.vitals}>
-          {[
-            {
-              name: "HP",
-              value: "850/850",
-              icon: miniIcons.heart,
-              fill: styles.hpFill,
-            },
-            {
-              name: "MP",
-              value: "320/320",
-              icon: miniIcons.water,
-              fill: styles.mpFill,
-            },
-          ].map((meter) => (
-            <View key={meter.name} style={styles.meterBox}>
-              <View style={styles.statRow}>
+        <View style={styles.characterRow}>
+          {[0, 1, 2].map((column) =>
+            column === 1 ? (
+              <View key="character" style={styles.characterStage}>
+                <View pointerEvents="none" style={styles.characterBackdrop} />
+                <View pointerEvents="none" style={styles.characterGround} />
                 <Image
-                  source={meter.icon}
+                  accessible
+                  accessibilityLabel="Nerd Mage character"
+                  source={art.character}
                   resizeMode="contain"
-                  style={styles.vitalIcon}
+                  style={styles.characterImage}
                 />
+              </View>
+            ) : (
+              <View key={column} style={styles.equipmentColumn}>
+                {loadout.slice(column, column + 2).map(({ item, label }) => (
+                  <View key={item.name} style={styles.equipmentEntry}>
+                    <InventorySlot
+                      item={item}
+                      label={label + ": " + item.name}
+                      equipped
+                      selected={selected === item.name}
+                      onPress={() => inspectItem(item)}
+                    />
+                    <Text style={styles.slotCaption}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+            ),
+          )}
+        </View>
+
+        <View style={styles.vitals}>
+          {(
+            [
+              { name: "HP", value: "850/850", icon: "heart", color: "#b9574b" },
+              { name: "MP", value: "320/320", icon: "water", color: "#497f91" },
+            ] as const
+          ).map((meter) => (
+            <View key={meter.name} style={styles.meterBox}>
+              <View style={styles.meterHeading}>
+                <Icon name={meter.icon} size={15} color={meter.color} />
                 <Text style={styles.statLabel}>{meter.name}</Text>
-                <Text style={styles.statValue}>{meter.value}</Text>
+                <Text style={styles.meterValue}>{meter.value}</Text>
               </View>
-              <View style={styles.meterTrack}>
-                <View style={meter.fill} />
-              </View>
+              <Meter value={100} color={meter.color} />
             </View>
           ))}
         </View>
-        <View style={styles.profileBody}>
-          <View style={styles.stats}>
-            {[
-              {
-                label: "Quiz ATK",
-                value: "185 +28",
-                icon: miniIcons.goldenSwords,
-              },
-              { label: "Ward DEF", value: "42 +6", icon: miniIcons.shield },
+        <View style={styles.stats}>
+          {(
+            [
+              { label: "Quiz ATK", value: "185 +28", icon: "sword-cross" },
+              { label: "Ward DEF", value: "42 +6", icon: "shield-outline" },
               {
                 label: "Free Clues",
                 value: "2 /run",
-                icon: miniIcons.clueBulb,
+                icon: "lightbulb-outline",
               },
-            ].map((stat) => (
-              <View
-                key={stat.label}
-                accessibilityLabel={`${stat.label} stat`}
-                style={styles.statTile}
-              >
-                <Image
-                  source={stat.icon}
-                  resizeMode="contain"
-                  style={styles.tileIcon}
-                />
-                <Text style={styles.tileLabel}>{stat.label}</Text>
-                <Text style={styles.tileValue}>{stat.value}</Text>
+            ] as const
+          ).map((stat) => (
+            <View
+              key={stat.label}
+              accessibilityLabel={stat.label + " stat"}
+              style={styles.statTile}
+            >
+              <View style={ui.row}>
+                <Icon name={stat.icon} size={17} color={colors.wood} />
+                <Text style={styles.statValue}>{stat.value}</Text>
               </View>
-            ))}
-          </View>
-          <View style={styles.character}>
-            <View style={styles.equipmentColumn}>
-              {equipped.slice(0, 2).map((item) => (
-                <View key={item.name} style={styles.equipmentSlot}>
-                  <Image
-                    source={item.image}
-                    resizeMode="contain"
-                    style={styles.equipmentImage}
-                  />
-                  <Text numberOfLines={1} style={styles.slotName}>
-                    {item.name}
-                  </Text>
-                </View>
-              ))}
+              <Text style={styles.meta}>{stat.label}</Text>
             </View>
-            <View style={styles.characterPlaceholder}>
-              <Image
-                source={require("../../assets/character/mc.png")}
-                resizeMode="contain"
-                style={{ width: "160%", height: "100%" }}
-              />
-            </View>
-            <View style={styles.equipmentColumn}>
-              {equipped.slice(2).map((item) => (
-                <View key={item.name} style={styles.equipmentSlot}>
-                  <Image
-                    source={item.image}
-                    resizeMode="contain"
-                    style={styles.equipmentImage}
-                  />
-                  <Text numberOfLines={1} style={styles.slotName}>
-                    {item.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          ))}
         </View>
       </View>
 
-      <View accessibilityLabel="Bag inventory panel" style={styles.bag}>
-        <View style={styles.tabs}>
-          {(["Equipment", "Potions"] as const).map((value) => (
-            <Pressable
-              key={value}
-              accessibilityRole="tab"
-              accessibilityLabel={value}
-              accessibilityState={{ selected: category === value }}
-              onPress={() => {
-                setCategory(value);
-                setSelected(undefined);
-              }}
-              style={[styles.tab, category === value && styles.activeTab]}
-            >
-              <Image
-                source={
-                  value === "Equipment"
-                    ? miniIcons.crossedSwords
-                    : miniIcons.hpPotion
-                }
-                resizeMode="contain"
-                style={styles.tabIcon}
-              />
-              <Text
-                style={[
-                  styles.tabText,
-                  category === value && styles.activeTabText,
-                ]}
-              >
-                {value}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+      <View
+        accessibilityLabel="Bag inventory panel"
+        style={styles.bag}
+        onLayout={(event) => {
+          bagY.current = event.nativeEvent.layout.y;
+        }}
+      >
         <View style={styles.bagHeading}>
-          <View style={styles.bagTitle}>
-            <Image
-              source={miniIcons.chest}
-              resizeMode="contain"
-              style={styles.bagIcon}
-            />
-            <Text style={styles.bagTitleText}>Bag</Text>
-          </View>
+          <Text style={[styles.sectionTitle, ui.flex]}>Backpack</Text>
           <Text style={styles.capacity}>24/40</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Expand"
+          <Button
+            label="Expand"
+            icon="plus"
+            tone="quiet"
+            style={styles.expand}
             onPress={() =>
               notify("Bag expansion preview. Kapasitas belum berubah.")
             }
-            style={styles.expand}
-          >
-            <Image
-              source={miniIcons.healPlus}
-              resizeMode="contain"
-              style={styles.expandIcon}
-            />
-            <Text style={styles.expandText}>Expand</Text>
-          </Pressable>
+          />
         </View>
-        <ScrollView
-          key={category}
-          accessibilityLabel="Bag items"
-          style={styles.itemsScroll}
-          contentContainerStyle={styles.itemsGrid}
-          showsVerticalScrollIndicator={false}
-        >
-          {items.map((item) => (
-            <Pressable
-              key={item.name}
-              accessibilityRole="button"
-              accessibilityLabel={item.name}
-              accessibilityState={{ selected: selected === item.name }}
-              onPress={() => setSelected(item.name)}
-              style={[
-                styles.itemSlot,
-                selected === item.name && styles.selectedSlot,
-              ]}
-            >
+        <Tabs
+          values={["Equipment", "Potions"] as const}
+          selected={category}
+          onChange={(value) => {
+            setCategory(value);
+            setSelected(undefined);
+          }}
+        />
+        {selectedItem && (
+          <View
+            accessibilityLabel="Selected item details"
+            accessibilityLiveRegion="polite"
+            style={styles.inspector}
+          >
+            <>
               <Image
-                source={item.image}
+                source={selectedItem.image}
                 resizeMode="contain"
-                style={styles.itemImage}
+                style={styles.inspectorImage}
               />
-              <Text numberOfLines={3} style={styles.itemName}>
-                {item.name}
-              </Text>
-            </Pressable>
+              <View style={styles.inspectorText}>
+                <Text style={ui.title}>{selectedItem.name}</Text>
+                <Text style={styles.meta}>
+                  {selectedItem.category}
+                  {loadout.some(({ item }) => item === selectedItem)
+                    ? " · In current loadout"
+                    : ""}
+                </Text>
+                <Text style={ui.body}>Item preview</Text>
+              </View>
+            </>
+          </View>
+        )}
+        <View accessibilityLabel="Bag items" style={styles.itemsGrid}>
+          {items.map((item) => (
+            <View key={item.name} style={styles.slotCell}>
+              <InventorySlot
+                item={item}
+                equipped={loadout.some((slot) => slot.item === item)}
+                selected={selected === item.name}
+                onPress={() => inspectItem(item)}
+              />
+            </View>
           ))}
-        </ScrollView>
+        </View>
+        <View style={styles.legend}>
+          <Icon name="check-circle" size={15} color={colors.teal} />
+          <Text style={styles.meta}>In current loadout</Text>
+        </View>
       </View>
-    </View>
+    </ScrollView>
+  );
+}
+
+function InventorySlot({
+  item,
+  label = item.name,
+  selected,
+  equipped,
+  onPress,
+}: {
+  item: Item;
+  label?: string;
+  selected: boolean;
+  equipped?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={
+        equipped
+          ? "In current loadout. View item details."
+          : "View item details."
+      }
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.itemSlot,
+        selected && styles.selectedSlot,
+        pressed && styles.pressedSlot,
+      ]}
+    >
+      <View pointerEvents="none" style={styles.slotStitch} />
+      <Image
+        source={item.image}
+        resizeMode="contain"
+        style={styles.itemImage}
+      />
+      {equipped && (
+        <View pointerEvents="none" style={styles.equippedMark}>
+          <Icon name="check" size={12} color={colors.white} />
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, paddingHorizontal: 14, paddingBottom: 104, gap: 12 },
-  armoryTitle: {
-    fontFamily: fonts.heading,
-    fontSize: 23,
-    color: "#43291b",
-    textAlign: "center",
-    marginBottom: 8,
-  },
+  screen: { flex: 1 },
+  content: { padding: 16, paddingBottom: 28, gap: 18 },
+  heading: { gap: 4, paddingHorizontal: 3, paddingTop: 8 },
+  sectionTitle: { ...ui.heading, fontSize: 19 },
   profile: {
-    height: 320,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 12,
-    gap: 7,
-    borderBottomWidth: 1,
-    borderColor: "#967047",
+    padding: 12,
+    gap: 12,
+    borderWidth: 2,
+    borderBottomWidth: 5,
+    borderColor: colors.edge,
+    borderRadius: 24,
+    borderTopLeftRadius: 14,
+    backgroundColor: "#dce7cc",
   },
-  vitals: { height: 66, flexDirection: "row", gap: 8 },
-  meterBox: {
+  meta: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.muted,
+  },
+  characterRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  equipmentColumn: { width: 62, gap: 8 },
+  equipmentEntry: { gap: 4 },
+  slotCaption: {
+    fontFamily: fonts.heading,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.wood,
+    textAlign: "center",
+  },
+  characterStage: {
     flex: 1,
-    padding: 8,
-    gap: 7,
-    borderRadius: 10,
-    backgroundColor: "#f4dfb7",
+    height: 174,
+    alignItems: "center",
     justifyContent: "center",
   },
-  statRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  vitalIcon: { width: 25, height: 25 },
+  characterBackdrop: {
+    position: "absolute",
+    width: "98%",
+    maxWidth: 185,
+    aspectRatio: 1,
+    borderRadius: 100,
+    backgroundColor: "#c5d6b4",
+    borderWidth: 1,
+    borderColor: "#abc29a",
+  },
+  characterGround: {
+    position: "absolute",
+    bottom: 7,
+    width: "80%",
+    height: 18,
+    borderRadius: 100,
+    backgroundColor: "#aabd95",
+  },
+  characterImage: { width: "100%", maxWidth: 192, height: 170 },
+  vitals: { flexDirection: "row", gap: 12 },
+  meterBox: { flex: 1, gap: 6 },
+  meterHeading: { flexDirection: "row", alignItems: "center", gap: 4 },
   statLabel: {
     flex: 1,
-    fontFamily: fonts.heavy,
-    fontSize: 12,
-    color: "#43291b",
+    fontFamily: fonts.heading,
+    fontSize: 11,
+    color: colors.ink,
   },
-  statValue: { fontFamily: fonts.heavy, fontSize: 10, color: "#43291b" },
-  meterTrack: {
-    height: 11,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#68411b",
-    backgroundColor: "#d0ba8f",
-    overflow: "hidden",
-  },
-  hpFill: { height: "100%", width: "100%", backgroundColor: "#23b336" },
-  mpFill: { height: "100%", width: "100%", backgroundColor: "#009eab" },
-  profileBody: { flex: 1, flexDirection: "row", gap: 8 },
+  meterValue: { fontFamily: fonts.heading, fontSize: 11, color: colors.ink },
   stats: {
-    width: "19%",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 2,
-  },
-  statTile: {
-    width: "100%",
-    maxWidth: 66,
-    aspectRatio: 1,
-    padding: 2,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 7,
-    backgroundColor: "#f4dfb7",
-  },
-  tileIcon: { width: 15, height: 15 },
-  tileLabel: {
-    fontFamily: fonts.heading,
-    fontSize: 10,
-    color: "#43291b",
-    textAlign: "center",
-  },
-  tileValue: {
-    width: "100%",
-    fontFamily: fonts.heavy,
-    fontSize: 10,
-    color: "#43291b",
-    textAlign: "center",
-  },
-  character: { flex: 1, flexDirection: "row", alignItems: "center", gap: 3 },
-  equipmentColumn: {
-    width: "30%",
-    height: "100%",
-    justifyContent: "space-around",
-  },
-  equipmentSlot: {
-    height: "45%",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 3,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#d6b183",
-    backgroundColor: "#fff0cf",
-  },
-  equipmentImage: { width: "100%", height: "70%" },
-  slotName: { fontFamily: fonts.heading, fontSize: 10, color: "#43291b" },
-  characterPlaceholder: {
-    flex: 1,
-    height: "72%",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: "#705436",
-    backgroundColor: "#e2dfad",
-  },
-  characterPlaceholderText: {
-    fontFamily: fonts.heading,
-    fontSize: 10,
-    color: "#7d5b37",
-    textAlign: "center",
-  },
-  bag: {
-    flex: 1,
-    minHeight: 170,
-    paddingHorizontal: 8,
+    flexDirection: "row",
     paddingTop: 8,
-    paddingBottom: 8,
-    borderWidth: 2,
-    borderColor: "#967047",
-    borderRadius: 9,
-    backgroundColor: "#e1bc80",
+    borderTopWidth: 1,
+    borderColor: "#bac8a7",
+    gap: 6,
   },
-  tabs: { height: 48, flexDirection: "row", gap: 6 },
-  tab: {
-    flex: 1,
-    minHeight: 48,
+  statTile: { flex: 1, alignItems: "center", gap: 3 },
+  statValue: { fontFamily: fonts.heading, fontSize: 14, color: colors.ink },
+  bag: {
+    padding: 12,
+    gap: 12,
+    borderWidth: 2,
+    borderBottomWidth: 5,
+    borderColor: colors.edge,
+    borderRadius: 16,
+    borderTopRightRadius: 25,
+    backgroundColor: colors.parchment,
+  },
+  bagHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
+  capacity: { fontFamily: fonts.heading, fontSize: 11, color: colors.muted },
+  expand: { paddingHorizontal: 8, minHeight: 48 },
+  inspector: {
+    minHeight: 102,
+    padding: 10,
     flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: colors.inset,
+    borderRadius: 12,
+  },
+  inspectorImage: { width: 46, height: 60 },
+  inspectorText: { flex: 1, gap: 3 },
+  itemsGrid: { flexDirection: "row", flexWrap: "wrap", margin: -4 },
+  slotCell: { width: "25%", padding: 4 },
+  itemSlot: {
+    width: "100%",
+    aspectRatio: 1,
+    minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#b88b56",
-    backgroundColor: "#ead1a3",
-  },
-  tabIcon: { width: 25, height: 25 },
-  activeTab: { borderColor: "#9f5a13", backgroundColor: "#c2934b" },
-  tabText: { fontFamily: fonts.heavy, fontSize: 14, color: "#43291b" },
-  activeTabText: { color: "#fff1ce" },
-  bagHeading: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  bagTitle: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
-  bagIcon: { width: 28, height: 28 },
-  bagTitleText: { fontFamily: fonts.heavy, fontSize: 19, color: "#43291b" },
-  capacity: { fontFamily: fonts.heavy, fontSize: 12, color: "#705039" },
-  expand: {
-    minHeight: 48,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#cda675",
-    backgroundColor: "#f5d48e",
-  },
-  expandIcon: { width: 19, height: 19 },
-  expandText: { fontFamily: fonts.heavy, fontSize: 11, color: "#43291b" },
-  itemsScroll: { flex: 1, minHeight: 0 },
-  itemsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    paddingBottom: 12,
-  },
-  itemSlot: {
-    width: "23%",
-    minHeight: 108,
-    padding: 4,
-    alignItems: "center",
-    gap: 2,
     borderWidth: 2,
     borderBottomWidth: 4,
-    borderColor: "#e6c18b",
-    borderBottomColor: "#8c5c31",
-    borderRadius: 11,
-    backgroundColor: "#fff0cf",
+    borderColor: "#9c835e",
+    borderRadius: 13,
+    backgroundColor: "#f3e5c6",
   },
-  selectedSlot: { borderColor: "#ffcf79", backgroundColor: "#ffe0a0" },
-  itemImage: { width: "90%", height: 65 },
-  itemName: {
-    fontFamily: fonts.heading,
-    fontSize: 10,
-    color: "#43291b",
-    textAlign: "center",
+  slotStitch: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    bottom: 4,
+    left: 4,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#c3aa7b",
+    borderRadius: 7,
   },
+  itemImage: { width: "80%", height: "80%" },
+  selectedSlot: { borderColor: colors.teal, backgroundColor: "#d6e6d1" },
+  pressedSlot: { transform: [{ translateY: 2 }] },
+  equippedMark: {
+    position: "absolute",
+    right: 3,
+    bottom: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.teal,
+  },
+  legend: { flexDirection: "row", alignItems: "center", gap: 5 },
 });
