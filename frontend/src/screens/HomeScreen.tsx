@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import * as DocumentPicker from "expo-document-picker";
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { art } from "../assets";
 import {
   Button,
@@ -18,7 +17,6 @@ import {
   type Region,
 } from "./AdventureScreen";
 import type { ScreenProps } from "../types";
-
 export function HomeScreen({
   navigate,
   notify,
@@ -30,39 +28,30 @@ export function HomeScreen({
 }: ScreenProps & {
   onSelectExpedition: (expedition: Expedition) => void;
   onContinue: () => void;
-  lastAdventure: { expedition: Expedition; region: Region };
+  lastAdventure: {
+    expedition: Expedition;
+    region: Region;
+  };
   expeditions?: Expedition[];
-  onForge: (asset: DocumentPicker.DocumentPickerAsset) => Promise<void>;
+  onForge: (asset: File) => Promise<void>;
 }) {
   const [file, setFile] = useState<string>();
-  const [asset, setAsset] = useState<DocumentPicker.DocumentPickerAsset>();
+  const [asset, setAsset] = useState<File>();
   const [forging, setForging] = useState(false);
   const reducedMotion = useReducedMotion();
-  async function pickFile() {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          "application/pdf",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ],
-        copyToCacheDirectory: true,
-      });
-      if (result.canceled) return;
-      const asset = result.assets[0];
-      if (
-        !/\.(pdf|docx)$/i.test(asset.name) ||
-        (asset.size ?? 0) > 25 * 1024 * 1024
-      ) {
-        notify("Pilih PDF atau DOCX dengan ukuran maksimal 25 MB.");
-        return;
-      }
-      setFile(asset.name);
-      setAsset(asset);
-    } catch {
-      notify("File belum bisa dibuka. Coba pilih lagi.");
-    }
+  const fileInput = useRef<HTMLInputElement>(null);
+  function pickFile() {
+    fileInput.current?.click();
   }
-
+  function selectFile(asset: File | undefined) {
+    if (!asset) return;
+    if (!/\.(pdf|docx)$/i.test(asset.name) || asset.size > 25 * 1024 * 1024) {
+      notify("Pilih PDF atau DOCX dengan ukuran maksimal 25 MB.");
+      return;
+    }
+    setFile(asset.name);
+    setAsset(asset);
+  }
   async function forgeAdventure() {
     if (forging) return;
     setForging(true);
@@ -76,80 +65,82 @@ export function HomeScreen({
       setForging(false);
     }
   }
-
   return (
-    <View style={s.page}>
-      <Modal
-        animationType={reducedMotion ? "none" : "fade"}
-        onRequestClose={() => {}}
-        statusBarTranslucent
-        transparent
-        visible={forging}
-      >
-        <View accessibilityViewIsModal style={s.forgeOverlay}>
-          <Image
-            accessible
-            accessibilityLabel="Nerd eating PDF"
-            source={reducedMotion ? art.character : art.nerdEatPdf}
-            resizeMode="contain"
-            style={s.loadingArt}
-          />
-          <Text accessibilityLiveRegion="polite" style={s.loadingTitle}>
-            Forging your adventure…
-          </Text>
-          <Text numberOfLines={2} style={s.loadingFile}>
-            {file}
-          </Text>
-        </View>
-      </Modal>
+    <div style={s.page} className="stack">
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".pdf,.docx"
+        hidden
+        aria-label="Study file"
+        onChange={(event) => {
+          selectFile(event.currentTarget.files?.[0]);
+          event.currentTarget.value = "";
+        }}
+      />
+      {forging && <ForgeDialog file={file} reducedMotion={reducedMotion} />}
 
-      <View style={s.scroll}>
-        <View pointerEvents="none" style={[s.scrollRoll, s.rollTop]}>
-          <View style={s.rollHighlight} />
-        </View>
-        <View pointerEvents="none" style={[s.scrollRoll, s.rollBottom]}>
-          <View style={s.rollHighlight} />
-        </View>
-        <View style={s.forgeHeading}>
-          <Icon name="feather" size={23} color={colors.wood} />
-          <Text style={s.forgeTitle}>The Study Forge</Text>
-        </View>
-        <Text style={s.forgeSubtitle}>
-          Every great quest starts with a little knowledge.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Browse study files"
-          onPress={pickFile}
-          style={({ pressed }) => [
-            s.dropZone,
-            pressed && { backgroundColor: "#f7e8c1" },
-          ]}
+      <div style={s.scroll} className="stack">
+        <div
+          aria-hidden={true}
+          style={{ ...s.scrollRoll, ...s.rollTop }}
+          className="stack"
         >
-          <View
-            accessibilityLabel={file ? "Selected PDF" : undefined}
+          <div style={s.rollHighlight} className="stack" />
+        </div>
+        <div
+          aria-hidden={true}
+          style={{ ...s.scrollRoll, ...s.rollBottom }}
+          className="stack"
+        >
+          <div style={s.rollHighlight} className="stack" />
+        </div>
+        <div style={s.forgeHeading} className="stack">
+          <Icon name="feather" size={23} color={colors.wood} />
+          <span style={s.forgeTitle} className="text">
+            The Study Forge
+          </span>
+        </div>
+        <span style={s.forgeSubtitle} className="text">
+          Every great quest starts with a little knowledge.
+        </span>
+        <button
+          role="button"
+          aria-label="Browse study files"
+          onClick={pickFile}
+          style={{ ...s.dropZone }}
+          className="stack pressable"
+          type="button"
+        >
+          <div
+            aria-label={file ? "Selected PDF" : undefined}
             style={s.documentEmblem}
+            className="stack"
           >
             <Icon
               name={file ? "file-check-outline" : "file-plus-outline"}
               size={30}
               color={colors.teal}
             />
-          </View>
-          <Text numberOfLines={2} style={s.uploadTitle}>
+          </div>
+          <span style={s.uploadTitle} className="text">
             {file ?? "Turn your notes into an adventure"}
-          </Text>
-          <Text style={s.uploadSubtitle}>
+          </span>
+          <span style={s.uploadSubtitle} className="text">
             {file ? "Tap to choose another file" : "Upload your study material"}
-          </Text>
+          </span>
           {!file && (
-            <View style={s.browse}>
-              <Text style={s.browseText}>Browse files</Text>
+            <div style={s.browse} className="stack">
+              <span style={s.browseText} className="text">
+                Browse files
+              </span>
               <Icon name="upload" size={18} color={colors.ink} />
-            </View>
+            </div>
           )}
-          <Text style={s.formats}>PDF / DOCX · Max 25 MB · Starter chapters use file name</Text>
-        </Pressable>
+          <span style={s.formats} className="text">
+            PDF / DOCX · Max 25 MB · Starter chapters use file name
+          </span>
+        </button>
         {file && (
           <Button
             label="Forge Adventure"
@@ -159,28 +150,32 @@ export function HomeScreen({
             disabled={forging}
           />
         )}
-      </View>
+      </div>
 
       <RealmFrame variant="sage" style={s.continueCard}>
-        <View style={ui.row}>
+        <div style={ui.row} className="stack">
           <Icon name="flag-variant" size={21} color={colors.teal} />
-          <Text style={s.continueHeading}>Continue Adventure</Text>
-        </View>
-        <Text style={s.questTitle}>{lastAdventure.expedition.title}</Text>
-        <Text style={ui.body}>
+          <span style={s.continueHeading} className="text">
+            Continue Adventure
+          </span>
+        </div>
+        <span style={s.questTitle} className="text">
+          {lastAdventure.expedition.title}
+        </span>
+        <span style={ui.body} className="text">
           Chapter {lastAdventure.region.chapter} · {lastAdventure.region.title}
-        </Text>
-        <View style={s.progressRow}>
-          <View style={ui.flex}>
+        </span>
+        <div style={s.progressRow} className="stack">
+          <div style={ui.flex} className="stack">
             <Meter
               value={lastAdventure.expedition.progress}
               label="Expedition progress"
             />
-          </View>
-          <Text style={s.progressValue}>
+          </div>
+          <span style={s.progressValue} className="text">
             {lastAdventure.expedition.progress}%
-          </Text>
-        </View>
+          </span>
+        </div>
         <Button
           label="Continue Adventure"
           tone="gold"
@@ -189,21 +184,25 @@ export function HomeScreen({
         />
       </RealmFrame>
 
-      <View style={s.materialHeading}>
-        <View style={ui.flex}>
+      <div style={s.materialHeading} className="stack">
+        <div style={ui.flex} className="stack">
           <SectionTitle title="Study scrolls" />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="View all expeditions"
-          onPress={() => navigate("Expedition")}
+        </div>
+        <button
+          role="button"
+          aria-label="View all expeditions"
+          onClick={() => navigate("Expedition")}
           style={s.allLink}
+          className="stack pressable"
+          type="button"
         >
-          <Text style={s.allText}>View all</Text>
+          <span style={s.allText} className="text">
+            View all
+          </span>
           <Icon name="chevron-right" size={18} color={colors.teal} />
-        </Pressable>
-      </View>
-      <View style={s.materials}>
+        </button>
+      </div>
+      <div style={s.materials} className="stack">
         {items.slice(0, 2).map((expedition) => (
           <ExpeditionCard
             key={expedition.title}
@@ -211,17 +210,18 @@ export function HomeScreen({
             onPress={() => onSelectExpedition(expedition)}
           />
         ))}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
-const s = StyleSheet.create({
+const s = {
   page: { gap: 20 },
   scroll: {
     backgroundColor: "#f9edcd",
     borderWidth: 2,
     borderColor: "#9a794b",
-    marginHorizontal: 4,
+    marginLeft: 4,
+    marginRight: 4,
     marginTop: 8,
     padding: 16,
     paddingTop: 23,
@@ -245,7 +245,8 @@ const s = StyleSheet.create({
   rollHighlight: {
     height: 3,
     marginTop: 2,
-    marginHorizontal: 10,
+    marginLeft: 10,
+    marginRight: 10,
     backgroundColor: "#fff2ce",
     borderRadius: 3,
   },
@@ -260,7 +261,7 @@ const s = StyleSheet.create({
     ...ui.body,
     textAlign: "center",
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: "18px",
   },
   dropZone: {
     alignItems: "center",
@@ -285,7 +286,7 @@ const s = StyleSheet.create({
   uploadTitle: {
     fontFamily: fonts.heading,
     fontSize: 17,
-    lineHeight: 23,
+    lineHeight: "23px",
     textAlign: "center",
     color: colors.ink,
     maxWidth: 290,
@@ -316,7 +317,7 @@ const s = StyleSheet.create({
   questTitle: {
     fontFamily: fonts.heading,
     fontSize: 18,
-    lineHeight: 24,
+    lineHeight: "24px",
     color: colors.ink,
   },
   progressRow: {
@@ -348,7 +349,8 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderTopWidth: 1,
     borderColor: "#cdbf9e",
   },
@@ -362,7 +364,7 @@ const s = StyleSheet.create({
   },
   harvestTitle: { ...ui.title, fontSize: 14, marginBottom: 3 },
   forgeOverlay: {
-    flex: 1,
+    flex: "1 1 0%",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
@@ -382,4 +384,33 @@ const s = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
   },
-});
+} satisfies Record<string, CSSProperties>;
+function ForgeDialog({
+  file,
+  reducedMotion,
+}: {
+  file?: string;
+  reducedMotion: boolean;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    dialog.current?.showModal();
+  }, []);
+  return (
+    <dialog
+      className="forge-dialog"
+      ref={dialog}
+      aria-label="Forging adventure"
+      onCancel={(event) => event.preventDefault()}
+    >
+      <div className="forge-dialog-content">
+        <img
+          alt="Nerd eating PDF"
+          src={reducedMotion ? art.character : art.nerdEatPdf}
+        />
+        <h2 aria-live="polite">Forging your adventure?</h2>
+        <p>{file}</p>
+      </div>
+    </dialog>
+  );
+}

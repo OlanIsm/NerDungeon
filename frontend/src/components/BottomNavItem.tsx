@@ -1,23 +1,14 @@
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type ImageSourcePropType,
-} from "react-native";
+import type { CSSProperties } from "react";
 import { colors, fonts } from "../theme";
 import type { Screen } from "../types";
-
 type BottomNavItemProps = {
   screen: Screen;
-  icon: ImageSourcePropType;
+  icon: string;
   size: number;
   iconOffsetX?: number;
   selected: boolean;
   onPress: () => void;
 };
-
 export function BottomNavItem({
   screen,
   icon,
@@ -25,32 +16,44 @@ export function BottomNavItem({
   onPress,
 }: BottomNavItemProps) {
   return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityLabel={screen}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        s.item,
-        selected && s.selected,
-        pressed && { transform: [{ translateY: 2 }] },
-      ]}
+    <button
+      role="tab"
+      aria-selected={selected}
+      aria-label={screen}
+      onClick={onPress}
+      style={{ ...s.item, ...((selected && s.selected) || {}) }}
+      className="stack pressable"
+      type="button"
     >
-      {selected && <View pointerEvents="none" style={s.highlight} />}
-      <Image source={icon} resizeMode="contain" style={s.icon} />
-      <Text style={[s.label, selected && s.activeLabel]}>{screen}</Text>
-      {selected && <View style={s.marker} />}
-    </Pressable>
+      {selected && (
+        <div aria-hidden={true} style={s.highlight} className="stack" />
+      )}
+      <img
+        src={icon}
+        style={{ ...s.icon, objectFit: "contain" }}
+        className="art-image"
+        alt=""
+        draggable={false}
+      />
+      <span
+        style={{ ...s.label, ...((selected && s.activeLabel) || {}) }}
+        className="text"
+      >
+        {screen}
+      </span>
+      {selected && <div style={s.marker} className="stack" />}
+    </button>
   );
 }
-const s = StyleSheet.create({
+const s = {
   item: {
-    flex: 1,
+    flex: "1 1 0%",
     minWidth: 0,
     minHeight: 70,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 5,
+    paddingTop: 5,
+    paddingBottom: 5,
     borderWidth: 2,
     borderColor: "transparent",
     borderRadius: 15,
@@ -60,7 +63,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.gold,
     borderColor: colors.edge,
     borderBottomWidth: 4,
-    transform: [{ translateY: -5 }],
+    transform: "translateY(" + -5 + "px)",
   },
   highlight: {
     position: "absolute",
@@ -75,7 +78,7 @@ const s = StyleSheet.create({
   label: {
     fontFamily: fonts.heading,
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: "15px",
     color: colors.parchment,
   },
   activeLabel: { color: colors.ink },
@@ -89,4 +92,4 @@ const s = StyleSheet.create({
     borderColor: colors.edge,
     backgroundColor: colors.parchment,
   },
-});
+} satisfies Record<string, CSSProperties>;

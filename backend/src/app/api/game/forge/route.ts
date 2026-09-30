@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { demoAllowed, newExpedition, readGame, writeGame } from "@/lib/game";
+import { summonPool } from "@/lib/summon";
 const headers = { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 export function OPTIONS() { return new Response(null, { status: 204, headers }); }
 
@@ -21,5 +22,5 @@ export async function POST(request: NextRequest) {
   await writeFile(join(process.cwd(), "data", "uploads", `${expedition.id}.${pdf ? "pdf" : "docx"}`), bytes);
   game.expeditions.unshift(expedition);
   await writeGame(game);
-  return NextResponse.json(game, { headers });
+  return NextResponse.json({ ...game, summonPool }, { headers });
 }

@@ -1,69 +1,49 @@
 # Nerdungeon
 
-React Native / Expo implementation of the five supplied Stitch screens:
-Hub, Adventure Map, Bazaar, Armory and Battle Study.
+Browser app with a mobile-sized layout. React + Vite renders Hub, Expedition, Bazaar, Bag, navigation, and battle controls. Phaser 3.90 renders the adventure world: the walk atlas, monsters, and eleven WebP parallax layers.
 
-## Run on your phone
+## Run
 
-Use Node 24 and npm:
+Use Node 24. Install dependencies once:
 
 ```sh
+npm ci
 npm --prefix frontend ci
-npm start
+npm --prefix backend ci
 ```
 
-Scan the Expo QR with a compatible Expo Go on Android or iPhone. Keep the
-phone and computer on the same network. This project uses Expo SDK 57.
-If your installed Expo Go does not support it, use the matching development
-client. No Supabase configuration is needed for the UI preview.
-
-For the browser preview: `npm run web`. For an installed Android emulator:
-`npm run android`. Browser rendering is a convenience for iteration; it does
-not certify native device behavior.
-
-## Structure
-
-- `frontend/src/screens/`: one React Native screen per Stitch page.
-- `frontend/src/components/`: shared buttons, panels, icons, badges and meters.
-- `frontend/src/theme.ts`: palette, type and reusable layout styles.
-- `frontend/src/data/`: local demonstration data.
-- `frontend/assets/stitch/`: original artwork, bundled locally, with source manifest.
-- `backend/`: existing Supabase/server foundation, isolated from the UI.
-- `docs/stitch/`: untouched HTML and screenshot references.
-
-The earlier Next.js landing/dashboard/login UI has been removed. Its committed
-version is recoverable from Git. The server helpers and unit tests were moved
-into backend. Historical milestone documents are retained as history; the
-current UI scope follows the user's replacement brief.
-
-## Preview interactions
-
-Navigate through the four bottom tabs. Open Battle from the Map or continue an
-expedition from Hub. Select a PDF/DOCX up to 25 MB in the Forge. Choose an
-inventory item and preview equipping it. Try correct and incorrect battle
-answers, inspect feedback, retry, and exit. Bazaar actions show preview feedback.
-
-Data, HP changes, item selection, gold, summons and timers are local illustrative
-UI states from Stitch, not production game rules. Files are selected locally,
-not uploaded or processed. No money is charged. Native auth, backend gameplay,
-AI generation and durable inventory are not connected in this UI task.
-
-## Checks
+Start the API in one terminal:
 
 ```sh
-npm run lint
-npm run typecheck
-npm run build
-npm --prefix backend ci
-npm --prefix backend test
-npm --prefix backend run typecheck
-npm --prefix backend run build
+npm run backend:dev
 ```
 
-`build` exports Android, iOS and web JS/assets; it does not produce an APK/IPA.
-The optional browser interaction check uses Playwright and installed Edge:
-run the web preview on port 8081, then `node scripts/verify-ui.cjs`.
-Its screenshots go into `.impeccable/review/` and are explicitly marked web previews.
+Start the web app in another terminal:
 
-For manual native review, check all five pages at your device's font scale,
-safe areas, Android Back, file picker, and keyboard/screen-reader navigation.
+```sh
+npm run dev
+```
+
+Open http://localhost:5173. Vite proxies /api to http://localhost:3000. Set VITE_API_URL in frontend/.env only when using another API origin. This is a web app; Expo Go and Android/iOS builds are no longer used.
+
+## Game and data
+
+Phaser loads when entering Battle and is destroyed on exit. Doors slide shut before game assets load, remain closed for at least 1.5 seconds, and reopen when the scene is ready. The game stays inactive until opening completes. Walking stops during encounters, pause, and hidden browser tabs. Canvas resizes with the app shell. Reduced motion disables walking animation and door motion while keeping the loading hold.
+
+The existing Next.js API still handles uploads, summons, and chapter progress. Express migration is a separate backend step. Supabase accounts and persistent per-user data remain deferred. Development uses one shared profile in backend/data. Uploads support PDF/DOCX up to 25 MB; chapters currently derive from filenames, without AI question generation. Battle retains the encounter completion prototype.
+
+## Verify
+
+```sh
+npm run typecheck
+npm run lint
+npm run build
+npm run test:game
+npm run test:web
+```
+
+Run the web app before test:web. Its browser test mocks the API, checks every React page, upload/summon requests, gate timing, Phaser WebGL animation, encounters, resize, and engine cleanup/re-entry. It uses installed Chrome; CHROME_PATH can override the executable. APP_URL can target Vite preview or another port. Screenshots go into ignored test-results/.
+
+Production output is frontend/dist. Configure the deployment to proxy /api to the backend or build with VITE_API_URL. Hashed assets support browser caching when the host sends suitable cache headers.
+
+Rollback checkpoint: a595bfd on feat/m01-auth. Current migration preserves backend/data and the existing API request/response shapes.

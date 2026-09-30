@@ -1,29 +1,47 @@
 export const art = {
-  navPlank: require("../assets/icon/Plank bar.webp"),
-  doorLeft: require("../assets/GUI/door/Door left.webp"),
-  doorRight: require("../assets/GUI/door/Door right.webp"),
-  nerdEatPdf: require("../assets/character/nerdEatPdf.gif"),
-  nerdLoading: require("../assets/icon/nerdLoading.gif"),
-  nerdiusTitle: require("../assets/optimized/nerdius-title.webp"),
-  character: require("../assets/optimized/scholar.webp"),
+  summon10x: new URL("../assets/GUI/summon-10x.png", import.meta.url).href,
+  merlinsRoom: new URL(
+    "../assets/background/merlins_room.webp",
+    import.meta.url,
+  ).href,
+  floatingIsland: new URL(
+    "../assets/background/floating_Island.webp",
+    import.meta.url,
+  ).href,
+  navPlank: new URL("../assets/icon/Plank bar.webp", import.meta.url).href,
+  doorLeft: new URL("../assets/GUI/door/Door left.webp", import.meta.url).href,
+  doorRight: new URL("../assets/GUI/door/Door right.webp", import.meta.url)
+    .href,
+  nerdEatPdf: new URL("../assets/character/nerdEatPdf.gif", import.meta.url)
+    .href,
+  nerdLoading: new URL("../assets/icon/nerdLoading.gif", import.meta.url).href,
+  nerdiusTitle: new URL(
+    "../assets/optimized/nerdius-title.webp",
+    import.meta.url,
+  ).href,
+  character: new URL("../assets/optimized/scholar.webp", import.meta.url).href,
 };
 
 export const icons = {
-  hub: require("../assets/icon/Hub.webp"),
-  map: require("../assets/icon/Map.webp"),
-  bazaar: require("../assets/icon/Chest.webp"),
-  armory: require("../assets/icon/bag.webp"),
-  coins: require("../assets/icon/Coins.webp"),
-  gems: require("../assets/icon/Gem.webp"),
+  equipment: new URL("../assets/icon/Equipment.webp", import.meta.url).href,
+  potion: new URL("../assets/icon/Potion.webp", import.meta.url).href,
+  hub: new URL("../assets/icon/Hub.webp", import.meta.url).href,
+  map: new URL("../assets/icon/map.webp", import.meta.url).href,
+  bazaar: new URL("../assets/icon/chest.webp", import.meta.url).href,
+  armory: new URL("../assets/icon/bag.webp", import.meta.url).href,
+  coins: new URL("../assets/icon/coins.webp", import.meta.url).href,
+  gems: new URL("../assets/icon/Gem.webp", import.meta.url).href,
 };
 
 export const mapArt = {
-  desert: require("../assets/optimized/desert.webp"),
-  volcano: require("../assets/optimized/volcano.webp"),
-  kingdom: require("../assets/optimized/kingdom.webp"),
+  background: new URL("../assets/background/map.webp", import.meta.url).href,
+  desert: new URL("../assets/optimized/desert.webp", import.meta.url).href,
+  volcano: new URL("../assets/optimized/volcano.webp", import.meta.url).href,
+  kingdom: new URL("../assets/optimized/kingdom.webp", import.meta.url).href,
 };
 
 export const miniIcons = {
-  oakTome: require("../assets/item/sliced/weapon/oak-tome.png"),
+  oakTome: new URL("../assets/item/sliced/weapon/oak-tome.png", import.meta.url)
+    .href,
   chest: icons.bazaar,
 };

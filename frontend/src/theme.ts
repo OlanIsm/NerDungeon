@@ -1,5 +1,4 @@
-import { StyleSheet } from "react-native";
-
+import type { CSSProperties } from "react";
 export const colors = {
   background: "#f5efdc",
   parchment: "#fff8e7",
@@ -34,20 +33,8 @@ export const typeSize = {
   display: 27,
 };
 export const shadows = {
-  panel: {
-    shadowColor: "#574432",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  raised: {
-    shadowColor: "#574432",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 9,
-    elevation: 4,
-  },
+  panel: {},
+  raised: {},
 };
 export const fonts = {
   heading: "Rubik_700Bold",
@@ -55,7 +42,7 @@ export const fonts = {
   body: "Epilogue_500Medium",
   label: "SpaceGrotesk_700Bold",
 };
-export const ui = StyleSheet.create({
+export const ui = {
   column: { gap: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
   between: {
@@ -64,7 +51,7 @@ export const ui = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  flex: { flex: 1 },
+  flex: { flex: "1 1 0%" },
   center: { alignItems: "center", justifyContent: "center" },
   panel: {
     backgroundColor: colors.parchment,
@@ -85,31 +72,31 @@ export const ui = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 20,
     color: colors.wood,
-    lineHeight: 27,
+    lineHeight: "27px",
   },
   title: {
     fontFamily: fonts.heading,
     fontSize: 16,
     color: colors.ink,
-    lineHeight: 22,
+    lineHeight: "22px",
   },
   body: {
     fontFamily: fonts.body,
     fontSize: 13,
     color: colors.muted,
-    lineHeight: 20,
+    lineHeight: "20px",
   },
   label: {
     fontFamily: fonts.label,
     fontSize: typeSize.label,
     color: colors.muted,
-    lineHeight: 16,
+    lineHeight: "16px",
     letterSpacing: 0.3,
   },
   hero: {
     fontFamily: fonts.heavy,
     fontSize: 24,
-    lineHeight: 29,
+    lineHeight: "29px",
     color: colors.wood,
   },
-});
+} satisfies Record<string, CSSProperties>;

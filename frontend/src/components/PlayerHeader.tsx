@@ -1,23 +1,26 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import type { CSSProperties } from "react";
 import { art, icons } from "../assets";
 import { colors, fonts } from "../theme";
-
 function Resource({ kind, label }: { kind: "coins" | "gems"; label: string }) {
   return (
-    <View
-      accessibilityLabel={label + (kind === "coins" ? " Gold" : " Gems")}
+    <div
+      aria-label={label + (kind === "coins" ? " Gold" : " Gems")}
       style={s.resource}
+      className="stack"
     >
-      <Image
-        source={icons[kind]}
-        resizeMode="contain"
-        style={s.resourceImage}
+      <img
+        src={icons[kind]}
+        style={{ ...s.resourceImage, objectFit: "contain" }}
+        className="art-image"
+        alt=""
+        draggable={false}
       />
-      <Text style={s.resourceValue}>{label}</Text>
-    </View>
+      <span style={s.resourceValue} className="text">
+        {label}
+      </span>
+    </div>
   );
 }
-
 export function PlayerHeader({
   onPressProfile,
   gold = 1450,
@@ -30,54 +33,63 @@ export function PlayerHeader({
   xp?: number;
 }) {
   return (
-    <View style={s.header}>
-      <View pointerEvents="none" style={s.highlight} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open player profile"
-        onPress={onPressProfile}
-        style={({ pressed }) => [
-          s.portrait,
-          pressed && { transform: [{ translateY: 1 }] },
-        ]}
+    <div style={s.header} className="stack">
+      <div aria-hidden={true} style={s.highlight} className="stack" />
+      <button
+        role="button"
+        aria-label="Open player profile"
+        onClick={onPressProfile}
+        style={{ ...s.portrait }}
+        className="stack pressable"
+        type="button"
       >
-        <Image
-          source={art.character}
-          resizeMode="contain"
-          style={s.character}
+        <img
+          src={art.character}
+          style={{ ...s.character, objectFit: "contain" }}
+          className="art-image"
+          alt=""
+          draggable={false}
         />
-        <View style={s.level}>
-          <Text style={s.levelText}>Lv. 5</Text>
-        </View>
-      </Pressable>
-      <View style={s.player}>
-        <Text numberOfLines={1} style={s.name}>
+        <div style={s.level} className="stack">
+          <span style={s.levelText} className="text">
+            Lv. 5
+          </span>
+        </div>
+      </button>
+      <div style={s.player} className="stack">
+        <span style={s.name} className="text">
           Nerd Mage
-        </Text>
-        <Text style={s.rank}>Scholar · {xp.toLocaleString()} XP</Text>
-        <View
-          accessibilityRole="progressbar"
-          accessibilityLabel="Player experience"
-          accessibilityValue={{ min: 0, max: 2000, now: 1250 }}
+        </span>
+        <span style={s.rank} className="text">
+          Scholar · {xp.toLocaleString()} XP
+        </span>
+        <div
+          role="progressbar"
+          aria-label="Player experience"
+          aria-valuemin={0}
+          aria-valuemax={2000}
+          aria-valuenow={1250}
           style={s.track}
+          className="stack"
         >
-          <View style={s.fill} />
-        </View>
-      </View>
-      <View style={s.resources}>
+          <div style={s.fill} className="stack" />
+        </div>
+      </div>
+      <div style={s.resources} className="stack">
         <Resource kind="coins" label={gold.toLocaleString()} />
         <Resource kind="gems" label={gems.toLocaleString()} />
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
-const s = StyleSheet.create({
+const s = {
   header: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     minHeight: 94,
-    marginHorizontal: 12,
+    marginLeft: 12,
+    marginRight: 12,
     marginTop: 10,
     marginBottom: 4,
     padding: 10,
@@ -114,11 +126,13 @@ const s = StyleSheet.create({
     borderColor: colors.edge,
     borderRadius: 6,
     backgroundColor: colors.gold,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingTop: 1,
+    paddingBottom: 1,
   },
   levelText: { fontFamily: fonts.heading, fontSize: 11, color: colors.ink },
-  player: { flex: 1, minWidth: 0, gap: 5 },
+  player: { flex: "1 1 0%", minWidth: 0, gap: 5 },
   name: { fontFamily: fonts.heading, fontSize: 16, color: colors.ink },
   rank: { fontFamily: fonts.label, fontSize: 11, color: colors.muted },
   track: {
@@ -150,4 +164,4 @@ const s = StyleSheet.create({
   },
   resourceImage: { width: 25, height: 25 },
   resourceValue: { fontFamily: fonts.heading, fontSize: 12, color: colors.ink },
-});
+} satisfies Record<string, CSSProperties>;

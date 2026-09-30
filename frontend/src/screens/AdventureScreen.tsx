@@ -1,12 +1,5 @@
+import type { CSSProperties } from "react";
 import { useState } from "react";
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
 import { mapArt } from "../assets";
 import { Badge, Button, Icon, Meter } from "../components/GameUI";
 import {
@@ -16,7 +9,6 @@ import {
 } from "../components/AdventurePath";
 import { RealmFrame, RealmButton, fantasy } from "../components/FantasyUI";
 import { colors, fonts, ui } from "../theme";
-
 export type Region = {
   chapter: number;
   title: string;
@@ -32,7 +24,6 @@ export type Expedition = {
   progress: number;
   regions: Region[];
 };
-
 const regions = (topics: string[]): Region[] =>
   topics.slice(0, 3).map((title, index) => ({
     chapter: index + 1,
@@ -46,7 +37,6 @@ const regions = (topics: string[]): Region[] =>
     questions: 10,
     enemies: index + 1,
   }));
-
 export const expeditions: Expedition[] = [
   {
     title: "Biologi — Fotosintesis",
@@ -77,7 +67,6 @@ export const expeditions: Expedition[] = [
     regions: regions(["Encapsulation", "Inheritance", "Polymorphism"]),
   },
 ];
-
 export function AdventureScreen({
   onSelect,
   onInspect,
@@ -92,67 +81,80 @@ export function AdventureScreen({
     currentChapter(expeditions[0].progress, expeditions[0].regions.length),
   );
   const expedition = items[Math.min(active, items.length - 1)];
-  const selectedRegion = expedition.regions[Math.min(chapter, expedition.regions.length - 1)];
+  const selectedRegion =
+    expedition.regions[Math.min(chapter, expedition.regions.length - 1)];
   return (
-    <View style={s.page}>
-      <View style={s.pageHeading}>
-        <Text style={fantasy.title}>Your Expeditions</Text>
-        <Text style={fantasy.body}>
+    <div style={s.page} className="stack">
+      <div style={s.pageHeading} className="stack">
+        <span style={fantasy.title} className="text">
+          Your Expeditions
+        </span>
+        <span style={fantasy.body} className="text">
           A chapter at a time. A little further every day.
-        </Text>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.scrollChoices}
-        accessibilityLabel="Choose study material"
-      >
-        {items.map((item, index) => (
-          <Pressable
-            key={item.file}
-            accessibilityRole="button"
-            accessibilityLabel={`Select ${item.title}`}
-            accessibilityState={{ selected: active === index }}
-            onPress={() => {
-              setActive(index);
-              setChapter(currentChapter(item.progress, item.regions.length));
-            }}
-            style={[s.scrollChoice, active === index && s.activeChoice]}
-          >
-            <Icon
-              name="book-open-page-variant-outline"
-              size={21}
-              color={active === index ? colors.parchment : colors.teal}
-            />
-            <Text
-              numberOfLines={2}
-              style={[
-                s.choiceText,
-                active === index && { color: colors.parchment },
-              ]}
+        </span>
+      </div>
+      <div aria-label="Choose study material" className="scroll horizontal">
+        <div className="stack horizontal-content" style={s.scrollChoices}>
+          {items.map((item, index) => (
+            <button
+              key={item.file}
+              role="button"
+              aria-label={`Select ${item.title}`}
+              aria-pressed={active === index}
+              onClick={() => {
+                setActive(index);
+                setChapter(currentChapter(item.progress, item.regions.length));
+              }}
+              style={{
+                ...s.scrollChoice,
+                ...((active === index && s.activeChoice) || {}),
+              }}
+              className="stack pressable"
+              type="button"
             >
-              {item.title}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${expedition.title}`}
-        onPress={() => onSelect(expedition)}
+              <Icon
+                name="book-open-page-variant-outline"
+                size={21}
+                color={active === index ? colors.parchment : colors.teal}
+              />
+              <span
+                style={{
+                  ...s.choiceText,
+                  ...((active === index && { color: colors.parchment }) || {}),
+                }}
+                className="text"
+              >
+                {item.title}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <button
+        role="button"
+        aria-label={`Open ${expedition.title}`}
+        onClick={() => onSelect(expedition)}
         style={s.expeditionHeading}
+        className="stack pressable"
+        type="button"
       >
-        <View style={ui.flex}>
-          <Text style={s.expeditionTitle}>{expedition.title}</Text>
-          <Text numberOfLines={1} style={ui.label}>
+        <div style={ui.flex} className="stack">
+          <span style={s.expeditionTitle} className="text">
+            {expedition.title}
+          </span>
+          <span style={ui.label} className="text">
             {expedition.file}
-          </Text>
-        </View>
-        <View style={s.progressSeal}>
-          <Text style={s.progressSealText}>{expedition.progress}%</Text>
-          <Text style={s.sealLabel}>cleared</Text>
-        </View>
-      </Pressable>
+          </span>
+        </div>
+        <div style={s.progressSeal} className="stack">
+          <span style={s.progressSealText} className="text">
+            {expedition.progress}%
+          </span>
+          <span style={s.sealLabel} className="text">
+            cleared
+          </span>
+        </div>
+      </button>
       <AdventurePath
         chapters={expedition.regions}
         progress={expedition.progress}
@@ -167,25 +169,29 @@ export function AdventureScreen({
         }}
       />
       <RealmFrame style={s.selectedChapter}>
-        <View style={ui.between}>
+        <div style={ui.between} className="stack">
           <Badge
             text={`Chapter ${selectedRegion.chapter}`}
             icon="flag-variant"
           />
-          <Text style={s.stateText}>
+          <span style={s.stateText} className="text">
             {chapterState(
               expedition.progress,
               expedition.regions.length,
               chapter,
             )}
-          </Text>
-        </View>
-        <Text style={ui.heading}>{selectedRegion.title}</Text>
-        <Text style={ui.body}>{selectedRegion.summary}</Text>
-        <Text style={ui.label}>
+          </span>
+        </div>
+        <span style={ui.heading} className="text">
+          {selectedRegion.title}
+        </span>
+        <span style={ui.body} className="text">
+          {selectedRegion.summary}
+        </span>
+        <span style={ui.label} className="text">
           {selectedRegion.questions} questions · {selectedRegion.enemies}{" "}
           encounters
-        </Text>
+        </span>
         <Button
           label="View chapter"
           icon="arrow-right"
@@ -193,10 +199,9 @@ export function AdventureScreen({
           onPress={() => onSelect(expedition, selectedRegion)}
         />
       </RealmFrame>
-    </View>
+    </div>
   );
 }
-
 export function ExpeditionCard({
   expedition,
   onPress,
@@ -205,34 +210,41 @@ export function ExpeditionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${expedition.title}`}
-      onPress={onPress}
-      style={({ pressed }) => [s.material, pressed && s.pressed]}
+    <button
+      role="button"
+      aria-label={`Open ${expedition.title}`}
+      onClick={onPress}
+      style={{ ...s.material }}
+      className="stack pressable"
+      type="button"
     >
-      <View pointerEvents="none" style={s.fold} />
-      <View style={s.document}>
+      <div aria-hidden={true} style={s.fold} className="stack" />
+      <div style={s.document} className="stack">
         <Icon name="file-document-outline" size={26} color={colors.wood} />
-      </View>
-      <View style={s.materialCopy}>
-        <Text style={s.materialTitle}>{expedition.title}</Text>
-        <Text numberOfLines={1} style={s.fileName}>
+      </div>
+      <div style={s.materialCopy} className="stack">
+        <span style={s.materialTitle} className="text">
+          {expedition.title}
+        </span>
+        <span style={s.fileName} className="text">
           {expedition.file}
-        </Text>
-        <View style={ui.row}>
-          <Text style={s.fileName}>{expedition.regions.length} chapters</Text>
-          <View style={ui.flex}>
+        </span>
+        <div style={ui.row} className="stack">
+          <span style={s.fileName} className="text">
+            {expedition.regions.length} chapters
+          </span>
+          <div style={ui.flex} className="stack">
             <Meter value={expedition.progress} />
-          </View>
-          <Text style={s.materialProgress}>{expedition.progress}%</Text>
-        </View>
-      </View>
+          </div>
+          <span style={s.materialProgress} className="text">
+            {expedition.progress}%
+          </span>
+        </div>
+      </div>
       <Icon name="chevron-right" size={22} color={colors.teal} />
-    </Pressable>
+    </button>
   );
 }
-
 export function RegionScreen({
   expedition,
   onBack,
@@ -247,53 +259,61 @@ export function RegionScreen({
     expedition.regions.length,
   );
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={s.regionPage}
-    >
-      <View style={s.backHeading}>
-        <BackButton onPress={onBack} />
-        <View style={ui.flex}>
-          <Text style={s.regionTitle}>{expedition.title}</Text>
-          <Text style={ui.body}>Choose your next chapter</Text>
-        </View>
-      </View>
-      <Meter
-        value={expedition.progress}
-        label={`${expedition.progress}% of this expedition cleared`}
-      />
-      <AdventurePath
-        chapters={expedition.regions}
-        progress={expedition.progress}
-        selected={expedition.regions[current].chapter}
-        onSelect={(chapter) => {
-          const region = expedition.regions.find(
-            (item) => item.chapter === chapter.chapter,
-          );
-          if (region) onSelect(region);
-        }}
-      />
-      <View style={s.mapLegend}>
-        <View style={ui.row}>
-          <Icon name="check-circle" size={18} color={colors.teal} />
-          <Text style={ui.label}>Completed</Text>
-        </View>
-        <View style={ui.row}>
-          <Icon name="flag-variant" size={18} color={colors.wood} />
-          <Text style={ui.label}>Current</Text>
-        </View>
-        <View style={ui.row}>
-          <Icon name="circle-outline" size={18} color={colors.muted} />
-          <Text style={ui.label}>Available</Text>
-        </View>
-      </View>
-      <Text style={s.mapHint}>
-        Every stop holds a new idea. Tap a chapter to see its topics.
-      </Text>
-    </ScrollView>
+    <div className="scroll">
+      <div className="stack" style={s.regionPage}>
+        <div style={s.backHeading} className="stack">
+          <BackButton onPress={onBack} />
+          <div style={ui.flex} className="stack">
+            <span style={s.regionTitle} className="text">
+              {expedition.title}
+            </span>
+            <span style={ui.body} className="text">
+              Choose your next chapter
+            </span>
+          </div>
+        </div>
+        <Meter
+          value={expedition.progress}
+          label={`${expedition.progress}% of this expedition cleared`}
+        />
+        <AdventurePath
+          chapters={expedition.regions}
+          progress={expedition.progress}
+          selected={expedition.regions[current].chapter}
+          onSelect={(chapter) => {
+            const region = expedition.regions.find(
+              (item) => item.chapter === chapter.chapter,
+            );
+            if (region) onSelect(region);
+          }}
+        />
+        <div style={s.mapLegend} className="stack">
+          <div style={ui.row} className="stack">
+            <Icon name="check-circle" size={18} color="#af791d" />
+            <span style={ui.label} className="text">
+              Completed
+            </span>
+          </div>
+          <div style={ui.row} className="stack">
+            <Icon name="flag-variant" size={18} color={colors.wood} />
+            <span style={ui.label} className="text">
+              Current
+            </span>
+          </div>
+          <div style={ui.row} className="stack">
+            <Icon name="circle-outline" size={18} color={colors.muted} />
+            <span style={ui.label} className="text">
+              Available
+            </span>
+          </div>
+        </div>
+        <span style={s.mapHint} className="text">
+          Every stop holds a new idea. Tap a chapter to see its topics.
+        </span>
+      </div>
+    </div>
   );
 }
-
 export function RegionDetailScreen({
   expedition,
   region,
@@ -309,86 +329,86 @@ export function RegionDetailScreen({
     (item) => item.chapter === region.chapter,
   );
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={s.detailPage}
-    >
-      <View style={s.backHeading}>
-        <BackButton onPress={onBack} />
-        <View style={ui.flex}>
-          <Text style={ui.body}>{expedition.title}</Text>
-          <Text style={s.detailTitle}>
-            Chapter {region.chapter}: {region.title}
-          </Text>
-        </View>
-      </View>
-      <View style={s.regionShowcase}>
-        <View pointerEvents="none" style={s.regionGround} />
-        <Image
-          source={[mapArt.desert, mapArt.volcano, mapArt.kingdom][index]}
-          resizeMode="contain"
-          style={s.regionImage}
-        />
-        <Badge
-          text={chapterState(
-            expedition.progress,
-            expedition.regions.length,
-            index,
-          )}
-          icon="flag-variant"
-        />
-      </View>
-      <RealmFrame>
-        <Text style={ui.heading}>Your quest</Text>
-        <Text style={ui.body}>{region.summary}</Text>
-        <View style={s.topics}>
-          {region.topics.map((topic, i) => (
-            <View key={topic} style={s.topic}>
-              <View style={s.topicNumber}>
-                <Text style={s.topicNumberText}>{i + 1}</Text>
-              </View>
-              <Text style={s.topicText}>{topic}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={s.encounterMeta}>
-          <Badge
-            text={`${region.questions} questions`}
-            icon="help-circle-outline"
+    <div className="scroll">
+      <div className="stack" style={s.detailPage}>
+        <div style={s.backHeading} className="stack">
+          <BackButton onPress={onBack} />
+          <div style={ui.flex} className="stack">
+            <span style={ui.body} className="text">
+              {expedition.title}
+            </span>
+            <span style={s.detailTitle} className="text">
+              Chapter {region.chapter}: {region.title}
+            </span>
+          </div>
+        </div>
+        <div style={s.regionShowcase} className="stack">
+          <img
+            src={[mapArt.desert, mapArt.volcano, mapArt.kingdom][index]}
+            style={{ ...s.regionImage, objectFit: "contain" }}
+            className="art-image"
+            alt=""
+            draggable={false}
           />
-          <Badge text={`${region.enemies} enemies`} icon="sword-cross" />
-        </View>
-      </RealmFrame>
-      <View style={s.readyBlock}>
-        <Text style={s.readyTitle}>A new discovery awaits.</Text>
-        <Text style={fantasy.body}>Your answers decide every encounter.</Text>
-        <RealmButton
-          label="Start Adventure"
-          icon="sword-cross"
-          onPress={onStart}
-        />
-      </View>
-    </ScrollView>
+        </div>
+        <RealmFrame>
+          <span style={ui.heading} className="text">
+            Your quest
+          </span>
+          <span style={ui.body} className="text">
+            {region.summary}
+          </span>
+          <div style={s.topics} className="stack">
+            {region.topics.map((topic, i) => (
+              <div key={topic} style={s.topic} className="stack">
+                <div style={s.topicNumber} className="stack">
+                  <span style={s.topicNumberText} className="text">
+                    {i + 1}
+                  </span>
+                </div>
+                <span style={s.topicText} className="text">
+                  {topic}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={s.encounterMeta} className="stack">
+            <Badge
+              text={`${region.questions} questions`}
+              icon="help-circle-outline"
+            />
+            <Badge text={`${region.enemies} enemies`} icon="sword-cross" />
+          </div>
+        </RealmFrame>
+        <div style={s.readyBlock} className="stack">
+          <RealmButton
+            label="Start Adventure"
+            icon="sword-cross"
+            onPress={onStart}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
-
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Back"
-      onPress={onPress}
-      style={({ pressed }) => [s.back, pressed && s.pressed]}
+    <button
+      role="button"
+      aria-label="Back"
+      onClick={onPress}
+      style={{ ...s.back }}
+      className="stack pressable"
+      type="button"
     >
       <Icon name="arrow-left" color={colors.ink} size={24} />
-    </Pressable>
+    </button>
   );
 }
-
-const s = StyleSheet.create({
+const s = {
   page: { gap: 16 },
   pageHeading: { gap: 4 },
-  scrollChoices: { gap: 8, paddingVertical: 3, paddingRight: 12 },
+  scrollChoices: { gap: 8, paddingTop: 3, paddingBottom: 3, paddingRight: 12 },
   scrollChoice: {
     width: 156,
     minHeight: 58,
@@ -404,10 +424,10 @@ const s = StyleSheet.create({
   },
   activeChoice: { backgroundColor: colors.teal, borderColor: colors.edge },
   choiceText: {
-    flex: 1,
+    flex: "1 1 0%",
     fontFamily: fonts.heading,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: "17px",
     color: colors.ink,
   },
   expeditionHeading: {
@@ -419,7 +439,7 @@ const s = StyleSheet.create({
   expeditionTitle: {
     fontFamily: fonts.heading,
     fontSize: 19,
-    lineHeight: 26,
+    lineHeight: "26px",
     color: colors.ink,
     marginBottom: 4,
   },
@@ -463,17 +483,17 @@ const s = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: colors.inset,
   },
-  materialCopy: { flex: 1, minWidth: 0, gap: 5 },
+  materialCopy: { flex: "1 1 0%", minWidth: 0, gap: 5 },
   materialTitle: {
     fontFamily: fonts.heading,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: "20px",
     color: colors.ink,
   },
   fileName: {
     fontFamily: fonts.body,
     fontSize: 11,
-    lineHeight: 16,
+    lineHeight: "16px",
     color: colors.muted,
   },
   materialProgress: {
@@ -493,7 +513,7 @@ const s = StyleSheet.create({
     borderLeftWidth: 1,
     borderColor: "#b7a27b",
   },
-  pressed: { transform: [{ translateY: 2 }] },
+  pressed: { transform: "translateY(" + 2 + "px)" },
   regionPage: { padding: 16, paddingTop: 24, paddingBottom: 32, gap: 22 },
   backHeading: { flexDirection: "row", alignItems: "center", gap: 12 },
   back: {
@@ -501,7 +521,7 @@ const s = StyleSheet.create({
     height: 48,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.parchment,
+    backgroundColor: "#d6ae7c",
     borderWidth: 2,
     borderBottomWidth: 4,
     borderColor: colors.edge,
@@ -510,7 +530,7 @@ const s = StyleSheet.create({
   regionTitle: {
     fontFamily: fonts.heading,
     fontSize: 22,
-    lineHeight: 28,
+    lineHeight: "28px",
     color: colors.ink,
   },
   mapLegend: {
@@ -519,25 +539,27 @@ const s = StyleSheet.create({
     flexWrap: "wrap",
     gap: 14,
   },
-  mapHint: { ...ui.body, textAlign: "center", paddingHorizontal: 18 },
+  mapHint: {
+    ...ui.body,
+    textAlign: "center",
+    paddingLeft: 18,
+    paddingRight: 18,
+  },
   detailPage: { padding: 16, paddingTop: 24, paddingBottom: 32, gap: 20 },
   detailTitle: {
     fontFamily: fonts.heading,
     fontSize: 22,
-    lineHeight: 29,
+    lineHeight: "29px",
     color: colors.ink,
     marginTop: 4,
   },
   regionShowcase: { alignItems: "center" },
-  regionGround: {
-    position: "absolute",
-    bottom: 21,
-    width: "80%",
-    height: 90,
-    borderRadius: 100,
-    backgroundColor: colors.sage,
+  regionImage: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 330,
+    height: 190,
   },
-  regionImage: { width: "100%", maxWidth: 330, height: 190 },
   topics: { gap: 12, marginTop: 4 },
   topic: { flexDirection: "row", alignItems: "center", gap: 10 },
   topicNumber: {
@@ -556,10 +578,10 @@ const s = StyleSheet.create({
     color: colors.teal,
   },
   topicText: {
-    flex: 1,
+    flex: "1 1 0%",
     fontFamily: fonts.body,
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: "20px",
     color: colors.ink,
   },
   encounterMeta: {
@@ -569,11 +591,4 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   readyBlock: { gap: 10, alignItems: "center" },
-  readyTitle: {
-    fontFamily: fonts.heading,
-    fontSize: 21,
-    lineHeight: 28,
-    color: colors.ink,
-    textAlign: "center",
-  },
-});
+} satisfies Record<string, CSSProperties>;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { demoAllowed, readGame, writeGame } from "@/lib/game";
 import { randomInt } from "node:crypto";
+import { summonPool } from "@/lib/summon";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
@@ -10,7 +11,7 @@ export function OPTIONS() { return new Response(null, { status: 204, headers });
 
 export async function GET() {
   if (!demoAllowed()) return fail("Demo game API disabled", 503);
-  return NextResponse.json(await readGame(), { headers });
+  return NextResponse.json({ ...await readGame(), summonPool }, { headers });
 }
 
 export async function POST(request: NextRequest) {
@@ -41,10 +42,9 @@ export async function POST(request: NextRequest) {
     if (game.gems < cost) return fail("Not enough gems");
     game.gems -= cost;
     game.favor = (game.favor + Number(count)) % 10;
-    const pool = ["Blue Mage Robe", "Quill Staff", "Spectacles", "HP Elixir"];
-    rewards = Array.from({ length: Number(count) }, () => pool[randomInt(pool.length)]);
+    rewards = Array.from({ length: Number(count) }, () => summonPool[randomInt(summonPool.length)].name);
     game.inventory.push(...rewards);
   } else return fail("Unknown action");
   await writeGame(game);
-  return NextResponse.json({ ...game, rewards }, { headers });
+  return NextResponse.json({ ...game, rewards, summonPool }, { headers });
 }
