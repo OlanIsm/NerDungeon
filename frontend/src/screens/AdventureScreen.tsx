@@ -39,32 +39,11 @@ const regions = (topics: string[]): Region[] =>
   }));
 export const expeditions: Expedition[] = [
   {
-    title: "Biologi — Fotosintesis",
-    file: "Fotosintesis_Lengkap_Revisi.pdf",
-    progress: 33,
+    id: "tutorial",
+    title: "Tutorial — Fotosintesis",
+    file: "Tutorial",
+    progress: 0,
     regions: regions(["Reaksi Terang", "Siklus Calvin", "Metabolisme"]),
-  },
-  {
-    title: "Fisika Dasar — Gravitasi",
-    file: "Fisika_Dasar.pdf",
-    progress: 0,
-    regions: regions(["Gaya Gravitasi", "Medan Gravitasi", "Orbit"]),
-  },
-  {
-    title: "SOLID Principles",
-    file: "SOLID.pdf",
-    progress: 66,
-    regions: regions([
-      "Single Responsibility",
-      "Open–Closed Principle",
-      "Dependency Inversion",
-    ]),
-  },
-  {
-    title: "Object-Oriented Programming",
-    file: "OOP_Fundamentals.pdf",
-    progress: 0,
-    regions: regions(["Encapsulation", "Inheritance", "Polymorphism"]),
   },
 ];
 export function AdventureScreen({

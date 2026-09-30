@@ -48,7 +48,7 @@ export default function App() {
   );
   const [lastAdventure, setLastAdventure] = useState({
     expedition: expeditions[0],
-    region: expeditions[0].regions[1],
+    region: expeditions[0].regions[0],
   });
   const [visited, setVisited] = useState(() => new Set<Screen>(["Hub"]));
   const pages = useRef<Partial<Record<Screen, HTMLDivElement | null>>>({});
@@ -60,9 +60,9 @@ export default function App() {
     });
     gameRequest()
       .then(setGameData)
-      .catch(() =>
+      .catch((error) =>
         setMessage(
-          "Backend unavailable. Start the backend and check VITE_API_URL.",
+          error instanceof Error ? error.message : "Backend unavailable",
         ),
       );
   }, []);
@@ -134,7 +134,7 @@ export default function App() {
             xp={gameData?.xp}
             onPressProfile={() =>
               setMessage(
-                "Nerd Mage · Level 5 Scholar. Shared development profile.",
+                "Nerd Mage · Your progress is saved to this account.",
               )
             }
           />
