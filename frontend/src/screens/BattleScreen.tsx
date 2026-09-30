@@ -1,219 +1,260 @@
-import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { art } from "../assets";
-import { Badge, Button, Icon, Meter, Panel } from "../components/GameUI";
-import { colors, fonts, ui } from "../theme";
+import { Button, Icon, useReducedMotion } from "../components/GameUI";
+import { DebugControls } from "../game/DebugControls";
+import type { WorldControls } from "../game/PhaserWorld";
+import { GameState, type GamePhase } from "../game/types";
 import type { ScreenProps } from "../types";
 
-const answers = [
-  "Menyerap foton cahaya merah & biru untuk eksitasi elektron.",
-  "Menguraikan glukosa menjadi molekul ATP secara anaerob.",
-  "Menyimpan cadangan air & ion mineral pada organel vakuola sel.",
-];
-export function BattleScreen({ navigate, notify }: ScreenProps) {
-  const [answer, setAnswer] = useState<number>();
-  const correct = answer === 0;
+const status: Record<GamePhase, string> = {
+  walking: "Walking east",
+  encounterStarting: "Something stirs ahead…",
+  encounter: "Forest encounter",
+  encounterComplete: "Path cleared!",
+  bossEncounter: "The grove guardian",
+  result: "Trail complete!",
+};
+export function BattleScreen({
+  navigate,
+  onComplete,
+}: ScreenProps & { onComplete: () => void }) {
+  const reducedMotion = useReducedMotion();
+  const [phase, setPhase] = useState<
+    "closing" | "loading" | "opening" | "ready"
+  >("closing");
+  const [closed, setClosed] = useState(false);
+  const [doorsLoaded, setDoorsLoaded] = useState(() => new Set<number>());
+  const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const [world, setWorld] = useState<WorldControls>();
+  const [WorldRenderer, setWorldRenderer] =
+    useState<typeof import("../game/PhaserWorld").PhaserWorld>();
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [, render] = useState(0);
+  const [debug, setDebug] = useState(false);
+  const [bounds, setBounds] = useState(false);
+  const [triggers, setTriggers] = useState(false);
+  const recorded = useRef(false);
+  const loadingStarted = useRef(0);
+  const reportReady = useCallback(
+    (controls: WorldControls) => setWorld(controls),
+    [],
+  );
+  const reportChange = useCallback(() => render((value) => value + 1), []);
+  const reportError = useCallback(() => setLoadError(true), []);
+  useEffect(() => {
+    if (phase !== "loading" || WorldRenderer) return;
+    let active = true;
+    import("../game/PhaserWorld").then(
+      (module) => {
+        if (active) setWorldRenderer(() => module.PhaserWorld);
+      },
+      () => {
+        if (active) reportError();
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [phase, WorldRenderer, reportError, attempt]);
+  useEffect(() => {
+    if (phase !== "closing" || doorsLoaded.size !== 2 || loadError) return;
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setClosed(true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [phase, doorsLoaded.size, loadError]);
+  useEffect(() => {
+    if (phase !== "closing" || !closed) return;
+    const timer = setTimeout(
+      () => {
+        loadingStarted.current = performance.now();
+        setPhase("loading");
+      },
+      reducedMotion ? 0 : 650,
+    );
+    return () => clearTimeout(timer);
+  }, [phase, closed, reducedMotion]);
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const timer = setTimeout(() => setMinimumElapsed(true), 1500);
+    return () => clearTimeout(timer);
+  }, [phase, attempt]);
+  useEffect(() => {
+    if (phase === "ready" || phase === "opening" || loadError) return;
+    const timer = setTimeout(reportError, 20000);
+    return () => clearTimeout(timer);
+  }, [phase, attempt, loadError, reportError]);
+  useEffect(() => {
+    if (phase !== "loading" || !world || !minimumElapsed || loadError) return;
+    const timer = setTimeout(() => setPhase("opening"), 0);
+    return () => clearTimeout(timer);
+  }, [phase, world, minimumElapsed, loadError]);
+  useEffect(() => {
+    if (phase !== "opening") return;
+    const timer = setTimeout(() => setPhase("ready"), reducedMotion ? 0 : 750);
+    return () => clearTimeout(timer);
+  }, [phase, reducedMotion]);
+  useEffect(() => {
+    world?.setActive(phase === "ready" && !loadError);
+  }, [phase, world, loadError]);
+  useEffect(() => {
+    world?.setDebug(bounds, triggers);
+  }, [world, bounds, triggers]);
+  const game = world?.model;
+  const gameState = game?.state;
+  useEffect(() => {
+    if (gameState === GameState.result && !recorded.current) {
+      recorded.current = true;
+      onComplete();
+    }
+  }, [gameState, onComplete]);
+  const inEncounter =
+    gameState === GameState.encounter || gameState === GameState.bossEncounter;
+  function retry() {
+    setWorld(undefined);
+    setLoadError(false);
+    setMinimumElapsed(false);
+    setClosed(false);
+    setDoorsLoaded(new Set());
+    setPhase("closing");
+    setAttempt((value) => value + 1);
+    recorded.current = false;
+  }
   return (
-    <View style={{ gap: 16 }}>
-      <View style={ui.between}>
-        <Button
-          label="Exit"
-          icon="logout"
-          onPress={() => navigate("Map")}
-          style={{ minWidth: 104 }}
+    <div
+      className="battle-screen"
+      data-phase={phase}
+      data-testid="fight-page"
+      data-loading-started={loadingStarted.current}
+    >
+      {phase !== "closing" && WorldRenderer && (
+        <WorldRenderer
+          key={attempt}
+          onReady={reportReady}
+          onChange={reportChange}
+          onError={reportError}
+          reducedMotion={reducedMotion}
         />
-        <Badge text="STAGE 1/3" icon="flag-outline" />
-      </View>
-      <View
-        style={{ backgroundColor: "#efe4c7", paddingVertical: 12, gap: 14 }}
-      >
-        <View style={ui.row}>
-          {[
-            {
-              name: "Nerd Mage Lv.3",
-              hp: answer !== undefined && !correct ? "400/580" : "580/580",
-              value: answer !== undefined && !correct ? 69 : 100,
-              color: "#65c932",
-            },
-            {
-              name: "Goblin Imp Lv.1",
-              hp: correct ? "70/600" : "420/600",
-              value: correct ? 12 : 70,
-              color: "#f05238",
-            },
-          ].map((actor) => (
-            <View
-              key={actor.name}
-              style={{
-                flex: 1,
-                backgroundColor: "#562b0d",
-                borderWidth: 2,
-                borderColor: "#271103",
-                borderBottomWidth: 4,
-                borderRadius: 10,
-                padding: 8,
-                gap: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.heading,
-                  fontSize: 10,
-                  color: "#ffeec7",
-                }}
-              >
-                {actor.name} {actor.hp}
-              </Text>
-              <Meter value={actor.value} color={actor.color} />
-            </View>
-          ))}
-        </View>
-        <View style={{ height: 160, justifyContent: "flex-end" }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              paddingHorizontal: 30,
-              paddingBottom: 8,
-            }}
-          >
-            <Image
-              source={art.mage}
-              style={{ width: 96, height: 96 }}
-              resizeMode="contain"
-            />
-            <Image
-              source={art.goblin}
-              style={{ width: 96, height: 96 }}
-              resizeMode="contain"
-            />
-          </View>
-          <View
-            style={{
-              height: 40,
-              backgroundColor: "#623610",
-              borderTopWidth: 11,
-              borderTopColor: "#5f9e24",
-              borderWidth: 2,
-              borderColor: "#391c07",
-              borderRadius: 5,
-            }}
-          />
-        </View>
-      </View>
-      <Panel
-        style={{
-          backgroundColor: "#783f16",
-          borderWidth: 3,
-          borderColor: "#381b06",
-          borderBottomWidth: 6,
-          gap: 12,
-          padding: 10,
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: "#fff4dc",
-            borderRadius: 10,
-            padding: 12,
-            gap: 12,
-            borderWidth: 2,
-            borderColor: "#cbb38e",
-          }}
-        >
-          <View style={ui.between}>
-            <Badge text="BAB 4: FOTOSINTESIS" icon="book-open-variant" />
-            <Text style={ui.label}>00:24s</Text>
-          </View>
-          <Text style={[ui.title, { fontSize: 14 }]}>
-            Apa fungsi utama dari klorofil a dalam proses reaksi terang
-            fotosintesis?
-          </Text>
-        </View>
-        {answers.map((text, index) => (
-          <Pressable
-            key={text}
-            accessibilityRole="button"
-            accessibilityLabel={`${"ABC"[index]}. ${text}`}
-            accessibilityState={{
-              disabled: answer !== undefined,
-              selected: answer === index,
-            }}
-            disabled={answer !== undefined}
-            onPress={() => setAnswer(index)}
-            style={({ pressed }) => ({
-              backgroundColor:
-                answer === index
-                  ? correct
-                    ? "#d6edbd"
-                    : "#f8d2bc"
-                  : "#f8ebd1",
-              borderWidth: 2,
-              borderBottomWidth: 4,
-              borderColor: "#5e300e",
-              borderRadius: 12,
-              minHeight: 74,
-              padding: 8,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-              transform: [{ translateY: pressed ? 2 : 0 }],
-            })}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: ["#ec9200", "#149bc5", "#20ac45"][index],
-                borderWidth: 2,
-                borderColor: "#52300d",
-                borderRadius: 8,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={[ui.title, { color: colors.white }]}>
-                {"ABC"[index]}
-              </Text>
-            </View>
-            <Text style={[ui.title, { flex: 1, fontSize: 12, lineHeight: 17 }]}>
-              {text}
-            </Text>
-            {answer === index && (
-              <Icon name={correct ? "check" : "close"} size={18} />
-            )}
-          </Pressable>
-        ))}
-        {answer !== undefined && (
-          <View accessibilityLiveRegion="polite" style={ui.inset}>
-            <Text style={ui.title}>
-              {correct ? "KRITIKAL! +350 DMG" : "SALAH! −180 HP"}
-            </Text>
-            <Text style={ui.body}>
-              {correct
-                ? "Klorofil a menyerap energi cahaya untuk mengeksitasi elektron dalam reaksi terang."
-                : answer === 1
-                  ? "Penguraian glukosa anaerob adalah proses glikolisis. Klorofil a menangkap energi cahaya."
-                  : "Vakuola menyimpan air dan ion mineral. Klorofil a menangkap energi cahaya."}
-            </Text>
+      )}
+      {world && game && (
+        <div aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
+          <header className="battle-header">
             <Button
-              label="Try Again"
-              tone="quiet"
-              onPress={() => setAnswer(undefined)}
+              label="Exit"
+              onPress={() => navigate("RegionDetail")}
+              style={{ minWidth: 62, paddingInline: 8 }}
             />
-          </View>
-        )}
-        <Button
-          label="Petunjuk"
-          icon="help-circle-outline"
-          style={{ alignSelf: "flex-start", minWidth: 135 }}
-          onPress={() =>
-            notify(
-              "Petunjuk: klorofil adalah pigmen penangkap energi cahaya. Ini adalah contoh soal dari desain Stitch.",
-            )
-          }
-        />
-      </Panel>
-    </View>
+            <div className="battle-heading">
+              <h1>Sunlit Forest</h1>
+              <p>The scholar’s trail</p>
+            </div>
+            <button
+              type="button"
+              aria-label="Debug controls"
+              aria-expanded={debug}
+              onClick={() => setDebug(!debug)}
+              className="debug-toggle"
+            >
+              <Icon name="tune-variant" color="#48643c" />
+              <span>Debug</span>
+            </button>
+          </header>
+          {!debug && (
+            <div className="east">
+              <Icon name="arrow-right" size={18} color="#fff4c8" />
+              EAST
+            </div>
+          )}
+          {debug && (
+            <DebugControls
+              game={game}
+              act={world.act}
+              bounds={bounds}
+              triggers={triggers}
+              setBounds={setBounds}
+              setTriggers={setTriggers}
+            />
+          )}
+          <footer className="battle-footer">
+            <div className="battle-status">
+              <div className="battle-status-copy">
+                <h2 data-testid="fight-status" aria-live="polite">
+                  {game.paused ? "Journey paused" : status[game.state]}
+                </h2>
+                <p>
+                  {inEncounter
+                    ? `${game.encounter?.name} · ${game.encounter?.count} ${game.encounter?.count === 1 ? "enemy" : "enemies"}`
+                    : game.state === GameState.result
+                      ? "The forest is safe. A new trail awaits."
+                      : game.state === GameState.encounterComplete
+                        ? "The trail opens up again."
+                        : "Follow the path toward the next clearing."}
+                </p>
+              </div>
+              <div className="battle-cleared">
+                <Icon name="flag-checkered" size={19} color="#506837" />
+                <span>{game.cleared} cleared</span>
+              </div>
+            </div>
+            {inEncounter && (
+              <Button
+                label="Complete Encounter"
+                tone="gold"
+                onPress={() => world.act(() => game.completeEncounter())}
+              />
+            )}
+            {game.state === GameState.result && (
+              <div className="result-actions">
+                <Button
+                  label="Continue trail"
+                  tone="gold"
+                  onPress={() => world.act(() => game.continueTrail())}
+                  style={{ flex: 1 }}
+                />
+                <Button label="Replay" tone="quiet" onPress={retry} />
+              </div>
+            )}
+          </footer>
+        </div>
+      )}
+      {(phase !== "ready" || loadError) && (
+        <div
+          className={`gate ${loadError ? "loading" : phase} ${closed ? "closed" : ""}`}
+          data-testid={`gate-${phase}`}
+          aria-label="Loading adventure"
+          aria-live="polite"
+        >
+          {[art.doorLeft, art.doorRight].map((source, index) => (
+            <div
+              key={`${attempt}-${index}`}
+              className={`gate-door ${index === 0 ? "left" : "right"}`}
+            >
+              <img
+                src={source}
+                alt=""
+                onLoad={() =>
+                  setDoorsLoaded((current) =>
+                    current.has(index) ? current : new Set(current).add(index),
+                  )
+                }
+                onError={reportError}
+              />
+            </div>
+          ))}
+          {loadError && (
+            <div className="loading-actions" role="alert">
+              <p>Some assets failed to load.</p>
+              <Button
+                label="Exit"
+                tone="quiet"
+                onPress={() => navigate("RegionDetail")}
+              />
+              <Button label="Retry" tone="gold" onPress={retry} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

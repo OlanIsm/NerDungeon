@@ -1,211 +1,296 @@
-import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
-import { art } from "../assets";
-import { Badge, Button, Icon, Meter, Panel, Tabs } from "../components/GameUI";
-import { inventory } from "../data/inventory";
-import { colors, ui } from "../theme";
+import type { CSSProperties } from "react";
+import { useRef, useState } from "react";
+import { Icon } from "../components/GameUI";
+import { art, icons } from "../assets";
+import { inventory, type Item } from "../data/inventory";
+import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
-
-export function InventoryScreen({ notify }: ScreenProps) {
-  const [category, setCategory] = useState("Equipment");
-  const [selected, setSelected] = useState(inventory[4]);
-  const [equipped, setEquipped] = useState<string>();
+type Category = "Equipment" | "Potions";
+const loadout = [
+  { item: inventory[2], label: "Accessory" },
+  { item: inventory[1], label: "Weapon" },
+  { item: inventory[0], label: "Armor" },
+  { item: inventory[3], label: "Potion" },
+];
+export function InventoryScreen({
+  owned = inventory.map((item) => item.name),
+}: ScreenProps & { owned?: string[] }) {
+  const scroll = useRef<HTMLDivElement>(null);
+  const [category, setCategory] = useState<Category>("Equipment");
+  const [selected, setSelected] = useState<string>();
+  const [sort, setSort] = useState("recent");
+  const items = inventory
+    .filter((item) => item.category === category && owned.includes(item.name))
+    .sort((left, right) =>
+      sort === "recent"
+        ? owned.lastIndexOf(right.name) - owned.lastIndexOf(left.name)
+        : left.name.localeCompare(right.name),
+    );
+  const selectedItem = items.find((item) => item.name === selected);
+  function inspectItem(item: Item) {
+    setCategory(item.category);
+    setSelected(item.name);
+    scroll.current?.scrollTo({ top: 0 });
+  }
   return (
-    <View style={{ gap: 16 }}>
-      <Panel>
-        <View style={ui.row}>
-          <Image
-            source={art.avatar}
-            style={{ width: 48, height: 48, borderRadius: 8 }}
-          />
-          <View style={ui.flex}>
-            <Text style={ui.heading}>Nerd Mage</Text>
-            <Text style={ui.label}>Scholar Class • Arcane Library</Text>
-          </View>
-          <View>
-            <Text style={ui.label}>RATING</Text>
-            <Badge text="1,420" icon="lightning-bolt" />
-          </View>
-        </View>
-        <View style={ui.between}>
-          <Text style={ui.label}>Vigor HP</Text>
-          <Text style={ui.label}>850 / 850</Text>
-        </View>
-        <Meter value={100} color="#29802a" />
-        <View style={ui.between}>
-          <Text style={ui.label}>Trivia MP</Text>
-          <Text style={ui.label}>320 / 320</Text>
-        </View>
-        <Meter value={100} />
-        <View style={ui.row}>
-          {[
-            { image: art.cap, name: "Scholar Cap" },
-            { image: art.staff, name: "Quill Staff" },
-            { image: art.noviceRobe, name: "Novice Robe" },
-            { image: art.amulet, name: "Mem. Amulet" },
-          ].map((item, index) => (
-            <View
-              key={item.name}
-              style={[
-                ui.flex,
-                ui.center,
-                {
-                  backgroundColor: index === 3 ? colors.mint : "#fff2d9",
-                  padding: 5,
-                  borderRadius: 6,
-                  gap: 5,
-                },
-              ]}
-            >
-              <Text style={ui.label}>{["I", "II", "III", "IV"][index]}</Text>
-              <Image source={item.image} style={{ width: 38, height: 38 }} />
-              <Text style={[ui.label, { fontSize: 9, textAlign: "center" }]}>
-                {item.name}
-              </Text>
-            </View>
+    <div className="inventory-screen">
+      <div aria-label="Bag profile panel" className="equipment-stage">
+        <div className="equipment-column">
+          {loadout.slice(0, 2).map(({ item, label }) => (
+            <div key={label} className="stack equipment-entry">
+              <InventorySlot
+                item={item}
+                label={label + ": " + item.name}
+                equipped={owned.includes(item.name)}
+                selected={selected === item.name}
+                onPress={() => inspectItem(item)}
+              />
+              <span style={styles.slotCaption} className="text">
+                {label}
+              </span>
+            </div>
           ))}
-        </View>
-        <View style={ui.row}>
-          {[
-            ["Quiz ATK", "185 +28"],
-            ["Ward DEF", "42 +6"],
-            ["Free Clues", "2 /run"],
-          ].map(([label, value]) => (
-            <View key={label} style={[ui.inset, ui.flex, { padding: 9 }]}>
-              <Text style={ui.label}>{label}</Text>
-              <Text style={ui.title}>{value}</Text>
-            </View>
-          ))}
-        </View>
-      </Panel>
-      <Panel>
-        <Tabs
-          values={["Equipment", "Spells", "Potions"]}
-          selected={category}
-          onChange={setCategory}
+        </div>
+        <img
+          src={art.character}
+          alt="Nerd Mage character"
+          className="inventory-character"
+          draggable={false}
         />
-        <View style={ui.between}>
-          <Text style={ui.label}>24/40</Text>
-          <Button
-            label="Expand"
-            icon="plus"
-            tone="quiet"
-            onPress={() =>
-              notify("Haversack expansion preview. Kapasitas belum berubah.")
-            }
-          />
-        </View>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {inventory
-            .filter(
-              (item) => category === "Equipment" || item.category === category,
-            )
-            .map((item) => (
-              <Pressable
-                key={item.name}
-                accessibilityRole="button"
-                accessibilityLabel={item.name}
-                accessibilityState={{ selected: selected.name === item.name }}
-                onPress={() => setSelected(item)}
-                style={{
-                  width: "23%",
-                  minHeight: 76,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 3,
-                  backgroundColor:
-                    selected.name === item.name ? colors.mint : colors.inset,
-                  borderWidth: selected.name === item.name ? 2 : 0,
-                  borderColor: colors.teal,
-                  borderBottomWidth: 3,
-                  borderBottomColor: colors.edge,
-                  borderRadius: 10,
-                }}
-              >
-                <Icon
-                  name={item.icon}
-                  size={25}
-                  color={
-                    selected.name === item.name ? colors.teal : colors.wood
-                  }
-                />
-                <Text style={[ui.label, { fontSize: 10 }]}>{item.short}</Text>
-                <Text style={[ui.label, { fontSize: 9 }]}>{item.level}</Text>
-              </Pressable>
-            ))}
-        </View>
-      </Panel>
-      <Panel>
-        <View style={ui.row}>
-          <View
-            style={{
-              backgroundColor: colors.mint,
-              borderRadius: 10,
-              padding: 10,
-            }}
-          >
-            <Icon name={selected.icon} color={colors.teal} size={28} />
-          </View>
-          <View style={ui.flex}>
-            <Text style={ui.title}>{selected.name}</Text>
-            <Text style={ui.label}>
-              {selected.category === "Equipment"
-                ? "EPIC RELIC HEAD · 500 Gold"
-                : selected.category}
-            </Text>
-          </View>
-          <Badge text="RANK S" />
-        </View>
-        <View style={ui.inset}>
-          <Text style={ui.label}>Passive Effect: Deductive Focus</Text>
-          <Text style={ui.body}>{selected.description}</Text>
-        </View>
-        <View style={ui.row}>
-          {[
-            ["Mana Max", "+35 MP"],
-            ["Think Time", "+3.5s"],
-            ["Crit Clue", "+12%"],
-          ].map(([label, value]) => (
-            <View
-              key={label}
-              style={[ui.inset, ui.flex, ui.center, { padding: 8 }]}
-            >
-              <Text style={ui.label}>{label}</Text>
-              <Text style={ui.title}>{value}</Text>
-            </View>
+        <div className="equipment-column">
+          {loadout.slice(2).map(({ item, label }) => (
+            <div key={label} className="stack equipment-entry">
+              <InventorySlot
+                item={item}
+                label={label + ": " + item.name}
+                equipped={owned.includes(item.name)}
+                selected={selected === item.name}
+                onPress={() => inspectItem(item)}
+              />
+              <span style={styles.slotCaption} className="text">
+                {label}
+              </span>
+            </div>
           ))}
-        </View>
-        <Button
-          label={
-            equipped === selected.name
-              ? "Equipped"
-              : selected.category === "Equipment"
-                ? "Equip Item"
-                : "Use Item"
-          }
-          icon="check-circle-outline"
-          tone="gold"
-          onPress={() => {
-            setEquipped(selected.name);
-            notify(`${selected.name} dipilih untuk preview loadout.`);
+        </div>
+      </div>
+      <section aria-label="Bag inventory panel" className="inventory-bag">
+        <select
+          className="backpack-handle"
+          aria-label="Sort items"
+          value={sort}
+          onChange={(event) => {
+            setSort(event.target.value);
+            scroll.current?.scrollTo({ top: 0 });
           }}
-        />
-        <View style={ui.row}>
-          <Button
-            label="Upgrade (250g)"
-            icon="upload"
-            style={ui.flex}
-            onPress={() => notify("Upgrade preview. Gold tidak dipotong.")}
-          />
-          <Button
-            label="Sell · 50g"
-            tone="quiet"
-            onPress={() =>
-              notify("Selling preview. Item tetap ada di inventory.")
-            }
-          />
-        </View>
-      </Panel>
-    </View>
+        >
+          <option value="recent">Last obtained</option>
+          <option value="name">Name A–Z</option>
+        </select>
+        <div
+          className="inventory-tabs"
+          role="tablist"
+          aria-label="Backpack categories"
+          aria-orientation="vertical"
+        >
+          {(["Equipment", "Potions"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              id={`bag-tab-${value}`}
+              aria-controls="bag-items-panel"
+              aria-selected={category === value}
+              onClick={() => {
+                setCategory(value);
+                setSelected(undefined);
+                scroll.current?.scrollTo({ top: 0 });
+              }}
+            >
+              <img
+                src={value === "Equipment" ? icons.equipment : icons.potion}
+                alt=""
+              />
+              <span>{value}</span>
+            </button>
+          ))}
+        </div>
+        <div
+          ref={scroll}
+          id="bag-items-panel"
+          role="tabpanel"
+          aria-labelledby={`bag-tab-${category}`}
+          className="inventory-items-scroll"
+          tabIndex={0}
+          aria-label="Backpack contents"
+        >
+          {selectedItem && (
+            <div
+              aria-label="Selected item details"
+              aria-live="polite"
+              style={styles.inspector}
+              className="stack"
+            >
+              <img
+                src={selectedItem.image}
+                style={{ width: 46, height: 60, objectFit: "contain" }}
+                alt=""
+              />
+              <div style={{ flex: 1, gap: 3 }} className="stack">
+                <span
+                  style={{ ...ui.title, color: "#fff0d3" }}
+                  className="text"
+                >
+                  {selectedItem.name}
+                </span>
+                <span style={styles.meta} className="text">
+                  {selectedItem.category}
+                </span>
+                <span style={{ ...ui.body, color: "#e6c7a0" }} className="text">
+                  Item preview
+                </span>
+              </div>
+            </div>
+          )}
+          <div aria-label="Bag items" className="backpack-grid">
+            {items.map((item) => (
+              <div key={item.name} className="stack">
+                <InventorySlot
+                  item={item}
+                  equipped={loadout.some((slot) => slot.item === item)}
+                  selected={selected === item.name}
+                  onPress={() => inspectItem(item)}
+                />
+              </div>
+            ))}
+            {Array.from(
+              { length: Math.max(0, 12 - items.length) },
+              (_, index) => (
+                <div
+                  key={`empty-${index}`}
+                  className="empty-backpack-slot"
+                  aria-hidden="true"
+                />
+              ),
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
+function InventorySlot({
+  item,
+  label = item.name,
+  selected,
+  equipped,
+  onPress,
+}: {
+  item: Item;
+  label?: string;
+  selected: boolean;
+  equipped?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <button
+      role="button"
+      aria-label={label}
+      aria-pressed={selected}
+      title={
+        equipped
+          ? "In current loadout. View item details."
+          : "View item details."
+      }
+      onClick={onPress}
+      style={{
+        ...styles.itemSlot,
+        ...((selected && styles.selectedSlot) || {}),
+      }}
+      className="stack pressable"
+      type="button"
+    >
+      <div aria-hidden={true} style={styles.slotStitch} className="stack" />
+      <img
+        src={item.image}
+        style={{ ...styles.itemImage, objectFit: "contain" }}
+        className="art-image"
+        alt=""
+        draggable={false}
+      />
+      {equipped && (
+        <div aria-hidden={true} style={styles.equippedMark} className="stack">
+          <Icon name="check" size={12} color={colors.white} />
+        </div>
+      )}
+    </button>
+  );
+}
+const styles = {
+  slotCaption: {
+    fontFamily: fonts.heading,
+    fontSize: 10,
+    color: colors.wood,
+    textAlign: "center",
+    backgroundColor: "#fff7e6e6",
+    borderRadius: 6,
+    padding: "2px",
+    whiteSpace: "nowrap",
+    overflowWrap: "normal",
+  },
+  meta: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: "16px",
+    color: "#e6c7a0",
+  },
+  inspector: {
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#69462d",
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  itemSlot: {
+    width: "100%",
+    aspectRatio: 1,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    borderColor: "var(--slot-edge, #9c835e)",
+    borderRadius: 13,
+    backgroundColor: "var(--slot-fill, #f3e5c6)",
+  },
+  slotStitch: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    bottom: 4,
+    left: 4,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "var(--slot-stitch, #c3aa7b)",
+    borderRadius: 7,
+  },
+  itemImage: { width: "80%", height: "80%" },
+  selectedSlot: {
+    borderColor: "var(--slot-selected-edge, #3c705f)",
+    backgroundColor: "var(--slot-selected-fill, #d6e6d1)",
+  },
+  pressedSlot: { transform: "translateY(" + 2 + "px)" },
+  equippedMark: {
+    position: "absolute",
+    right: 3,
+    bottom: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.teal,
+  },
+} satisfies Record<string, CSSProperties>;

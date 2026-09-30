@@ -1,56 +1,47 @@
 export const art = {
-  logo: require("../assets/stitch/art-00.png"),
-  landscape: require("../assets/stitch/art-01.png"),
-  forest: require("../assets/stitch/art-02.png"),
-  chest: require("../assets/stitch/art-03.png"),
-  robe: require("../assets/stitch/art-04.png"),
-  quill: require("../assets/stitch/art-05.png"),
-  shield: require("../assets/stitch/art-06.png"),
-  avatar: require("../assets/stitch/art-07.png"),
-  cap: require("../assets/stitch/art-08.png"),
-  staff: require("../assets/stitch/art-09.png"),
-  noviceRobe: require("../assets/stitch/art-10.png"),
-  amulet: require("../assets/stitch/art-11.png"),
-  mage: require("../assets/stitch/art-12.png"),
-  goblin: require("../assets/stitch/art-13.png"),
+  summon10x: new URL("../assets/GUI/summon-10x.png", import.meta.url).href,
+  merlinsRoom: new URL(
+    "../assets/background/merlins_room.webp",
+    import.meta.url,
+  ).href,
+  floatingIsland: new URL(
+    "../assets/background/floating_Island.webp",
+    import.meta.url,
+  ).href,
+  navPlank: new URL("../assets/icon/Plank bar.webp", import.meta.url).href,
+  doorLeft: new URL("../assets/GUI/door/Door left.webp", import.meta.url).href,
+  doorRight: new URL("../assets/GUI/door/Door right.webp", import.meta.url)
+    .href,
+  nerdEatPdf: new URL("../assets/character/nerdEatPdf.gif", import.meta.url)
+    .href,
+  nerdLoading: new URL("../assets/icon/nerdLoading.gif", import.meta.url).href,
+  nerdiusTitle: new URL(
+    "../assets/optimized/nerdius-title.webp",
+    import.meta.url,
+  ).href,
+  character: new URL("../assets/optimized/scholar.webp", import.meta.url).href,
 };
 
 export const icons = {
-  hub: require("../assets/icon/home.png"),
-  map: require("../assets/icon/map.png"),
-  bazaar: require("../assets/icon/chest.png"),
-  armory: require("../assets/icon/backpack.png"),
-  coins: require("../assets/icon/coins.png"),
-  gems: require("../assets/icon/gems.png"),
-  exp: require("../assets/icon/exp.png"),
+  equipment: new URL("../assets/icon/Equipment.webp", import.meta.url).href,
+  potion: new URL("../assets/icon/Potion.webp", import.meta.url).href,
+  hub: new URL("../assets/icon/Hub.webp", import.meta.url).href,
+  map: new URL("../assets/icon/map.webp", import.meta.url).href,
+  bazaar: new URL("../assets/icon/chest.webp", import.meta.url).href,
+  armory: new URL("../assets/icon/bag.webp", import.meta.url).href,
+  coins: new URL("../assets/icon/coins.webp", import.meta.url).href,
+  gems: new URL("../assets/icon/Gem.webp", import.meta.url).href,
 };
 
-export const gui = {
-  background: require("../assets/GUI/background.webp"),
-  header: require("../assets/GUI/header.webp"),
-  navbar: require("../assets/GUI/navbar.webp"),
-  scroll9: {
-    topLeft: require("../assets/GUI/scroll-9/top-left.webp"),
-    top: require("../assets/GUI/scroll-9/top.webp"),
-    topRight: require("../assets/GUI/scroll-9/top-right.webp"),
-    left: require("../assets/GUI/scroll-9/left.webp"),
-    center: require("../assets/GUI/scroll-9/center.webp"),
-    right: require("../assets/GUI/scroll-9/right.webp"),
-    bottomLeft: require("../assets/GUI/scroll-9/bottom-left.webp"),
-    bottom: require("../assets/GUI/scroll-9/bottom.webp"),
-    bottomRight: require("../assets/GUI/scroll-9/bottom-right.webp"),
-  },
-  expeditionCard9: {
-    topLeft: require("../assets/GUI/expedition-card-9/top-left.webp"),
-    top: require("../assets/GUI/expedition-card-9/top.webp"),
-    topRight: require("../assets/GUI/expedition-card-9/top-right.webp"),
-    left: require("../assets/GUI/expedition-card-9/left.webp"),
-    center: require("../assets/GUI/expedition-card-9/center.webp"),
-    right: require("../assets/GUI/expedition-card-9/right.webp"),
-    bottomLeft: require("../assets/GUI/expedition-card-9/bottom-left.webp"),
-    bottom: require("../assets/GUI/expedition-card-9/bottom.webp"),
-    bottomRight: require("../assets/GUI/expedition-card-9/bottom-right.webp"),
-  },
-  claimed: require("../assets/GUI/claimed.webp"),
-  sectionTitle: require("../assets/GUI/text placeholder.png"),
+export const mapArt = {
+  background: new URL("../assets/background/map.webp", import.meta.url).href,
+  desert: new URL("../assets/optimized/desert.webp", import.meta.url).href,
+  volcano: new URL("../assets/optimized/volcano.webp", import.meta.url).href,
+  kingdom: new URL("../assets/optimized/kingdom.webp", import.meta.url).href,
+};
+
+export const miniIcons = {
+  oakTome: new URL("../assets/item/sliced/weapon/oak-tome.png", import.meta.url)
+    .href,
+  chest: icons.bazaar,
 };

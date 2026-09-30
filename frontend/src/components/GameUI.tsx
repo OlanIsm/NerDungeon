@@ -1,25 +1,7 @@
-import {
-  useEffect,
-  useState,
-  type ComponentProps,
-  type PropsWithChildren,
-} from "react";
-import {
-  Animated,
-  Image,
-  Pressable,
-  Text,
-  View,
-  StyleSheet,
-  type ImageSourcePropType,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { LinearGradient } from "expo-linear-gradient";
-import { colors, fonts, ui } from "../theme";
-
-export type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
+import { useEffect, useState, type CSSProperties } from "react";
+import { colors, ui } from "../theme";
+import { iconGlyphs } from "./iconGlyphs";
+export type IconName = keyof typeof iconGlyphs;
 export function Icon({
   name,
   size = 22,
@@ -29,65 +11,24 @@ export function Icon({
   size?: number;
   color?: string;
 }) {
-  return <MaterialCommunityIcons name={name} size={size} color={color} />;
-}
-export function Panel({
-  children,
-  style,
-}: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
-  return <View style={[ui.panel, style]}>{children}</View>;
-}
-
-function GoldButtonSurface() {
-  const [shine] = useState(() => new Animated.Value(0));
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.delay(1200),
-        Animated.timing(shine, {
-          toValue: 1,
-          duration: 850,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1500),
-      ]),
-      { resetBeforeIteration: true },
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [shine]);
-
   return (
-    <View pointerEvents="none" style={s.goldSurface}>
-      <LinearGradient
-        colors={["#e39a0b", "#ffc42c", "#ffd960"]}
-        locations={[0, 0.58, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={s.goldSurfaceImage}
-      />
-      <View style={s.goldTopGlow} />
-      <Animated.View
-        style={[
-          s.shine,
-          {
-            transform: [
-              { rotate: "18deg" },
-              {
-                translateX: shine.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-120, 540],
-                }),
-              },
-            ],
-          },
-        ]}
-      />
-    </View>
+    <span aria-hidden="true" className="icon" style={{ fontSize: size, color }}>
+      {String.fromCodePoint(iconGlyphs[name])}
+    </span>
   );
 }
-
+export function useReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return reduced;
+}
 export function Button({
   label,
   icon,
@@ -101,55 +42,30 @@ export function Button({
   onPress: () => void;
   tone?: "wood" | "gold" | "teal" | "quiet";
   disabled?: boolean;
-  style?: StyleProp<ViewStyle>;
+  style?: CSSProperties;
 }) {
-  const backgroundColor = {
-    wood: colors.wood,
-    gold: colors.gold,
-    teal: colors.teal,
-    quiet: colors.inset,
-  }[tone];
-  const color =
-    tone === "wood" || tone === "teal"
-      ? colors.white
-      : tone === "gold"
-        ? "#6b3509"
-        : colors.ink;
+  const color = tone === "wood" || tone === "teal" ? colors.white : colors.ink;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      accessibilityLabel={label}
+    <button
+      type="button"
+      className={`game-button ${tone}`}
+      aria-label={label}
       disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        s.button,
-        {
-          backgroundColor,
-          opacity: disabled ? 0.5 : 1,
-          transform: [{ translateY: pressed ? 2 : 0 }],
-        },
-        tone === "gold" && s.goldButton,
-        style,
-      ]}
+      onClick={onPress}
+      style={{
+        backgroundColor: {
+          wood: colors.wood,
+          gold: colors.gold,
+          teal: colors.teal,
+          quiet: colors.inset,
+        }[tone],
+        color,
+        ...style,
+      }}
     >
-      {tone === "gold" && <GoldButtonSurface />}
-      {icon && tone !== "gold" && <Icon name={icon} size={20} color={color} />}
-      <Text
-        style={[
-          ui.title,
-          {
-            color,
-            fontFamily: tone === "gold" ? fonts.heavy : ui.title.fontFamily,
-            fontSize: 14,
-            textAlign: "center",
-            flexShrink: 1,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
+      {icon && <Icon name={icon} size={20} color={color} />}
+      <span>{label}</span>
+    </button>
   );
 }
 export function Badge({
@@ -162,32 +78,26 @@ export function Badge({
   icon?: IconName;
 }) {
   return (
-    <View style={s.badge}>
+    <div className="badge" style={{ color }}>
       {icon && <Icon name={icon} color={color} size={14} />}
-      <Text style={[ui.label, { color }]}>{text}</Text>
-    </View>
+      <span style={{ ...ui.label, color }}>{text}</span>
+    </div>
   );
 }
-
 export function ImageBadge({
   text,
   source,
   size = 20,
 }: {
   text: string;
-  source: ImageSourcePropType;
+  source: string;
   size?: number;
 }) {
   return (
-    <View style={s.badge}>
-      <Image
-        accessibilityIgnoresInvertColors
-        source={source}
-        resizeMode="contain"
-        style={{ width: size, height: size }}
-      />
-      <Text style={[ui.label, { color: colors.wood }]}>{text}</Text>
-    </View>
+    <div className="badge">
+      <img src={source} alt="" width={size} height={size} />
+      <span style={ui.label}>{text}</span>
+    </div>
   );
 }
 export function Meter({
@@ -199,52 +109,32 @@ export function Meter({
   color?: string;
   label?: string;
 }) {
+  const amount = Math.min(100, Math.max(0, value));
   return (
-    <View style={{ gap: 4 }}>
-      {label && <Text style={ui.label}>{label}</Text>}
-      <View
-        accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: value }}
-        style={s.track}
+    <div className="stack" style={{ gap: 4 }}>
+      {label && <span style={ui.label}>{label}</span>}
+      <div
+        className="meter"
+        role="progressbar"
+        aria-label={label ?? "Progress"}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={amount}
       >
-        <View
+        <div
           style={{
-            width: `${Math.min(100, Math.max(0, value))}%`,
+            width: `${amount}%`,
             backgroundColor: color,
             height: "100%",
             borderRadius: 6,
           }}
         />
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
-export function SectionTitle({
-  title,
-  aside,
-  icon,
-  color,
-}: {
-  title: string;
-  aside?: string;
-  icon?: IconName;
-  color?: string;
-}) {
-  return (
-    <View style={ui.between}>
-      <View style={[ui.row, ui.flex]}>
-        {icon && <Icon name={icon} color={color ?? colors.teal} size={20} />}
-        <Text
-          style={[ui.heading, { flexShrink: 1 }, color ? { color } : undefined]}
-        >
-          {title}
-        </Text>
-      </View>
-      {aside && (
-        <Text style={[ui.label, color ? { color } : undefined]}>{aside}</Text>
-      )}
-    </View>
-  );
+export function SectionTitle({ title }: { title: string }) {
+  return <span style={ui.heading}>{title}</span>;
 }
 export function Tabs<T extends string>({
   values,
@@ -256,114 +146,23 @@ export function Tabs<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <View style={ui.row}>
+    <div className="tabs" role="tablist">
       {values.map((value) => (
-        <Pressable
+        <button
           key={value}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: value === selected }}
-          onPress={() => onChange(value)}
-          style={[
-            s.tab,
-            {
-              backgroundColor: selected === value ? colors.wood : colors.inset,
-            },
-          ]}
+          type="button"
+          role="tab"
+          aria-selected={value === selected}
+          onClick={() => onChange(value)}
+          style={{
+            backgroundColor: selected === value ? colors.teal : "transparent",
+            borderColor: selected === value ? colors.edge : "transparent",
+            color: selected === value ? colors.white : colors.wood,
+          }}
         >
-          <Text
-            style={[
-              ui.label,
-              {
-                color: selected === value ? colors.white : colors.wood,
-                textAlign: "center",
-              },
-            ]}
-          >
-            {value}
-          </Text>
-        </Pressable>
+          {value}
+        </button>
       ))}
-    </View>
+    </div>
   );
 }
-const s = StyleSheet.create({
-  button: {
-    minHeight: 48,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderBottomWidth: 4,
-    borderBottomColor: colors.edge,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  goldButton: {
-    overflow: "hidden",
-    width: "100%",
-    minHeight: 58,
-    borderWidth: 3,
-    borderBottomWidth: 5,
-    borderColor: "#a95b05",
-    borderBottomColor: "#713300",
-    borderRadius: 18,
-    backgroundColor: colors.gold,
-    paddingVertical: 10,
-  },
-  goldSurface: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  goldSurfaceImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  goldTopGlow: {
-    position: "absolute",
-    top: 3,
-    right: 10,
-    left: 10,
-    height: 13,
-    borderRadius: 9,
-    backgroundColor: "#fff4a54d",
-  },
-  shine: {
-    position: "absolute",
-    top: -24,
-    left: -40,
-    width: 30,
-    height: 96,
-    backgroundColor: "#ffffff52",
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.inset,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 5,
-  },
-  track: {
-    height: 9,
-    borderRadius: 6,
-    backgroundColor: "#dbc6a0",
-    overflow: "hidden",
-  },
-  tab: {
-    flex: 1,
-    minHeight: 48,
-    justifyContent: "center",
-    padding: 8,
-    borderRadius: 8,
-    borderBottomWidth: 3,
-    borderBottomColor: "#bba689",
-  },
-});

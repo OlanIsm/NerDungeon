@@ -1,165 +1,95 @@
-import { useEffect, useState } from "react";
-import {
-  Animated,
-  ImageSourcePropType,
-  Pressable,
-  StyleSheet,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import type { CSSProperties } from "react";
 import { colors, fonts } from "../theme";
 import type { Screen } from "../types";
-
 type BottomNavItemProps = {
   screen: Screen;
-  icon: ImageSourcePropType;
+  icon: string;
   size: number;
   iconOffsetX?: number;
   selected: boolean;
   onPress: () => void;
 };
-
 export function BottomNavItem({
   screen,
   icon,
-  size,
-  iconOffsetX = 0,
   selected,
   onPress,
 }: BottomNavItemProps) {
-  const [reveal] = useState(() => new Animated.Value(selected ? 1 : 0));
-
-  useEffect(() => {
-    reveal.stopAnimation();
-    if (selected) {
-      Animated.spring(reveal, {
-        toValue: 1,
-        stiffness: 310,
-        damping: 17,
-        mass: 0.72,
-        useNativeDriver: true,
-      }).start();
-      return;
-    }
-
-    Animated.timing(reveal, {
-      toValue: 0,
-      duration: 160,
-      useNativeDriver: true,
-    }).start();
-  }, [reveal, selected]);
-
-  const frameStyle = {
-    opacity: reveal,
-    transform: [
-      {
-        translateY: reveal.interpolate({
-          inputRange: [0, 1],
-          outputRange: [76, 0],
-        }),
-      },
-      {
-        scale: reveal.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.88, 1],
-        }),
-      },
-      { translateX: iconOffsetX },
-    ],
-  };
-  const iconStyle = {
-    transform: [
-      {
-        translateY: reveal.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -9],
-        }),
-      },
-      {
-        scale: reveal.interpolate({
-          inputRange: [0, 0.72, 1],
-          outputRange: [1, 1.2, 1.1],
-        }),
-      },
-    ],
-  };
-  const labelStyle = {
-    opacity: reveal,
-    transform: [
-      {
-        translateY: reveal.interpolate({
-          inputRange: [0, 1],
-          outputRange: [12, 0],
-        }),
-      },
-    ],
-  };
-
   return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityLabel={screen}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={styles.item}
+    <button
+      role="tab"
+      aria-selected={selected}
+      aria-label={screen}
+      onClick={onPress}
+      style={{ ...s.item, ...((selected && s.selected) || {}) }}
+      className="stack pressable"
+      type="button"
     >
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.activeFrame, frameStyle]}
-      >
-        <LinearGradient
-          colors={["#f0ad12", "#ffda55"]}
-          locations={[0, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-      <Animated.Image
-        accessibilityIgnoresInvertColors
-        source={icon}
-        resizeMode="contain"
-        style={[{ width: size, height: size }, iconStyle]}
-      />
       {selected && (
-        <Animated.Text numberOfLines={1} style={[styles.label, labelStyle]}>
-          {screen}
-        </Animated.Text>
+        <div aria-hidden={true} style={s.highlight} className="stack" />
       )}
-    </Pressable>
+      <img
+        src={icon}
+        style={{ ...s.icon, objectFit: "contain" }}
+        className="art-image"
+        alt=""
+        draggable={false}
+      />
+      <span
+        style={{ ...s.label, ...((selected && s.activeLabel) || {}) }}
+        className="text"
+      >
+        {screen}
+      </span>
+      {selected && <div style={s.marker} className="stack" />}
+    </button>
   );
 }
-
-const styles = StyleSheet.create({
+const s = {
   item: {
-    flex: 1,
-    height: "100%",
-    overflow: "hidden",
+    flex: "1 1 0%",
+    minWidth: 0,
+    minHeight: 70,
     alignItems: "center",
     justifyContent: "center",
+    paddingTop: 5,
+    paddingBottom: 5,
+    borderWidth: 2,
+    borderColor: "transparent",
+    borderRadius: 15,
+    gap: 1,
   },
-  activeFrame: {
-    position: "absolute",
-    overflow: "hidden",
-    top: 5,
-    left: 12,
-    right: 12,
-    bottom: 5,
-    borderWidth: 3,
-    borderBottomWidth: 5,
-    borderColor: "#ffe16b",
-    borderBottomColor: "#a95b05",
-    borderRadius: 16,
+  selected: {
     backgroundColor: colors.gold,
+    borderColor: colors.edge,
+    borderBottomWidth: 4,
+    transform: "translateY(" + -5 + "px)",
   },
-  label: {
+  highlight: {
     position: "absolute",
-    left: 4,
-    right: 4,
-    bottom: 11,
-    fontFamily: fonts.heavy,
-    fontSize: 12,
-    lineHeight: 14,
-    color: colors.wood,
-    textAlign: "center",
+    top: 3,
+    left: 10,
+    right: 10,
+    height: 3,
+    borderRadius: 3,
+    backgroundColor: "#fff0b0",
   },
-});
+  icon: { width: 39, height: 39 },
+  label: {
+    fontFamily: fonts.heading,
+    fontSize: 11,
+    lineHeight: "15px",
+    color: colors.parchment,
+  },
+  activeLabel: { color: colors.ink },
+  marker: {
+    position: "absolute",
+    bottom: -6,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: colors.edge,
+    backgroundColor: colors.parchment,
+  },
+} satisfies Record<string, CSSProperties>;

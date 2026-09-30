@@ -1,182 +1,255 @@
-import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
-import { art } from "../assets";
-import { Badge, Button, Meter, Panel, Tabs } from "../components/GameUI";
-import { colors, ui } from "../theme";
+import { useEffect, useRef, useState } from "react";
+import { art, miniIcons } from "../assets";
+import { inventory } from "../data/inventory";
+import { Button } from "../components/GameUI";
+import { rarity } from "../theme";
 import type { ScreenProps } from "../types";
+import type { GameData, SummonItem } from "../gameApi";
 
-export function GachaScreen({ notify }: ScreenProps) {
-  const [tab, setTab] = useState("Armory & Relics");
+export function GachaScreen({
+  notify,
+  onSummon,
+  pool = [],
+}: ScreenProps & {
+  onSummon: (count: 1 | 10) => Promise<GameData>;
+  pool?: SummonItem[];
+}) {
+  const [pending, setPending] = useState<1 | 10>();
+  const [details, setDetails] = useState(false);
+  async function summon(count: 1 | 10) {
+    if (pending) return;
+    setPending(count);
+    try {
+      const data = await onSummon(count);
+      notify(`You received: ${data.rewards?.join(", ")}.`);
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "Summon failed. Try again.",
+      );
+    } finally {
+      setPending(undefined);
+    }
+  }
   return (
-    <View style={{ gap: 16 }}>
-      <Tabs
-        values={["Armory & Relics", "Spell Scrolls"]}
-        selected={tab}
-        onChange={setTab}
-      />
-      <Panel>
-        <View style={ui.between}>
-          <View style={ui.flex}>
-            <Text style={ui.heading}>
-              {tab === "Spell Scrolls"
-                ? "Grand Scholar Scrolls"
-                : "Grand Scholar Cache"}
-            </Text>
-            <Text style={ui.label}>EXCAVATION ALCOVE #4</Text>
-          </View>
-          <Badge
-            text="TIER 5 VAULT"
-            color={colors.teal}
-            icon="shield-check-outline"
-          />
-        </View>
-        <View
-          style={{
-            borderWidth: 3,
-            borderColor: colors.edge,
-            borderRadius: 8,
-            overflow: "hidden",
-          }}
+    <div className="bazaar-page">
+      <div className="bazaar-showcase">
+        <button
+          type="button"
+          className="chest-trigger"
+          aria-label="View obtainable items and drop rates"
+          aria-haspopup="dialog"
+          onClick={() => setDetails(true)}
         >
-          <Image
-            source={art.chest}
-            style={{ width: "100%", height: 184 }}
-            resizeMode="cover"
+          <div className="chest-aura" aria-hidden="true" />
+          <img
+            src={miniIcons.chest}
+            alt="Scholar treasure chest"
+            className="bazaar-chest"
+            draggable={false}
           />
-          <View style={{ position: "absolute", top: 8, left: 8 }}>
-            <Badge text="FEATURED CACHE" icon="creation" />
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Inspect Lore"
-            onPress={() =>
-              notify(
-                "Grand Scholar Cache — an ancient brass-bound vault filled with scholar relics.",
-              )
-            }
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
-              padding: 14,
-              minHeight: 48,
-              backgroundColor: colors.wood,
-            }}
+        </button>
+      </div>
+      <div className="summon-actions">
+        <button
+          type="button"
+          className="summon-action single"
+          aria-label="Summon 1x"
+          aria-description="Costs 100 gems"
+          title="Costs 100 gems"
+          aria-busy={pending === 1}
+          disabled={!!pending}
+          onClick={() => summon(1)}
+        >
+          <SingleSummonArt />
+        </button>
+        <button
+          type="button"
+          className="summon-action ten"
+          aria-label="Summon 10x"
+          aria-description="Costs 900 gems"
+          title="Costs 900 gems"
+          aria-busy={pending === 10}
+          disabled={!!pending}
+          onClick={() => summon(10)}
+        >
+          <img className="summon-reference" src={art.summon10x} alt="" />
+        </button>
+      </div>
+      {details && <DropRates pool={pool} dismiss={() => setDetails(false)} />}
+    </div>
+  );
+}
+
+function SingleSummonArt() {
+  // Reuse the reference lettering and gem so both variants match on every device.
+  return (
+    <svg className="summon-reference" viewBox="0 0 789 292" aria-hidden="true">
+      <defs>
+        <filter id="summon-brown-ink" colorInterpolationFilters="sRGB">
+          <feColorMatrix
+            type="matrix"
+            values="0 0 0 0 .2902 0 0 0 0 .1412 0 0 0 0 .0392 -1.41 0 0 0 1.41"
+          />
+        </filter>
+        <filter id="summon-white-ink" colorInterpolationFilters="sRGB">
+          <feColorMatrix
+            type="matrix"
+            values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -1.41 0 0 0 1.41"
+          />
+        </filter>
+        <clipPath id="summon-word">
+          <rect x="145" y="45" width="343" height="95" />
+        </clipPath>
+        <clipPath id="summon-one">
+          <rect x="505" y="45" width="34" height="95" />
+        </clipPath>
+        <clipPath id="summon-times">
+          <rect x="592" y="45" width="44" height="95" />
+        </clipPath>
+        <clipPath id="summon-price-pill">
+          <rect x="210" y="149" width="352" height="86" rx="43" />
+        </clipPath>
+      </defs>
+      <rect x="6" y="30" width="782" height="260" rx="56" fill="#345b95" />
+      <rect x="6" y="6" width="782" height="259" rx="56" fill="#91cef5" />
+      <g transform="translate(23 0)">
+        <g clipPath="url(#summon-word)">
+          <image
+            href={art.summon10x}
+            width="789"
+            height="292"
+            filter="url(#summon-brown-ink)"
+          />
+        </g>
+        <g clipPath="url(#summon-one)">
+          <image
+            href={art.summon10x}
+            width="789"
+            height="292"
+            filter="url(#summon-brown-ink)"
+          />
+        </g>
+        <g transform="translate(-47 0)" clipPath="url(#summon-times)">
+          <image
+            href={art.summon10x}
+            width="789"
+            height="292"
+            filter="url(#summon-brown-ink)"
+          />
+        </g>
+      </g>
+      <g clipPath="url(#summon-price-pill)">
+        <image href={art.summon10x} width="789" height="292" />
+      </g>
+      <rect x="392" y="165" width="27" height="57" fill="#3d200a" />
+      <svg
+        x="398"
+        y="170"
+        width="18"
+        height="45"
+        viewBox="507 55 31 78"
+        preserveAspectRatio="none"
+      >
+        <image
+          href={art.summon10x}
+          width="789"
+          height="292"
+          filter="url(#summon-white-ink)"
+        />
+      </svg>
+    </svg>
+  );
+}
+
+function DropRates({
+  pool,
+  dismiss,
+}: {
+  pool: SummonItem[];
+  dismiss: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    dialog.current?.showModal();
+  }, []);
+  const totals = pool.reduce<Partial<Record<keyof typeof rarity, number>>>(
+    (result, item) => {
+      result[item.rarity] = (result[item.rarity] ?? 0) + item.chance;
+      return result;
+    },
+    {},
+  );
+  return (
+    <dialog
+      ref={dialog}
+      className="drop-rates"
+      aria-labelledby="drop-rates-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        dismiss();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) dismiss();
+      }}
+    >
+      <div className="drop-rates-content">
+        <header className="drop-rates-heading">
+          <div>
+            <h2 id="drop-rates-title">Obtainable items</h2>
+            <p>Chances per summon</p>
+          </div>
+          <button
+            type="button"
+            className="drop-rates-close"
+            aria-label="Close drop rates"
+            onClick={dismiss}
           >
-            <Text style={[ui.label, { color: colors.white }]}>
-              Inspect Lore
-            </Text>
-          </Pressable>
-        </View>
-        <View style={ui.between}>
-          <Text style={ui.label}>FEATURED VAULT RELICS</Text>
-          <Text style={ui.label}>Tap to inspect</Text>
-        </View>
-        <View style={ui.row}>
-          {[
-            { name: "Sunfire Robe", image: art.robe, odds: "2% LEG" },
-            { name: "Wisdom Quill", image: art.quill, odds: "8% EPIC" },
-            { name: "Scholar Aegis", image: art.shield, odds: "35% RARE" },
-          ].map((item) => (
-            <Pressable
-              key={item.name}
-              accessibilityRole="button"
-              accessibilityLabel={`Inspect ${item.name}`}
-              onPress={() =>
-                notify(
-                  `${item.name} · ${item.odds}. Relic preview from the Grand Scholar Cache.`,
-                )
-              }
-              style={[
-                ui.flex,
-                ui.center,
-                {
-                  padding: 8,
-                  backgroundColor: "#fff2d9",
-                  borderRadius: 8,
-                  gap: 6,
-                },
-              ]}
-            >
-              <Image
-                source={item.image}
-                style={{ width: 58, height: 58, borderRadius: 6 }}
-              />
-              <Text style={[ui.label, { textAlign: "center" }]}>
-                {item.name}
-              </Text>
-              <Badge text={item.odds} />
-            </Pressable>
-          ))}
-        </View>
-        <View style={ui.inset}>
-          <View style={ui.between}>
-            <Text style={ui.label}>LOOT PROBABILITIES</Text>
-            <Text style={ui.label}>100% Fair Odds</Text>
-          </View>
-          <View
-            style={{
-              height: 9,
-              borderRadius: 8,
-              overflow: "hidden",
-              flexDirection: "row",
-            }}
-          >
-            {[
-              ["55%", "#c7b391"],
-              ["35%", colors.teal],
-              ["8%", "#dbaa60"],
-              ["2%", colors.gold],
-            ].map(([width, backgroundColor]) => (
-              <View
-                key={width}
-                style={{ flex: parseInt(width), backgroundColor }}
-              />
-            ))}
-          </View>
-          <Text style={ui.label}>Common 55% Rare 35% Epic 8% Leg. 2%</Text>
-        </View>
-        <View style={ui.inset}>
-          <View style={ui.between}>
-            <Text style={ui.label}>Scholar’s Favor Pity</Text>
-            <Text style={ui.label}>3 / 10 Pulls</Text>
-          </View>
-          <Meter value={30} />
-          <Text style={ui.label}>
-            Guaranteed Epic or Higher in next 7 summons!
-          </Text>
-        </View>
-        <View style={ui.row}>
-          <View style={[ui.column, ui.flex]}>
-            <Button
-              label="Summon ×1"
-              tone="quiet"
-              onPress={() =>
-                notify(
-                  "Preview summon: Quill of Wisdom (Epic). Tidak ada currency yang dipotong.",
-                )
-              }
-            />
-            <Text style={[ui.label, { textAlign: "center" }]}>
-              100 Gems or 1,000 Gold
-            </Text>
-          </View>
-          <View style={[ui.column, ui.flex]}>
-            <Button
-              label="Summon ×10"
-              tone="gold"
-              onPress={() =>
-                notify(
-                  "Preview ×10 summon. Summoning dan pembelian belum terhubung ke backend.",
-                )
-              }
-            />
-            <Text style={[ui.label, { textAlign: "center" }]}>
-              900 Gems · Save 10%
-            </Text>
-          </View>
-        </View>
-      </Panel>
-    </View>
+            Close
+          </button>
+        </header>
+        {pool.length ? (
+          <>
+            <div className="rarity-totals" aria-label="Rarity chances">
+              {Object.entries(totals).map(([name, chance]) => (
+                <span
+                  key={name}
+                  style={{
+                    color: rarity[name as keyof typeof rarity].ink,
+                    backgroundColor: rarity[name as keyof typeof rarity].fill,
+                  }}
+                >
+                  {name} <strong>{chance}%</strong>
+                </span>
+              ))}
+            </div>
+            <ul className="drop-item-list">
+              {pool.map((item) => (
+                <li key={item.name}>
+                  <img
+                    src={
+                      inventory.find((owned) => owned.name === item.name)?.image
+                    }
+                    alt=""
+                  />
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span style={{ color: rarity[item.rarity].ink }}>
+                      {item.rarity}
+                    </span>
+                  </div>
+                  <b>{item.chance}%</b>
+                </li>
+              ))}
+            </ul>
+            <p className="drop-rates-note">
+              Each of the 10 pulls is independent. Duplicate items are possible.
+            </p>
+          </>
+        ) : (
+          <p>Drop rates unavailable. Check the backend connection.</p>
+        )}
+        <Button label="Got it" tone="gold" onPress={dismiss} />
+      </div>
+    </dialog>
   );
 }

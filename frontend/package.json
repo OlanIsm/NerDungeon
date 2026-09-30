@@ -1,40 +1,32 @@
 {
-  "name": "frontend",
+  "name": "nerdungeon-web",
   "version": "1.0.0",
-  "main": "index.ts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "web": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint App.tsx src vite.config.ts --max-warnings=0",
+    "format": "prettier --write App.tsx src vite.config.ts"
+  },
   "dependencies": {
-    "@expo-google-fonts/epilogue": "^0.4.2",
-    "@expo-google-fonts/rubik": "^0.4.2",
-    "@expo-google-fonts/space-grotesk": "^0.4.1",
-    "@expo/metro-runtime": "~57.0.15",
-    "@expo/vector-icons": "^15.0.2",
-    "expo": "~57.0.22",
-    "expo-document-picker": "~57.0.2",
-    "expo-font": "~57.0.4",
-    "expo-linear-gradient": "~57.0.2",
-    "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.3",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-web": "^0.21.2"
+    "phaser": "3.90.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "eslint": "^9.39.5",
-    "eslint-config-expo": "^57.0.2",
-    "prettier": "^3.9.6",
-    "typescript": "~6.0.3"
-  },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings=0",
-    "build": "expo export --platform all",
-    "format": "prettier --write App.tsx src"
-  },
-  "private": true
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "6.0.3",
+    "vite": "6.4.3",
+    "eslint": "9.39.5",
+    "@typescript-eslint/parser": "8.70.0",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "prettier": "3.9.6"
+  }
 }

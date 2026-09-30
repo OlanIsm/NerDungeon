@@ -1,3 +1,3 @@
-# Expo HAS CHANGED
+# Frontend
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+React + Vite web app with a mobile-sized layout. Use DOM elements for app screens and Phaser 3.90 for the Battle world. Preserve existing assets and API contracts.

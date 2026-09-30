@@ -1,4 +1,5 @@
 node_modules/
+.npm-cache/
 .expo/
 dist/
 .impeccable/review/
@@ -16,6 +17,7 @@ next-env.d.ts
 !.env.example
 *.pem
 .vercel/
+backend/data/
 
 # Local tooling
 .DS_Store

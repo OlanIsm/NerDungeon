@@ -1,363 +1,416 @@
-import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import * as DocumentPicker from "expo-document-picker";
-import { gui, icons } from "../assets";
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import { art } from "../assets";
 import {
-  Badge,
   Button,
   Icon,
-  ImageBadge,
   Meter,
+  SectionTitle,
+  useReducedMotion,
 } from "../components/GameUI";
+import { RealmFrame } from "../components/FantasyUI";
 import { colors, fonts, ui } from "../theme";
+import {
+  ExpeditionCard,
+  expeditions,
+  type Expedition,
+  type Region,
+} from "./AdventureScreen";
 import type { ScreenProps } from "../types";
-
-export function HomeScreen({ navigate, notify }: ScreenProps) {
+export function HomeScreen({
+  navigate,
+  notify,
+  onSelectExpedition,
+  onContinue,
+  lastAdventure,
+  expeditions: items = expeditions,
+  onForge,
+}: ScreenProps & {
+  onSelectExpedition: (expedition: Expedition) => void;
+  onContinue: () => void;
+  lastAdventure: {
+    expedition: Expedition;
+    region: Region;
+  };
+  expeditions?: Expedition[];
+  onForge: (asset: File) => Promise<void>;
+}) {
   const [file, setFile] = useState<string>();
-  async function pickFile() {
+  const [asset, setAsset] = useState<File>();
+  const [forging, setForging] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const fileInput = useRef<HTMLInputElement>(null);
+  function pickFile() {
+    fileInput.current?.click();
+  }
+  function selectFile(asset: File | undefined) {
+    if (!asset) return;
+    if (!/\.(pdf|docx)$/i.test(asset.name) || asset.size > 25 * 1024 * 1024) {
+      notify("Pilih PDF atau DOCX dengan ukuran maksimal 25 MB.");
+      return;
+    }
+    setFile(asset.name);
+    setAsset(asset);
+  }
+  async function forgeAdventure() {
+    if (forging) return;
+    setForging(true);
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          "application/pdf",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ],
-        copyToCacheDirectory: true,
-      });
-      if (result.canceled) return;
-      const asset = result.assets[0];
-      if (
-        !/\.(pdf|docx)$/i.test(asset.name) ||
-        (asset.size ?? 0) > 25 * 1024 * 1024
-      ) {
-        notify("Pilih PDF atau DOCX dengan ukuran maksimal 25 MB.");
-        return;
-      }
-      setFile(asset.name);
-    } catch {
-      notify("File belum bisa dibuka. Coba pilih lagi.");
+      if (!asset) throw new Error("Choose a file first");
+      await onForge(asset);
+      navigate("Expedition");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Forge failed");
+    } finally {
+      setForging(false);
     }
   }
   return (
-    <View>
-      <View style={styles.forgeCard}>
-        <ScrollFrame />
-        <View style={styles.forgeHeading}>
-          <Text style={styles.forgeTitle}>THE STUDY FORGE</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Browse study files"
-          onPress={pickFile}
-          style={({ pressed }) => [
-            styles.dropZone,
-            pressed && { transform: [{ scale: 0.99 }], opacity: 0.94 },
-          ]}
+    <div style={s.page} className="stack">
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".pdf,.docx"
+        hidden
+        aria-label="Study file"
+        onChange={(event) => {
+          selectFile(event.currentTarget.files?.[0]);
+          event.currentTarget.value = "";
+        }}
+      />
+      {forging && <ForgeDialog file={file} reducedMotion={reducedMotion} />}
+
+      <div style={s.scroll} className="stack">
+        <div
+          aria-hidden={true}
+          style={{ ...s.scrollRoll, ...s.rollTop }}
+          className="stack"
         >
-          <Icon
-            name={file ? "file-check-outline" : "file-plus-outline"}
-            size={46}
-            color="#5d2d0b"
-          />
-          <Text numberOfLines={2} style={styles.uploadTitle}>
-            {file ?? "Drop study scroll here"}
-          </Text>
-          <Text style={styles.uploadSubtitle}>
-            {file ? "Tap to choose another file" : "or tap to Browse Files"}
-          </Text>
-          <View style={ui.row}>
-            <Badge text="PDF / DOCX" icon="file-document-outline" />
-            <Badge text="MAX 25MB" icon="scale-balance" />
-          </View>
-        </Pressable>
+          <div style={s.rollHighlight} className="stack" />
+        </div>
+        <div
+          aria-hidden={true}
+          style={{ ...s.scrollRoll, ...s.rollBottom }}
+          className="stack"
+        >
+          <div style={s.rollHighlight} className="stack" />
+        </div>
+        <div style={s.forgeHeading} className="stack">
+          <Icon name="feather" size={23} color={colors.wood} />
+          <span style={s.forgeTitle} className="text">
+            The Study Forge
+          </span>
+        </div>
+        <span style={s.forgeSubtitle} className="text">
+          Every great quest starts with a little knowledge.
+        </span>
+        <button
+          role="button"
+          aria-label="Browse study files"
+          onClick={pickFile}
+          style={{ ...s.dropZone }}
+          className="stack pressable"
+          type="button"
+        >
+          <div
+            aria-label={file ? "Selected PDF" : undefined}
+            style={s.documentEmblem}
+            className="stack"
+          >
+            <Icon
+              name={file ? "file-check-outline" : "file-plus-outline"}
+              size={30}
+              color={colors.teal}
+            />
+          </div>
+          <span style={s.uploadTitle} className="text">
+            {file ?? "Turn your notes into an adventure"}
+          </span>
+          <span style={s.uploadSubtitle} className="text">
+            {file ? "Tap to choose another file" : "Upload your study material"}
+          </span>
+          {!file && (
+            <div style={s.browse} className="stack">
+              <span style={s.browseText} className="text">
+                Browse files
+              </span>
+              <Icon name="upload" size={18} color={colors.ink} />
+            </div>
+          )}
+          <span style={s.formats} className="text">
+            PDF / DOCX · Max 25 MB · Starter chapters use file name
+          </span>
+        </button>
         {file && (
           <Button
             label="Forge Adventure"
             tone="gold"
-            style={styles.forgeButton}
-            onPress={() => {
-              notify("Preview adventure dibuka. Dokumen belum diproses.");
-              navigate("Map");
-            }}
+            icon="creation"
+            onPress={forgeAdventure}
+            disabled={forging}
           />
         )}
-      </View>
-      <View style={styles.expeditionHeader}>
-        <View style={styles.expeditionTitle}>
-          <Image
-            accessibilityIgnoresInvertColors
-            source={gui.sectionTitle}
-            resizeMode="contain"
-            style={styles.expeditionBackground}
-          />
-          <Text numberOfLines={1} adjustsFontSizeToFit style={styles.expeditionText}>
-            Active Expeditions
-          </Text>
-        </View>
-      </View>
-      {[
-        {
-          title: "Biologi — Fotosintesis",
-          stage: "Stage 2/3 • 18/30 Questions",
-          xp: "+350 EXP",
-          encounter: "Calvin Cycle Golem",
-          progress: 60,
-          icon: "head-lightbulb-outline" as const,
-        },
-        {
-          title: "Fisika Dasar — Gravitasi",
-          stage: "Stage 1/3 • 8/30 Questions",
-          xp: "+200 EXP",
-          encounter: "Newton’s Apple Slime",
-          progress: 27,
-          icon: "earth" as const,
-        },
-      ].map((quest) => (
-        <View key={quest.title} style={styles.questCard}>
-          <NineSliceFrame
-            images={gui.expeditionCard9}
-            top={25}
-            bottom={31}
-            side={62}
-          />
-          <View style={ui.row}>
-            <View
-              style={{
-                backgroundColor: colors.teal,
-                padding: 9,
-                borderRadius: 10,
-              }}
-            >
-              <Icon name={quest.icon} color={colors.white} />
-            </View>
-            <View style={ui.flex}>
-              <Text style={[ui.title, styles.questTitle]}>{quest.title}</Text>
-              <Text style={ui.label}>{quest.stage}</Text>
-            </View>
-            <ImageBadge text={quest.xp} source={icons.exp} size={18} />
-          </View>
-          <View style={ui.between}>
-            <Text style={[ui.label, ui.flex]}>
-              Encounter: {quest.encounter}
-            </Text>
-            <Text style={ui.label}>{quest.progress}% Cleared</Text>
-          </View>
-          <Meter value={quest.progress} />
-          <Button
-            label="Continue Quest"
-            icon="play"
-            tone="gold"
-            style={styles.questButton}
-            onPress={() => navigate("Map")}
-          />
-        </View>
-      ))}
-      <View style={styles.questCard}>
-        <NineSliceFrame
-          images={gui.expeditionCard9}
-          top={25}
-          bottom={31}
-          side={62}
-        />
-        <View style={ui.row}>
-          <Icon name="check-decagram" size={30} />
-          <View style={ui.flex}>
-            <Text style={ui.title}>Daily Guild Harvest</Text>
-            <Text style={ui.label}>Resets in 06h 42m</Text>
-          </View>
-          <Badge text="+450 Gold" />
-        </View>
-        <Meter value={100} label="Complete 1 Biology Stage · 1 / 1 Completed" />
+      </div>
+
+      <RealmFrame variant="sage" style={s.continueCard}>
+        <div style={ui.row} className="stack">
+          <Icon name="flag-variant" size={21} color={colors.teal} />
+          <span style={s.continueHeading} className="text">
+            Continue Adventure
+          </span>
+        </div>
+        <span style={s.questTitle} className="text">
+          {lastAdventure.expedition.title}
+        </span>
+        <span style={ui.body} className="text">
+          Chapter {lastAdventure.region.chapter} · {lastAdventure.region.title}
+        </span>
+        <div style={s.progressRow} className="stack">
+          <div style={ui.flex} className="stack">
+            <Meter
+              value={lastAdventure.expedition.progress}
+              label="Expedition progress"
+            />
+          </div>
+          <span style={s.progressValue} className="text">
+            {lastAdventure.expedition.progress}%
+          </span>
+        </div>
         <Button
-          label="Claimed"
-          icon="check"
-          tone="quiet"
-          disabled
-          style={styles.questButton}
-          onPress={() => {}}
+          label="Continue Adventure"
+          tone="gold"
+          icon="play"
+          onPress={onContinue}
         />
-        <View
-          accessibilityLabel="Claimed expedition"
-          pointerEvents="none"
-          style={styles.claimedOverlay}
+      </RealmFrame>
+
+      <div style={s.materialHeading} className="stack">
+        <div style={ui.flex} className="stack">
+          <SectionTitle title="Study scrolls" />
+        </div>
+        <button
+          role="button"
+          aria-label="View all expeditions"
+          onClick={() => navigate("Expedition")}
+          style={s.allLink}
+          className="stack pressable"
+          type="button"
         >
-          <Image
-            accessibilityIgnoresInvertColors
-            source={gui.claimed}
-            resizeMode="contain"
-            style={styles.claimedBadge}
+          <span style={s.allText} className="text">
+            View all
+          </span>
+          <Icon name="chevron-right" size={18} color={colors.teal} />
+        </button>
+      </div>
+      <div style={s.materials} className="stack">
+        {items.slice(0, 2).map((expedition) => (
+          <ExpeditionCard
+            key={expedition.title}
+            expedition={expedition}
+            onPress={() => onSelectExpedition(expedition)}
           />
-        </View>
-      </View>
-    </View>
+        ))}
+      </div>
+    </div>
   );
 }
-
-function ScrollFrame() {
-  return <NineSliceFrame images={gui.scroll9} top={46} bottom={52} side={46} />;
-}
-
-function NineSliceFrame({
-  images,
-  top,
-  bottom,
-  side,
-}: {
-  images: typeof gui.scroll9;
-  top: number;
-  bottom: number;
-  side: number;
-}) {
-  const piece = (
-    source: (typeof images)[keyof typeof images],
-    style: object,
-  ) => (
-    <Image
-      accessibilityIgnoresInvertColors
-      source={source}
-      resizeMode="stretch"
-      style={style}
-    />
-  );
-  return (
-    <View pointerEvents="none" style={styles.scrollFrame}>
-      <View style={[styles.sliceRow, { height: top }]}>
-        {piece(images.topLeft, { width: side, height: top })}
-        {piece(images.top, styles.sliceFill)}
-        {piece(images.topRight, { width: side, height: top })}
-      </View>
-      <View style={[styles.sliceRow, styles.sliceMiddle]}>
-        {piece(images.left, { width: side, height: "100%" })}
-        {piece(images.center, styles.sliceCenter)}
-        {piece(images.right, { width: side, height: "100%" })}
-      </View>
-      <View style={[styles.sliceRow, { height: bottom }]}>
-        {piece(images.bottomLeft, { width: side, height: bottom })}
-        {piece(images.bottom, styles.sliceFill)}
-        {piece(images.bottomRight, { width: side, height: bottom })}
-      </View>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  forgeCard: {
-    minHeight: 310,
-    marginHorizontal: -6,
-    paddingHorizontal: 14,
-    paddingTop: 30,
-    paddingBottom: 40,
-    gap: 12,
+const s = {
+  page: { gap: 20 },
+  scroll: {
+    backgroundColor: "#f9edcd",
+    borderWidth: 2,
+    borderColor: "#9a794b",
+    marginLeft: 4,
+    marginRight: 4,
+    marginTop: 8,
+    padding: 16,
+    paddingTop: 23,
+    paddingBottom: 22,
+    gap: 10,
+    borderRadius: 10,
   },
-  scrollFrame: {
+  scrollRoll: {
     position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    left: -8,
+    right: -8,
+    height: 17,
+    backgroundColor: "#dec08a",
+    borderWidth: 2,
+    borderBottomWidth: 3,
+    borderColor: colors.wood,
+    borderRadius: 12,
   },
-  sliceRow: { flexDirection: "row" },
-  sliceMiddle: { flex: 1 },
-  sliceCenter: { flex: 1, height: "100%" },
-  sliceFill: { flex: 1, height: "100%" },
-  forgeHeading: { alignItems: "center", transform: [{ translateY: 5 }] },
-  forgeTitle: {
-    fontFamily: fonts.heavy,
-    fontSize: 19,
-    color: "#4a2108",
-    letterSpacing: 0.8,
-    textShadowColor: "#fff2c7",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 2,
+  rollTop: { top: -9 },
+  rollBottom: { bottom: -9 },
+  rollHighlight: {
+    height: 3,
+    marginTop: 2,
+    marginLeft: 10,
+    marginRight: 10,
+    backgroundColor: "#fff2ce",
+    borderRadius: 3,
+  },
+  forgeHeading: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  forgeTitle: { fontFamily: fonts.heading, fontSize: 22, color: colors.ink },
+  forgeSubtitle: {
+    ...ui.body,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: "18px",
   },
   dropZone: {
-    minHeight: 160,
-    marginHorizontal: 10,
-    padding: 12,
+    alignItems: "center",
+    gap: 8,
+    padding: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#b49b71",
+    borderRadius: 14,
+    backgroundColor: "#fff8e5",
+  },
+  documentEmblem: {
+    width: 49,
+    height: 49,
+    borderRadius: 16,
+    backgroundColor: colors.sage,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#fff2cf",
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "#d59a42",
-    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#a8b594",
   },
   uploadTitle: {
-    fontFamily: fonts.heavy,
-    fontSize: 19,
-    lineHeight: 24,
-    color: "#3b1b06",
-    textAlign: "center",
-  },
-  uploadSubtitle: {
     fontFamily: fonts.heading,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#69401f",
+    fontSize: 17,
+    lineHeight: "23px",
     textAlign: "center",
+    color: colors.ink,
+    maxWidth: 290,
   },
-  forgeButton: {
-    width: "52%",
-    minHeight: 46,
-    alignSelf: "center",
-  },
-  expeditionHeader: {
-    height: 76,
+  uploadSubtitle: { ...ui.body, fontSize: 12, textAlign: "center" },
+  browse: {
+    minHeight: 44,
+    width: "100%",
+    maxWidth: 230,
     flexDirection: "row",
     alignItems: "center",
-  },
-  expeditionTitle: {
-    width: "82%",
-    maxWidth: 300,
-    aspectRatio: 2175 / 723,
     justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.gold,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    borderColor: colors.edge,
+    borderRadius: 12,
   },
-  expeditionBackground: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  expeditionText: {
-    marginLeft: "27%",
-    marginRight: 8,
-    paddingBottom: 2,
-    fontFamily: fonts.heavy,
+  browseText: { fontFamily: fonts.heading, fontSize: 14, color: colors.ink },
+  formats: { ...ui.label, fontSize: 11, textAlign: "center" },
+  continueCard: { gap: 8, marginTop: 6 },
+  continueHeading: {
+    fontFamily: fonts.heading,
     fontSize: 16,
-    color: colors.white,
-    textShadowColor: "#06235e",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 1,
+    color: colors.teal,
   },
-  questCard: {
-    position: "relative",
-    marginBottom: 12,
-    paddingTop: 26,
-    paddingHorizontal: 30,
-    paddingBottom: 38,
-    gap: 10,
+  questTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    lineHeight: "24px",
+    color: colors.ink,
   },
-  questTitle: { fontSize: 15, lineHeight: 20 },
-  questButton: {
-    width: "82%",
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 4,
+  },
+  progressValue: {
+    fontFamily: fonts.heading,
+    fontSize: 14,
+    color: colors.teal,
+  },
+  materialHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: -14,
+  },
+  allLink: {
     minHeight: 48,
-    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 8,
   },
-  claimedOverlay: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    bottom: 8,
-    left: 8,
-    zIndex: 3,
-    overflow: "hidden",
-    borderRadius: 14,
+  allText: { fontFamily: fonts.heading, fontSize: 12, color: colors.teal },
+  materials: { gap: 10 },
+  harvest: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderColor: "#cdbf9e",
+  },
+  harvestSeal: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.sage,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(67, 210, 42, 0.52)",
   },
-  claimedBadge: { width: 140, height: 140 },
-});
+  harvestTitle: { ...ui.title, fontSize: 14, marginBottom: 3 },
+  forgeOverlay: {
+    flex: "1 1 0%",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: "rgba(35,45,35,0.96)",
+  },
+  loadingArt: { width: 220, height: 220 },
+  loadingTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 22,
+    textAlign: "center",
+    color: colors.gold,
+    marginTop: 16,
+  },
+  loadingFile: {
+    ...ui.body,
+    color: colors.parchment,
+    textAlign: "center",
+    marginTop: 10,
+  },
+} satisfies Record<string, CSSProperties>;
+function ForgeDialog({
+  file,
+  reducedMotion,
+}: {
+  file?: string;
+  reducedMotion: boolean;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    dialog.current?.showModal();
+  }, []);
+  return (
+    <dialog
+      className="forge-dialog"
+      ref={dialog}
+      aria-label="Forging adventure"
+      onCancel={(event) => event.preventDefault()}
+    >
+      <div className="forge-dialog-content">
+        <img
+          alt="Nerd eating PDF"
+          src={reducedMotion ? art.character : art.nerdEatPdf}
+        />
+        <h2 aria-live="polite">Forging your adventure?</h2>
+        <p>{file}</p>
+      </div>
+    </dialog>
+  );
+}

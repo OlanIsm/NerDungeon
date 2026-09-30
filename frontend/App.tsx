@@ -1,207 +1,336 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  BackHandler,
-  Image,
-  ImageBackground,
-  Modal,
-  ScrollView,
-  Text,
-  View,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { useFonts } from "expo-font";
-import { Rubik_700Bold } from "@expo-google-fonts/rubik/700Bold";
-import { Rubik_900Black } from "@expo-google-fonts/rubik/900Black";
-import { Epilogue_500Medium } from "@expo-google-fonts/epilogue/500Medium";
-import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk/700Bold";
-import { gui, icons } from "./src/assets";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { art, icons } from "./src/assets";
 import { Button } from "./src/components/GameUI";
-import { BottomNavItem } from "./src/components/BottomNavItem";
 import { PlayerHeader } from "./src/components/PlayerHeader";
+import { BottomNavItem } from "./src/components/BottomNavItem";
 import { HomeScreen } from "./src/screens/HomeScreen";
-import { AdventureScreen } from "./src/screens/AdventureScreen";
-import { GachaScreen } from "./src/screens/GachaScreen";
+import {
+  AdventureScreen,
+  RegionScreen,
+  RegionDetailScreen,
+  expeditions,
+  type Expedition,
+  type Region,
+} from "./src/screens/AdventureScreen";
 import { InventoryScreen } from "./src/screens/InventoryScreen";
-import { BattleScreen } from "./src/screens/BattleScreen";
-import { colors, ui } from "./src/theme";
+import { GachaScreen } from "./src/screens/GachaScreen";
+import { forgeRequest, gameRequest, type GameData } from "./src/gameApi";
 import type { Screen } from "./src/types";
-
+import { ui } from "./src/theme";
+import { BattleScreen } from "./src/screens/BattleScreen";
 const navigation = [
-  { screen: "Hub", icon: icons.hub, size: 52, iconOffsetX: 4 },
-  { screen: "Map", icon: icons.map, size: 51, iconOffsetX: 1 },
-  { screen: "Bazaar", icon: icons.bazaar, size: 56, iconOffsetX: -1 },
-  { screen: "Armory", icon: icons.armory, size: 57, iconOffsetX: -4 },
+  { screen: "Hub", icon: icons.hub },
+  { screen: "Expedition", icon: icons.map },
+  { screen: "Bazaar", icon: icons.bazaar },
+  { screen: "Bag", icon: icons.armory },
 ] as const;
-export default function App() {
-  const [loaded, error] = useFonts({
-    Rubik_700Bold,
-    Rubik_900Black,
-    Epilogue_500Medium,
-    SpaceGrotesk_700Bold,
-  });
-  return (
-    <SafeAreaProvider>
-      {!loaded && !error ? (
-        <View style={[s.loading, ui.center]}>
-          <ActivityIndicator color={colors.wood} />
-          <Text>Opening the dungeon…</Text>
-        </View>
-      ) : (
-        <GameApp />
-      )}
-    </SafeAreaProvider>
+const shellAssets = [
+  art.doorLeft,
+  art.doorRight,
+  art.navPlank,
+  ...Object.values(icons),
+  art.character,
+];
+function findExpedition(items: Expedition[], selected: Expedition) {
+  return items.find((item) =>
+    selected.id ? item.id === selected.id : item.file === selected.file,
   );
 }
-function GameApp() {
+export default function App() {
   const [screen, setScreen] = useState<Screen>("Hub");
   const [message, setMessage] = useState<string>();
-  const scroll = useRef<ScrollView>(null);
-  function navigate(next: Screen) {
-    setScreen(next);
-    scroll.current?.scrollTo({ y: 0, animated: false });
-  }
+  const [gameData, setGameData] = useState<GameData>();
+  const [selectedExpedition, setSelectedExpedition] = useState<Expedition>(
+    expeditions[0],
+  );
+  const [selectedRegion, setSelectedRegion] = useState<Region>(
+    expeditions[0].regions[0],
+  );
+  const [lastAdventure, setLastAdventure] = useState({
+    expedition: expeditions[0],
+    region: expeditions[0].regions[1],
+  });
+  const [visited, setVisited] = useState(() => new Set<Screen>(["Hub"]));
+  const pages = useRef<Partial<Record<Screen, HTMLDivElement | null>>>({});
+  const main = useRef<HTMLElement>(null);
   useEffect(() => {
-    const handler = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (message) {
-        setMessage(undefined);
-        return true;
-      }
-      if (screen !== "Hub") {
-        navigate(screen === "Battle" ? "Map" : "Hub");
-        return true;
-      }
-      return false;
+    shellAssets.forEach((source) => {
+      const image = new Image();
+      image.src = source;
     });
-    return () => handler.remove();
-  }, [screen, message]);
+    gameRequest()
+      .then(setGameData)
+      .catch(() =>
+        setMessage(
+          "Backend unavailable. Start the backend and check VITE_API_URL.",
+        ),
+      );
+  }, []);
+  const navigate = useCallback((next: Screen) => {
+    setVisited((current) =>
+      current.has(next) ? current : new Set(current).add(next),
+    );
+    setScreen(next);
+    requestAnimationFrame(() => {
+      pages.current[next]?.scrollTo({ top: 0 });
+      main.current?.focus({ preventScroll: true });
+    });
+  }, []);
+  async function perform(action: Record<string, unknown>) {
+    const data = await gameRequest(action);
+    setGameData(data);
+    return data;
+  }
+  const availableExpeditions = gameData?.expeditions ?? expeditions;
+  const currentExpedition =
+    findExpedition(availableExpeditions, selectedExpedition) ??
+    selectedExpedition;
+  const currentRegion =
+    currentExpedition.regions.find(
+      (item) => item.chapter === selectedRegion.chapter,
+    ) ?? selectedRegion;
+  const recentExpedition = availableExpeditions.find(
+    (item) => item.id === gameData?.lastAdventure?.expeditionId,
+  );
+  const recentAdventure =
+    recentExpedition && gameData?.lastAdventure
+      ? {
+          expedition: recentExpedition,
+          region:
+            recentExpedition.regions.find(
+              (region) => region.chapter === gameData.lastAdventure!.chapter,
+            ) ?? recentExpedition.regions[0],
+        }
+      : {
+          expedition:
+            findExpedition(availableExpeditions, lastAdventure.expedition) ??
+            lastAdventure.expedition,
+          region: lastAdventure.region,
+        };
   const props = { navigate, notify: setMessage };
+  const showShell = ["Hub", "Expedition", "Bazaar", "Bag"].includes(screen);
   return (
-    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <StatusBar style="light" />
-      <View style={s.app}>
-        <ImageBackground
-          accessibilityIgnoresInvertColors
-          source={gui.background}
-          resizeMode="cover"
-          style={s.appBackground}
-        />
-        <PlayerHeader
-          onPressProfile={() =>
-            setMessage(
-              "Nerd Mage · Level 5 Scholar. UI preview — data demonstrasi lokal.",
-            )
-          }
-        />
-        <ScrollView
-          ref={scroll}
-          style={s.content}
-          contentContainerStyle={{
-            padding: 12,
-            paddingTop: 118,
-            paddingBottom: 124,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {screen === "Hub" && <HomeScreen {...props} />}
-          {screen === "Map" && <AdventureScreen {...props} />}
-          {screen === "Bazaar" && <GachaScreen {...props} />}
-          {screen === "Armory" && <InventoryScreen {...props} />}
-          {screen === "Battle" && <BattleScreen {...props} />}
-        </ScrollView>
-        {screen !== "Battle" && (
-          <View style={s.nav}>
-            <Image
-              accessibilityIgnoresInvertColors
-              source={gui.navbar}
-              resizeMode="cover"
-              style={s.navBackground}
+    <div className="app-shell">
+      <div className="app" data-screen={screen}>
+        {screen === "Bag" && (
+          <div
+            className="bag-backdrop"
+            style={{ backgroundImage: `url("${art.floatingIsland}")` }}
+            aria-hidden="true"
+          />
+        )}
+        {screen === "Bazaar" && (
+          <div className="bazaar-backdrop" aria-hidden="true">
+            <div
+              className="bazaar-room-art"
+              style={{ backgroundImage: `url("${art.merlinsRoom}")` }}
             />
+          </div>
+        )}
+        {showShell && (
+          <PlayerHeader
+            gold={gameData?.gold}
+            gems={gameData?.gems}
+            xp={gameData?.xp}
+            onPressProfile={() =>
+              setMessage(
+                "Nerd Mage · Level 5 Scholar. Shared development profile.",
+              )
+            }
+          />
+        )}
+        <main className="pages" ref={main} tabIndex={-1} aria-label={screen}>
+          {visited.has("Hub") && (
+            <div
+              className="page-scroll page-reveal"
+              hidden={screen !== "Hub"}
+              ref={(node) => {
+                pages.current.Hub = node;
+              }}
+            >
+              <HomeScreen
+                {...props}
+                expeditions={availableExpeditions}
+                lastAdventure={recentAdventure}
+                onForge={async (file) => setGameData(await forgeRequest(file))}
+                onContinue={() => {
+                  setSelectedExpedition(recentAdventure.expedition);
+                  setSelectedRegion(recentAdventure.region);
+                  navigate("RegionDetail");
+                }}
+                onSelectExpedition={(expedition) => {
+                  setSelectedExpedition(expedition);
+                  setSelectedRegion(expedition.regions[0]);
+                  navigate("Region");
+                }}
+              />
+            </div>
+          )}
+          {visited.has("Expedition") && (
+            <div
+              className="page-scroll page-reveal"
+              hidden={screen !== "Expedition"}
+              ref={(node) => {
+                pages.current.Expedition = node;
+              }}
+            >
+              <AdventureScreen
+                expeditions={availableExpeditions}
+                onInspect={() =>
+                  requestAnimationFrame(() =>
+                    pages.current.Expedition?.scrollTo({
+                      top: pages.current.Expedition.scrollHeight,
+                      behavior: matchMedia("(prefers-reduced-motion: reduce)")
+                        .matches
+                        ? "instant"
+                        : "smooth",
+                    }),
+                  )
+                }
+                onSelect={(expedition, region) => {
+                  setSelectedExpedition(expedition);
+                  setSelectedRegion(region ?? expedition.regions[0]);
+                  navigate(region ? "RegionDetail" : "Region");
+                }}
+              />
+            </div>
+          )}
+          {visited.has("Bazaar") && (
+            <div
+              className="fixed-page bazaar-fixed-page"
+              hidden={screen !== "Bazaar"}
+              ref={(node) => {
+                pages.current.Bazaar = node;
+              }}
+            >
+              <GachaScreen
+                {...props}
+                pool={gameData?.summonPool}
+                onSummon={(count) => perform({ action: "summon", count })}
+              />
+            </div>
+          )}
+          {visited.has("Bag") && (
+            <div className="fixed-page" hidden={screen !== "Bag"}>
+              <InventoryScreen {...props} owned={gameData?.inventory} />
+            </div>
+          )}
+          {screen === "Region" && (
+            <RegionScreen
+              expedition={currentExpedition}
+              onBack={() => navigate("Expedition")}
+              onSelect={(region) => {
+                setSelectedRegion(region);
+                navigate("RegionDetail");
+              }}
+            />
+          )}
+          {(screen === "RegionDetail" || screen === "Battle") && (
+            <div
+              className="fixed-page region-preview"
+              inert={screen === "Battle"}
+              aria-hidden={screen === "Battle"}
+            >
+              <RegionDetailScreen
+                expedition={currentExpedition}
+                region={currentRegion}
+                onBack={() => navigate("Region")}
+                onStart={async () => {
+                  try {
+                    let expedition = currentExpedition;
+                    if (!expedition.id) {
+                      const data = await gameRequest();
+                      setGameData(data);
+                      expedition =
+                        findExpedition(data.expeditions, expedition) ??
+                        expedition;
+                    }
+                    if (!expedition.id)
+                      throw new Error(
+                        "Adventure not found. Choose an expedition from the current list.",
+                      );
+                    await perform({
+                      action: "start",
+                      expeditionId: expedition.id,
+                      chapter: currentRegion.chapter,
+                    });
+                    setLastAdventure({
+                      expedition,
+                      region: currentRegion,
+                    });
+                    navigate("Battle");
+                  } catch (error) {
+                    setMessage(
+                      error instanceof Error
+                        ? error.message
+                        : "Adventure failed to start",
+                    );
+                  }
+                }}
+              />
+            </div>
+          )}
+          {screen === "Battle" && (
+            <BattleScreen
+              {...props}
+              onComplete={() =>
+                perform({ action: "complete" }).catch((error) =>
+                  setMessage(error.message),
+                )
+              }
+            />
+          )}
+        </main>
+        {showShell && (
+          <nav className="navbar" aria-label="Main navigation" role="tablist">
+            <img className="nav-plank" src={art.navPlank} alt="" />
             {navigation.map((item) => (
               <BottomNavItem
                 key={item.screen}
                 screen={item.screen}
                 icon={item.icon}
-                size={item.size}
-                iconOffsetX={item.iconOffsetX}
+                size={39}
                 selected={screen === item.screen}
                 onPress={() => navigate(item.screen)}
               />
             ))}
-          </View>
+          </nav>
         )}
-        <Modal
-          visible={!!message}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setMessage(undefined)}
-        >
-          <View style={s.overlay}>
-            <View
-              accessibilityViewIsModal
-              style={[ui.panel, { width: "100%", maxWidth: 370, padding: 22 }]}
-            >
-              <Text style={ui.heading}>Adventurer’s Journal</Text>
-              <Text style={ui.body}>{message}</Text>
-              <Button
-                label="Continue"
-                tone="gold"
-                onPress={() => setMessage(undefined)}
-              />
-            </View>
-          </View>
-        </Modal>
-      </View>
-    </SafeAreaView>
+        {message && (
+          <Journal message={message} dismiss={() => setMessage(undefined)} />
+        )}
+      </div>
+    </div>
   );
 }
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#e8d9b6" },
-  app: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 520,
-    alignSelf: "center",
-    overflow: "hidden",
-    backgroundColor: colors.background,
-  },
-  loading: { flex: 1, backgroundColor: colors.background, gap: 16 },
-  appBackground: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-  content: { flex: 1, backgroundColor: "transparent" },
-  nav: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 96,
-    overflow: "hidden",
-    backgroundColor: "transparent",
-  },
-  navBackground: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: "#221b0599",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-});
+function Journal({
+  message,
+  dismiss,
+}: {
+  message: string;
+  dismiss: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    dialog.current?.showModal();
+  }, []);
+  return (
+    <dialog
+      className="journal"
+      ref={dialog}
+      aria-labelledby="journal-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        dismiss();
+      }}
+    >
+      <div className="stack" style={{ ...ui.panel, padding: 22 }}>
+        <h2 id="journal-title" style={ui.heading}>
+          Adventurer’s Journal
+        </h2>
+        <p style={ui.body}>{message}</p>
+        <Button label="Continue" tone="gold" onPress={dismiss} />
+      </div>
+    </dialog>
+  );
+}
