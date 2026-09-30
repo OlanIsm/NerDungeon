@@ -25,12 +25,17 @@ export function HomeScreen({
   onSelectExpedition,
   onContinue,
   lastAdventure,
+  expeditions: items = expeditions,
+  onForge,
 }: ScreenProps & {
   onSelectExpedition: (expedition: Expedition) => void;
   onContinue: () => void;
   lastAdventure: { expedition: Expedition; region: Region };
+  expeditions?: Expedition[];
+  onForge: (asset: DocumentPicker.DocumentPickerAsset) => Promise<void>;
 }) {
   const [file, setFile] = useState<string>();
+  const [asset, setAsset] = useState<DocumentPicker.DocumentPickerAsset>();
   const [forging, setForging] = useState(false);
   const reducedMotion = useReducedMotion();
   async function pickFile() {
@@ -52,6 +57,7 @@ export function HomeScreen({
         return;
       }
       setFile(asset.name);
+      setAsset(asset);
     } catch {
       notify("File belum bisa dibuka. Coba pilih lagi.");
     }
@@ -60,9 +66,15 @@ export function HomeScreen({
   async function forgeAdventure() {
     if (forging) return;
     setForging(true);
-    await new Promise((resolve) => setTimeout(resolve, 1800));
-    setForging(false);
-    navigate("Expedition");
+    try {
+      if (!asset) throw new Error("Choose a file first");
+      await onForge(asset);
+      navigate("Expedition");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Forge failed");
+    } finally {
+      setForging(false);
+    }
   }
 
   return (
@@ -136,7 +148,7 @@ export function HomeScreen({
               <Icon name="upload" size={18} color={colors.ink} />
             </View>
           )}
-          <Text style={s.formats}>PDF / DOCX · Max 25 MB</Text>
+          <Text style={s.formats}>PDF / DOCX · Max 25 MB · Starter chapters use file name</Text>
         </Pressable>
         {file && (
           <Button
@@ -192,23 +204,13 @@ export function HomeScreen({
         </Pressable>
       </View>
       <View style={s.materials}>
-        {expeditions.slice(0, 2).map((expedition) => (
+        {items.slice(0, 2).map((expedition) => (
           <ExpeditionCard
             key={expedition.title}
             expedition={expedition}
             onPress={() => onSelectExpedition(expedition)}
           />
         ))}
-      </View>
-      <View accessibilityLabel="Claimed expedition" style={s.harvest}>
-        <View style={s.harvestSeal}>
-          <Icon name="check" color={colors.teal} size={22} />
-        </View>
-        <View style={ui.flex}>
-          <Text style={s.harvestTitle}>Daily Guild Harvest</Text>
-          <Text style={ui.label}>1 Biology stage completed · +450 Gold</Text>
-          <Text style={ui.label}>Claimed · Resets in 06h 42m</Text>
-        </View>
       </View>
     </View>
   );

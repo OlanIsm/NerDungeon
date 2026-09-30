@@ -26,6 +26,7 @@ export type Region = {
   enemies: number;
 };
 export type Expedition = {
+  id?: string;
   title: string;
   file: string;
   progress: number;
@@ -80,16 +81,18 @@ export const expeditions: Expedition[] = [
 export function AdventureScreen({
   onSelect,
   onInspect,
+  expeditions: items = expeditions,
 }: {
   onSelect: (expedition: Expedition, region?: Region) => void;
   onInspect: () => void;
+  expeditions?: Expedition[];
 }) {
   const [active, setActive] = useState(0);
   const [chapter, setChapter] = useState(
     currentChapter(expeditions[0].progress, expeditions[0].regions.length),
   );
-  const expedition = expeditions[active];
-  const selectedRegion = expedition.regions[chapter];
+  const expedition = items[Math.min(active, items.length - 1)];
+  const selectedRegion = expedition.regions[Math.min(chapter, expedition.regions.length - 1)];
   return (
     <View style={s.page}>
       <View style={s.pageHeading}>
@@ -104,7 +107,7 @@ export function AdventureScreen({
         contentContainerStyle={s.scrollChoices}
         accessibilityLabel="Choose study material"
       >
-        {expeditions.map((item, index) => (
+        {items.map((item, index) => (
           <Pressable
             key={item.file}
             accessibilityRole="button"

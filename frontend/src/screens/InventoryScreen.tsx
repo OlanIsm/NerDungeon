@@ -8,7 +8,6 @@ import {
   View,
 } from "react-native";
 import {
-  Button,
   Icon,
   Meter,
   Tabs,
@@ -22,19 +21,18 @@ import type { ScreenProps } from "../types";
 type Category = "Equipment" | "Potions";
 
 const loadout = [
-  { item: inventory[17], label: "Accessory" },
-  { item: inventory[8], label: "Weapon" },
+  { item: inventory[2], label: "Accessory" },
+  { item: inventory[1], label: "Weapon" },
   { item: inventory[0], label: "Armor" },
-  { item: inventory[16], label: "Accessory" },
 ];
 
-export function InventoryScreen({ notify }: ScreenProps) {
+export function InventoryScreen({ owned = inventory.map((item) => item.name) }: ScreenProps & { owned?: string[] }) {
   const scroll = useRef<ScrollView>(null);
   const bagY = useRef(0);
   const reducedMotion = useReducedMotion();
   const [category, setCategory] = useState<Category>("Equipment");
   const [selected, setSelected] = useState<string>();
-  const items = inventory.filter((item) => item.category === category);
+  const items = inventory.filter((item) => item.category === category && owned.includes(item.name));
   const selectedItem = items.find((item) => item.name === selected);
   function inspectItem(item: Item) {
     setCategory(item.category);
@@ -142,16 +140,7 @@ export function InventoryScreen({ notify }: ScreenProps) {
       >
         <View style={styles.bagHeading}>
           <Text style={[styles.sectionTitle, ui.flex]}>Backpack</Text>
-          <Text style={styles.capacity}>24/40</Text>
-          <Button
-            label="Expand"
-            icon="plus"
-            tone="quiet"
-            style={styles.expand}
-            onPress={() =>
-              notify("Bag expansion preview. Kapasitas belum berubah.")
-            }
-          />
+          <Text style={styles.capacity}>{owned.length}/40</Text>
         </View>
         <Tabs
           values={["Equipment", "Potions"] as const}

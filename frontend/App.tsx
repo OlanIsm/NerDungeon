@@ -5,6 +5,7 @@ import {
   Easing,
   Image,
   Modal,
+  Platform,
   ScrollView,
   Text,
   View,
@@ -36,6 +37,7 @@ import { InventoryScreen } from "./src/screens/InventoryScreen";
 import { BattleScreen } from "./src/screens/BattleScreen";
 import { colors, ui } from "./src/theme";
 import type { Screen } from "./src/types";
+import { forgeRequest, gameRequest, type GameData } from "./src/gameApi";
 
 const navigation = [
   { screen: "Hub", icon: icons.hub, size: 52, iconOffsetX: 4 },
@@ -45,6 +47,9 @@ const navigation = [
 ] as const;
 
 const shellAssets = [
+  art.doorLeft,
+  art.doorRight,
+  art.navPlank,
   icons.hub,
   icons.map,
   icons.bazaar,
@@ -146,6 +151,15 @@ function GameApp() {
   const { width } = useWindowDimensions();
   const [screen, setScreen] = useState<Screen>("Hub");
   const [message, setMessage] = useState<string>();
+  const [gameData, setGameData] = useState<GameData>();
+  useEffect(() => {
+    gameRequest().then(setGameData).catch(() => setMessage("Backend unavailable. Start backend and set EXPO_PUBLIC_API_URL."));
+  }, []);
+  async function perform(action: Record<string, unknown>) {
+    const data = await gameRequest(action);
+    setGameData(data);
+    return data;
+  }
   const [selectedExpedition, setSelectedExpedition] = useState<Expedition>(
     expeditions[0],
   );
@@ -156,6 +170,13 @@ function GameApp() {
     expedition: expeditions[0],
     region: expeditions[0].regions[1],
   });
+  const availableExpeditions = gameData?.expeditions ?? expeditions;
+  const currentExpedition = availableExpeditions.find((item) => item.id === selectedExpedition.id) ?? selectedExpedition;
+  const currentRegion = currentExpedition.regions.find((item) => item.chapter === selectedRegion.chapter) ?? selectedRegion;
+  const recentExpedition = availableExpeditions.find((item) => item.id === gameData?.lastAdventure?.expeditionId);
+  const recentAdventure = recentExpedition && gameData?.lastAdventure
+    ? { expedition: recentExpedition, region: recentExpedition.regions[gameData.lastAdventure.chapter - 1] }
+    : lastAdventure;
   const [visited, setVisited] = useState(() => new Set<Screen>(["Hub"]));
   const scrolls = useRef<Partial<Record<Screen, ScrollView | null>>>({});
   const [pageReveal] = useState(() => new Animated.Value(1));
@@ -217,6 +238,9 @@ function GameApp() {
           screen,
         ) && (
           <PlayerHeader
+            gold={gameData?.gold}
+            gems={gameData?.gems}
+            xp={gameData?.xp}
             onPressProfile={() =>
               setMessage(
                 "Nerd Mage · Level 5 Scholar. UI preview — data demonstrasi lokal.",
@@ -248,7 +272,7 @@ function GameApp() {
         >
           {visited.has("Bag") && (
             <View style={[s.fixedContent, screen !== "Bag" && s.hidden]}>
-              <InventoryScreen {...props} />
+              <InventoryScreen {...props} owned={gameData?.inventory} />
             </View>
           )}
           {visited.has("Hub") && (
@@ -262,10 +286,12 @@ function GameApp() {
             >
               <HomeScreen
                 {...props}
-                lastAdventure={lastAdventure}
+                lastAdventure={recentAdventure}
+                expeditions={availableExpeditions}
+                onForge={async (asset) => setGameData(await forgeRequest(asset))}
                 onContinue={() => {
-                  setSelectedExpedition(lastAdventure.expedition);
-                  setSelectedRegion(lastAdventure.region);
+                  setSelectedExpedition(recentAdventure.expedition);
+                  setSelectedRegion(recentAdventure.region);
                   navigate("RegionDetail");
                 }}
                 onSelectExpedition={(expedition) => {
@@ -286,6 +312,7 @@ function GameApp() {
               showsVerticalScrollIndicator={false}
             >
               <AdventureScreen
+                expeditions={availableExpeditions}
                 onInspect={() =>
                   requestAnimationFrame(() =>
                     scrolls.current.Expedition?.scrollToEnd({
@@ -310,12 +337,12 @@ function GameApp() {
               contentContainerStyle={s.scrollContent}
               showsVerticalScrollIndicator={false}
             >
-              <GachaScreen {...props} />
+              <GachaScreen {...props} gems={gameData?.gems} favor={gameData?.favor} onSummon={(count) => perform({ action: "summon", count })} />
             </ScrollView>
           )}
           {screen === "Region" && (
             <RegionScreen
-              expedition={selectedExpedition}
+              expedition={currentExpedition}
               onBack={() => navigate("Expedition")}
               onSelect={(region) => {
                 setSelectedRegion(region);
@@ -325,19 +352,22 @@ function GameApp() {
           )}
           {screen === "RegionDetail" && (
             <RegionDetailScreen
-              expedition={selectedExpedition}
-              region={selectedRegion}
+              expedition={currentExpedition}
+              region={currentRegion}
               onBack={() => navigate("Region")}
-              onStart={() => {
-                setLastAdventure({
-                  expedition: selectedExpedition,
-                  region: selectedRegion,
-                });
-                navigate("Battle");
+              onStart={async () => {
+                try {
+                  if (!currentExpedition.id) throw new Error("Adventure unavailable until backend loads");
+                  await perform({ action: "start", expeditionId: currentExpedition.id, chapter: currentRegion.chapter });
+                  setLastAdventure({ expedition: currentExpedition, region: currentRegion });
+                  navigate("Battle");
+                } catch (error) {
+                  setMessage(error instanceof Error ? error.message : "Adventure failed to start");
+                }
               }}
             />
           )}
-          {screen === "Battle" && <BattleScreen {...props} />}
+          {screen === "Battle" && <BattleScreen {...props} onComplete={() => perform({ action: "complete" }).catch((error) => setMessage(error.message))} />}
         </Animated.View>
         {!(["Region", "RegionDetail", "Battle"] as Screen[]).includes(
           screen,
@@ -347,6 +377,13 @@ function GameApp() {
             accessibilityLabel="Main navigation"
             style={s.nav}
           >
+            <View pointerEvents="none" style={s.navPlank}>
+              <Image
+                source={art.navPlank}
+                resizeMode="stretch"
+                style={s.navPlankImage}
+              />
+            </View>
             {navigation.map((item) => (
               <BottomNavItem
                 key={item.screen}
@@ -387,13 +424,13 @@ function GameApp() {
 }
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  safe: { flex: 1, backgroundColor: "#dce3ce", overflow: "hidden" },
+  safe: { flex: 1, backgroundColor: "#dce3ce", overflow: Platform.OS === "web" ? "clip" as "hidden" : "hidden" },
   app: {
     flex: 1,
     width: "100%",
     maxWidth: 540,
     alignSelf: "center",
-    overflow: "hidden",
+    overflow: Platform.OS === "web" ? "clip" as "hidden" : "hidden",
     backgroundColor: colors.background,
   },
   desktopApp: {
@@ -476,10 +513,9 @@ const s = StyleSheet.create({
     paddingBottom: 6,
     paddingHorizontal: 8,
     gap: 4,
-    borderTopWidth: 3,
-    borderTopColor: colors.edge,
-    backgroundColor: colors.wood,
   },
+  navPlank: { position: "absolute", width: "100%", height: "100%" },
+  navPlankImage: { width: "100%", height: "100%" },
   overlay: {
     flex: 1,
     backgroundColor: "#221b0599",

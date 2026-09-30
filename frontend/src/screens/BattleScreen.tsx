@@ -1,7 +1,15 @@
-import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { art } from "../assets";
-import { Button, Icon } from "../components/GameUI";
+import { Button, Icon, useReducedMotion } from "../components/GameUI";
 import { DebugControls } from "../game/DebugControls";
 import { FantasyScene } from "../game/FantasyScene";
 import { WORLD } from "../game/level";
@@ -20,25 +28,80 @@ const status: Record<GamePhase, string> = {
   result: "Trail complete!",
 };
 
-export function BattleScreen({ navigate }: ScreenProps) {
+export function BattleScreen({
+  navigate,
+  onComplete,
+}: ScreenProps & { onComplete: () => void }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [run, setRun] = useState(0);
   const [loadedAssets, setLoadedAssets] = useState(() => new Set<number>());
+  const [doorAssets, setDoorAssets] = useState(() => new Set<number>());
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const progress = loadedAssets.size / fightAssets.length;
+  const [phase, setPhase] = useState<"closing" | "loading" | "ready">(
+    "closing",
+  );
+  const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const [doors] = useState(() => new Animated.Value(0));
+  const reducedMotion = useReducedMotion();
+  const allLoaded = loadedAssets.size === fightAssets.length;
+  const opening =
+    phase === "loading" && allLoaded && minimumElapsed && !loadError;
 
-  if (progress < 1) {
-    return (
-      <View
-        accessibilityLabel="Loading fight assets"
-        accessibilityLiveRegion="polite"
-        style={s.loading}
-        onLayout={({ nativeEvent: { layout } }) =>
-          setSize({ width: layout.width, height: layout.height })
-        }
-      >
-        {fightAssets.map((source, index) => (
+  useEffect(() => {
+    if (phase !== "closing" || doorAssets.size !== 2 || size.width === 0)
+      return;
+    const animation = Animated.timing(doors, {
+      toValue: 1,
+      duration: reducedMotion ? 0 : 650,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start(({ finished }) => {
+      if (finished) setPhase("loading");
+    });
+    return () => animation.stop();
+  }, [phase, doors, doorAssets.size, size.width, reducedMotion]);
+
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const timer = setTimeout(() => setMinimumElapsed(true), 1500);
+    return () => clearTimeout(timer);
+  }, [phase, attempt]);
+
+  useEffect(() => {
+    if (phase !== "loading" || allLoaded || loadError) return;
+    const timer = setTimeout(() => setLoadError(true), 20000);
+    return () => clearTimeout(timer);
+  }, [phase, allLoaded, loadError, attempt]);
+
+  useEffect(() => {
+    if (!opening) return;
+    const animation = Animated.timing(doors, {
+      toValue: 0,
+      duration: reducedMotion ? 0 : 750,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start(({ finished }) => {
+      if (finished) setPhase("ready");
+    });
+    return () => animation.stop();
+  }, [opening, doors, reducedMotion]);
+
+  return (
+    <View
+      style={[s.screen, { backgroundColor: "#17110c" }]}
+      onLayout={({ nativeEvent: { layout } }) =>
+        setSize((current) =>
+          current.width === layout.width && current.height === layout.height
+            ? current
+            : { width: layout.width, height: layout.height },
+        )
+      }
+    >
+      {phase !== "closing" &&
+        fightAssets.map((source, index) => (
           <Image
             key={`${attempt}-${index}`}
             source={source}
@@ -51,64 +114,80 @@ export function BattleScreen({ navigate }: ScreenProps) {
             onError={() => setLoadError(true)}
           />
         ))}
-        <Image
-          accessibilityIgnoresInvertColors
-          source={art.nerdLoading}
-          resizeMode="contain"
-          style={s.loadingNerd}
-        />
-        <Image
-          accessibilityIgnoresInvertColors
-          source={art.nerdiusTitle}
-          resizeMode="contain"
-          style={s.loadingTitle}
-        />
-        <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${progress * 100}%` }]} />
-        </View>
-        <Text style={s.progressText}>
-          {loadError
-            ? "Some assets failed to load"
-            : `Preparing adventure... ${Math.round(progress * 100)}%`}
-        </Text>
-        {loadError && (
-          <View style={s.loadingActions}>
-            <Button
-              label="Exit"
-              tone="quiet"
-              onPress={() => navigate("RegionDetail")}
-            />
-            <Button
-              label="Retry"
-              tone="gold"
-              onPress={() => {
-                setLoadedAssets(new Set());
-                setLoadError(false);
-                setAttempt(attempt + 1);
-              }}
-            />
-          </View>
-        )}
-      </View>
-    );
-  }
-
-  return (
-    <View
-      style={s.screen}
-      onLayout={({ nativeEvent: { layout } }) => {
-        if (layout.width !== size.width || layout.height !== size.height)
-          setSize({ width: layout.width, height: layout.height });
-      }}
-    >
-      {size.width > 0 && size.height > 0 && (
+      {(opening || phase === "ready") && size.width > 0 && size.height > 0 && (
         <Journey
           key={run}
           width={size.width}
           height={size.height}
+          active={phase === "ready"}
           exit={() => navigate("RegionDetail")}
           replay={() => setRun(run + 1)}
+          onComplete={onComplete}
         />
+      )}
+      {phase !== "ready" && (
+        <View
+          testID={`gate-${opening ? "opening" : phase}`}
+          accessibilityLabel="Loading adventure"
+          accessibilityLiveRegion="polite"
+          style={s.gate}
+        >
+          {[art.doorLeft, art.doorRight].map((source, index) => (
+            <Animated.View
+              key={`${attempt}-door-${index}`}
+              style={[
+                s.door,
+                index === 0 ? { left: 0 } : { right: 0 },
+                {
+                  transform: [
+                    {
+                      translateX: doors.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [
+                          (index === 0 ? -1 : 1) * (size.width / 2 + 2),
+                          0,
+                        ],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Image
+                source={source}
+                resizeMode="stretch"
+                style={s.doorImage}
+                onLoad={() =>
+                  setDoorAssets((current) =>
+                    current.has(index) ? current : new Set(current).add(index),
+                  )
+                }
+                onError={() => setLoadError(true)}
+              />
+            </Animated.View>
+          ))}
+          {loadError && (
+            <View accessibilityLiveRegion="assertive" style={s.loadingActions}>
+              <Text style={s.progressText}>Some assets failed to load.</Text>
+              <Button
+                label="Exit"
+                tone="quiet"
+                onPress={() => navigate("RegionDetail")}
+              />
+              <Button
+                label="Retry"
+                tone="gold"
+                onPress={() => {
+                  setLoadedAssets(new Set());
+                  setDoorAssets(new Set());
+                  setLoadError(false);
+                  setMinimumElapsed(false);
+                  setAttempt((value) => value + 1);
+                }}
+              />
+            </View>
+          )}
+        </View>
       )}
     </View>
   );
@@ -119,14 +198,25 @@ function Journey({
   height,
   exit,
   replay,
+  onComplete,
+  active,
 }: {
+  active: boolean;
   width: number;
   height: number;
   exit: () => void;
   replay: () => void;
+  onComplete: () => void;
 }) {
   const scale = width / WORLD.width;
-  const { game, bob, scrollX, act } = useFantasyGame(height / scale, scale);
+  const { game, scrollX, act } = useFantasyGame(height / scale, scale, active);
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (game.state === GameState.result && !recorded.current) {
+      recorded.current = true;
+      onComplete();
+    }
+  }, [game.state, onComplete]);
   const [debug, setDebug] = useState(false);
   const [bounds, setBounds] = useState(false);
   const [triggers, setTriggers] = useState(false);
@@ -134,11 +224,16 @@ function Journey({
     game.state === GameState.encounter ||
     game.state === GameState.bossEncounter;
   return (
-    <View style={s.screen} testID="fight-page">
+    <View
+      style={s.screen}
+      testID="fight-page"
+      pointerEvents={active ? "auto" : "none"}
+      accessibilityElementsHidden={!active}
+      importantForAccessibility={active ? "auto" : "no-hide-descendants"}
+    >
       <FantasyScene
         game={game}
         scale={scale}
-        bob={bob}
         scrollX={scrollX}
         bounds={bounds}
         triggers={triggers}
@@ -226,39 +321,29 @@ function Journey({
 
 const s = StyleSheet.create({
   screen: { flex: 1, overflow: "hidden", backgroundColor: "#94c967" },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 28,
-    backgroundColor: "#10284e",
-  },
-  preloadAsset: { position: "absolute", width: 1, height: 1, opacity: 0 },
-  loadingNerd: { width: 230, height: 230 },
-  loadingTitle: { width: "100%", maxWidth: 320, height: 150, marginTop: -52 },
-  progressTrack: {
-    width: "82%",
-    maxWidth: 330,
-    height: 18,
-    padding: 3,
+  gate: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 20,
     overflow: "hidden",
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: "#7b481c",
-    backgroundColor: "#f8df9a",
   },
-  progressFill: {
-    height: "100%",
-    borderRadius: 999,
-    backgroundColor: "#f4b927",
+  door: { position: "absolute", top: 0, bottom: 0, width: "50%" },
+  doorImage: { width: "100%", height: "100%" },
+  preloadAsset: { position: "absolute", width: 1, height: 1, opacity: 0 },
+  progressText: { fontFamily: fonts.heading, fontSize: 13, color: "#fff1c7" },
+  loadingActions: {
+    position: "absolute",
+    top: "48%",
+    left: 16,
+    right: 16,
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#33240f",
   },
-  progressText: {
-    marginTop: 12,
-    fontFamily: fonts.heading,
-    fontSize: 13,
-    color: "#fff1c7",
-  },
-  loadingActions: { flexDirection: "row", gap: 10, marginTop: 14 },
   header: {
     position: "absolute",
     top: 12,

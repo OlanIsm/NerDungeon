@@ -5,14 +5,12 @@ import type { FantasyGame } from "./FantasyGame";
 export function FantasyScene({
   game,
   scale,
-  bob,
   scrollX,
   bounds,
   triggers,
 }: {
   game: FantasyGame;
   scale: number;
-  bob: Animated.Value;
   scrollX: Animated.Value;
   bounds: boolean;
   triggers: boolean;
@@ -22,7 +20,6 @@ export function FantasyScene({
       <SideScene
         game={game}
         scale={scale}
-        bob={bob}
         scrollX={scrollX}
         bounds={bounds}
         triggers={triggers}

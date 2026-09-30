@@ -7,15 +7,15 @@ import {
   Icon,
   ImageBadge,
   Meter,
-  RarityBadge,
   Tabs,
 } from "../components/GameUI";
 import { RealmFrame, fantasy } from "../components/FantasyUI";
 import { colors, fonts, ui } from "../theme";
 import type { ScreenProps } from "../types";
+import type { GameData } from "../gameApi";
 
 const vaults = ["Armory & Relics", "Spell Scrolls"] as const;
-export function GachaScreen({ notify }: ScreenProps) {
+export function GachaScreen({ notify, onSummon, gems = 320, favor = 3 }: ScreenProps & { onSummon: (count: 1 | 10) => Promise<GameData>; gems?: number; favor?: number }) {
   const [tab, setTab] = useState<(typeof vaults)[number]>("Armory & Relics");
   return (
     <View style={s.page}>
@@ -66,7 +66,7 @@ export function GachaScreen({ notify }: ScreenProps) {
           <Text style={s.preview}>Preview</Text>
         </View>
         <View style={s.relics}>
-          {[inventory[8], inventory[0], inventory[17]].map((item) => (
+          {inventory.map((item) => (
             <Pressable
               key={item.name}
               accessibilityRole="button"
@@ -86,37 +86,21 @@ export function GachaScreen({ notify }: ScreenProps) {
             </Pressable>
           ))}
         </View>
-        <View accessibilityLabel="Loot probabilities" style={s.rarities}>
-          <RarityBadge name="Common" detail="55%" />
-          <RarityBadge name="Rare" detail="35%" />
-          <RarityBadge name="Epic" detail="8%" />
-          <RarityBadge name="Legendary" detail="2%" />
-        </View>
         <View style={s.costRow}>
           <ImageBadge source={icons.gems} text="100" size={24} />
-          <Text style={ui.label}>or</Text>
-          <ImageBadge source={icons.coins} text="1,000" size={24} />
         </View>
         <Button
           label="Summon 1"
           icon="treasure-chest"
           tone="gold"
-          onPress={() =>
-            notify(
-              "Preview summon: Quill of Wisdom (Epic). Tidak ada currency yang dipotong.",
-            )
-          }
+          onPress={() => onSummon(1).then((data) => notify(`You received ${data.rewards?.[0]}.`)).catch((error) => notify(error.message))}
         />
         <View style={s.multiPull}>
           <View style={ui.flex}>
             <Button
               label="Summon 10"
               tone="teal"
-              onPress={() =>
-                notify(
-                  "Preview ×10 summon. Summoning dan pembelian belum terhubung ke backend.",
-                )
-              }
+              onPress={() => onSummon(10).then((data) => notify(`You received: ${data.rewards?.join(", ")}.`)).catch((error) => notify(error.message))}
             />
           </View>
           <View style={s.multiCost}>
@@ -124,16 +108,16 @@ export function GachaScreen({ notify }: ScreenProps) {
             <Text style={ui.label}>Save 10%</Text>
           </View>
         </View>
-        <Text style={s.disclosure}>Preview only · No currency is spent.</Text>
+        <Text style={s.disclosure}>{gems} gems available · One item per summon.</Text>
       </RealmFrame>
 
       <View style={s.favor}>
         <View style={ui.between}>
           <Text style={s.favorTitle}>Scholar’s Favor</Text>
-          <Text style={ui.label}>3 / 10</Text>
+          <Text style={ui.label}>{favor} / 10</Text>
         </View>
-        <Meter value={30} color={colors.teal} label="Summon progress" />
-        <Text style={ui.body}>Epic or higher guaranteed within 7 summons.</Text>
+        <Meter value={favor * 10} color={colors.teal} label="Summon progress" />
+        <Text style={ui.body}>One of four items per summon.</Text>
       </View>
     </View>
   );

@@ -1,4 +1,7 @@
 export const art = {
+  navPlank: require("../assets/icon/Plank bar.webp"),
+  doorLeft: require("../assets/GUI/door/Door left.webp"),
+  doorRight: require("../assets/GUI/door/Door right.webp"),
   nerdEatPdf: require("../assets/character/nerdEatPdf.gif"),
   nerdLoading: require("../assets/icon/nerdLoading.gif"),
   nerdiusTitle: require("../assets/optimized/nerdius-title.webp"),
@@ -6,12 +9,12 @@ export const art = {
 };
 
 export const icons = {
-  hub: require("../assets/icon/home.webp"),
-  map: require("../assets/icon/map.webp"),
-  bazaar: require("../assets/icon/chest.webp"),
-  armory: require("../assets/icon/backpack.webp"),
-  coins: require("../assets/icon/coins.webp"),
-  gems: require("../assets/icon/gems.webp"),
+  hub: require("../assets/icon/Hub.webp"),
+  map: require("../assets/icon/Map.webp"),
+  bazaar: require("../assets/icon/Chest.webp"),
+  armory: require("../assets/icon/bag.webp"),
+  coins: require("../assets/icon/Coins.webp"),
+  gems: require("../assets/icon/Gem.webp"),
 };
 
 export const mapArt = {
@@ -21,6 +24,6 @@ export const mapArt = {
 };
 
 export const miniIcons = {
-  oakTome: require("../assets/mini icon/sliced/oak-tome.png"),
-  chest: require("../assets/mini icon/sliced/chest.png"),
+  oakTome: require("../assets/item/sliced/weapon/oak-tome.png"),
+  chest: icons.bazaar,
 };

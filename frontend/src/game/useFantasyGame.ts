@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { Animated, AppState, Platform } from "react-native";
 import { FantasyGame } from "./FantasyGame";
-import { GameState } from "./types";
 
-export function useFantasyGame(height: number, scale: number) {
+export function useFantasyGame(height: number, scale: number, active = true) {
   const [game] = useState(() => new FantasyGame(height));
-  const [bob] = useState(() => new Animated.Value(0));
   const [scrollX] = useState(() => new Animated.Value(0));
   const [, render] = useState(0);
 
@@ -31,24 +29,19 @@ export function useFantasyGame(height: number, scale: number) {
         Platform.OS !== "web" ||
         typeof document === "undefined" ||
         !document.hidden;
-      if (appActive && visible && lastTime) {
+      if (active && appActive && visible && lastTime) {
         const distance = game.distance;
         game.update((time - lastTime) / 1000);
         if (game.distance !== distance) {
           scrollX.setValue(-game.distance * scale);
         }
-        bob.setValue(
-          game.state === GameState.walking && !game.paused
-            ? Math.sin(game.walkTime * 13) * 2.5 * scale
-            : 0,
-        );
         const nextRevision = game.revision + game.chunks.revision;
         if (revision !== nextRevision) {
           revision = nextRevision;
           render(revision);
         }
       }
-      lastTime = appActive && visible ? time : 0;
+      lastTime = active && appActive && visible ? time : 0;
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -56,12 +49,12 @@ export function useFantasyGame(height: number, scale: number) {
       cancelAnimationFrame(frame);
       subscription.remove();
     };
-  }, [bob, game, scale, scrollX]);
+  }, [active, game, scale, scrollX]);
 
   function act(action: () => void) {
     action();
     render(game.revision + game.chunks.revision);
   }
 
-  return { game, bob, scrollX, act };
+  return { game, scrollX, act };
 }

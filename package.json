@@ -18,6 +18,7 @@
     "typescript": "~6.0.3"
   },
   "dependencies": {
-    "expo": "^57.0.22"
+    "expo": "^57.0.22",
+    "phaser": "^3.90.0"
   }
 }

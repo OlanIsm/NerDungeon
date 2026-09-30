@@ -20,8 +20,14 @@ function Resource({ kind, label }: { kind: "coins" | "gems"; label: string }) {
 
 export function PlayerHeader({
   onPressProfile,
+  gold = 1450,
+  gems = 320,
+  xp = 1771,
 }: {
   onPressProfile: () => void;
+  gold?: number;
+  gems?: number;
+  xp?: number;
 }) {
   return (
     <View style={s.header}>
@@ -48,7 +54,7 @@ export function PlayerHeader({
         <Text numberOfLines={1} style={s.name}>
           Nerd Mage
         </Text>
-        <Text style={s.rank}>Scholar · 1,771 XP</Text>
+        <Text style={s.rank}>Scholar · {xp.toLocaleString()} XP</Text>
         <View
           accessibilityRole="progressbar"
           accessibilityLabel="Player experience"
@@ -59,8 +65,8 @@ export function PlayerHeader({
         </View>
       </View>
       <View style={s.resources}>
-        <Resource kind="coins" label="1,450" />
-        <Resource kind="gems" label="320" />
+        <Resource kind="coins" label={gold.toLocaleString()} />
+        <Resource kind="gems" label={gems.toLocaleString()} />
       </View>
     </View>
   );

@@ -7,13 +7,13 @@ import {
 } from "react-native";
 import type { FantasyGame } from "../FantasyGame";
 import { GameState } from "../types";
+import { WalkingSprite, walkTexture } from "./WalkingSprite";
 
 const PLAYER_X = 102;
 const SOURCE_WIDTH = 1118;
 const SOURCE_HEIGHT = 844;
 const SOURCE_GROUND_Y = 657;
 
-const hero = require("../../../assets/character/mc.png");
 const soda = require("../../../assets/character/soda-cutout.png");
 
 const layers: readonly {
@@ -23,74 +23,72 @@ const layers: readonly {
 }[] = [
   {
     name: "background",
-    source: require("../../../assets/parallax backgound pack/_11_background.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_11_background.webp"),
     speed: 0,
   },
   {
     name: "distant-clouds",
-    source: require("../../../assets/parallax backgound pack/_10_distant_clouds.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_10_distant_clouds.webp"),
     speed: 0.04,
   },
   {
     name: "distant-clouds-2",
-    source: require("../../../assets/parallax backgound pack/_09_distant_clouds1.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_09_distant_clouds1.webp"),
     speed: 0.07,
   },
   {
     name: "clouds",
-    source: require("../../../assets/parallax backgound pack/_08_clouds.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_08_clouds.webp"),
     speed: 0.1,
   },
   {
     name: "huge-clouds",
-    source: require("../../../assets/parallax backgound pack/_07_huge_clouds.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_07_huge_cloud.webp"),
     speed: 0.14,
   },
   {
     name: "hill-2",
-    source: require("../../../assets/parallax backgound pack/_06_hill2.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_06_hill2.webp"),
     speed: 0.2,
   },
   {
     name: "hill-1",
-    source: require("../../../assets/parallax backgound pack/_05_hill1.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_05_hill1.webp"),
     speed: 0.28,
   },
   {
     name: "bushes",
-    source: require("../../../assets/parallax backgound pack/_04_bushes.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_04_bushes.webp"),
     speed: 0.38,
   },
   {
     name: "distant-trees",
-    source: require("../../../assets/parallax backgound pack/_03_distant_trees.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_03_distant_trees.webp"),
     speed: 0.5,
   },
   {
     name: "trees",
-    source: require("../../../assets/parallax backgound pack/_02_trees and bushes.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_02_trees and bushes.webp"),
     speed: 0.72,
   },
   {
     name: "ground",
-    source: require("../../../assets/parallax backgound pack/_01_ground.png"),
+    source: require("../../../assets/parallax backgound pack/compressed/_01_ground.webp"),
     speed: 1,
   },
 ];
 
-export const fightAssets = [hero, soda, ...layers.map((layer) => layer.source)];
+export const fightAssets = [walkTexture, soda, ...layers.map((layer) => layer.source)];
 
 export function SideScene({
   game,
   scale,
-  bob,
   scrollX,
   bounds,
   triggers,
 }: {
   game: FantasyGame;
   scale: number;
-  bob: Animated.Value;
   scrollX: Animated.Value;
   bounds: boolean;
   triggers: boolean;
@@ -148,30 +146,7 @@ export function SideScene({
         }}
       >
         <View style={s.shadow} />
-        <Animated.View
-          style={[
-            s.fill,
-            {
-              transform: [
-                { translateY: bob },
-                {
-                  rotate: bob.interpolate({
-                    inputRange: [-3, 0, 3],
-                    outputRange: ["-1.5deg", "0deg", "1.5deg"],
-                    extrapolate: "clamp",
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Image
-            accessibilityIgnoresInvertColors
-            source={hero}
-            resizeMode="contain"
-            style={s.sprite}
-          />
-        </Animated.View>
+        <WalkingSprite game={game} size={116 * scale} />
       </View>
 
       {visibleActors && (

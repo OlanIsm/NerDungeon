@@ -1,0 +1,45 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { chromium } = require('@playwright/test');
+const state = { gold: 1450, gems: 320, xp: 1771, favor: 3, inventory: [], expeditions: [{ id: 'test', title: 'Walk Test', file: 'walk.pdf', progress: 0, regions: [{ chapter: 1, title: 'Forest', summary: 'Walk', topics: ['Walk'], questions: 1, enemies: 1 }] }], lastAdventure: { expeditionId: 'test', chapter: 1 } };
+(async () => {
+  const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+  try {
+    const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.route('**/api/game', route => route.fulfill({ json: state }));
+    await page.goto(process.env.APP_URL || 'http://localhost:8082', { waitUntil: 'networkidle' });
+    await page.getByLabel('Loading Nerdius', { exact: true }).waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Continue Adventure', exact: true }).click();
+    await page.getByRole('button', { name: 'Start Adventure', exact: true }).click();
+    await page.getByTestId('gate-loading').waitFor();
+    const closedAt = Date.now();
+    const gate = await page.getByTestId('gate-loading').boundingBox();
+    assert.equal(gate.y, 0, 'gate fills viewport without inherited scroll');
+    assert.equal(gate.height, 932);
+    fs.mkdirSync('test-results', { recursive: true });
+    await page.screenshot({ path: 'test-results/gate-closed.png' });
+    assert.equal(await page.getByTestId('fight-player').count(), 0, 'game starts only after closed-door hold');
+    await page.getByTestId('gate-loading').waitFor({ state: 'hidden' });
+    assert(Date.now() - closedAt >= 1300, 'doors stay closed for minimum loading delay');
+    await page.getByTestId('gate-opening').waitFor({ state: 'hidden' });
+    const sprite = page.locator('[data-testid^="walk-frame-"]');
+    const first = await sprite.getAttribute('data-testid');
+    await page.waitForTimeout(200);
+    assert.notEqual(await sprite.getAttribute('data-testid'), first, 'walk atlas frames advance');
+    assert.equal(await page.locator('[data-testid^="parallax-"]').count(), 11);
+    const urls = await page.locator('[data-testid^="parallax-"] img').evaluateAll(images => images.map(img => img.src));
+    assert(urls.every(url => url.includes('compressed') && url.includes('.webp')), 'all game background layers use compressed WebP');
+    await page.getByRole('button', { name: 'Debug controls', exact: true }).click();
+    await page.getByRole('button', { name: 'Pause Scrolling', exact: true }).click();
+    await page.waitForTimeout(150);
+    const stopped = await sprite.getAttribute('data-testid');
+    await page.waitForTimeout(250);
+    assert.equal(await sprite.getAttribute('data-testid'), stopped, 'sprite stops when game paused');
+    await page.getByRole('button', { name: 'Debug controls', exact: true }).click();
+    await page.screenshot({ path: 'test-results/walk-game.png' });
+    assert.deepEqual(errors, []);
+    console.log('PASS gate hold/open, atlas walking/pause, WebP layers');
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });
