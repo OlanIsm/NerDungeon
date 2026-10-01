@@ -23,14 +23,13 @@ Status di bawah harus mengikuti bukti, bukan keberadaan kode saja. **MVP belum s
 | [x] | Satu ekspedisi awal untuk tutorial | `backend/src/modules/game/state.ts` membuat hanya `tutorial`; ekspedisi baru muncul hanya setelah upload. Chapter terkunci sesuai progres dan hadiah chapter tidak berulang. | Tes `backend/tests/game.test.ts` lulus. |
 | [x] | Cek dasar lokal | Pada 2026-09-30: 4 tes backend lulus; typecheck backend/frontend, lint dan build frontend lulus. | Ini cek kode lokal, bukan uji deploy atau database live. |
 | [x] | Kredensial aplikasi lokal terpasang | Pada workspace ini `backend/.env` dan `frontend/.env` sudah berisi URL dan publishable key; secret key hanya di backend. Nilai key tidak dicatat di Git. | Format dan pemisahan key terverifikasi; environment deploy tetap perlu diisi sendiri. |
-
 | [x] | Implementasi PDF/Gemini dan validasi lokal | `backend/src/modules/game/pdf.ts`, `backend/src/platform/gemini.ts`, dan `backend/tests/pdf.test.ts`; 7 tes backend, typecheck backend/frontend, lint dan build frontend lulus pada 2026-10-01. Briefing materi PDF diuji dengan mock pada viewport 430 dan 1280 px. | Bukti lokal dengan mock provider; kualitas soal dan penyimpanan live belum dinyatakan lulus. |
+| [x] | Commit dan push modular monolith serta PDF/Gemini | Commit `09ea9d2` berhasil dipush ke `origin/main` pada 2026-10-01. Staged files diperiksa tanpa secret key dari environment lokal. | Implementasi tersedia di GitHub; migrasi SQL dan jalur PDF live masih perlu dituntaskan. |
 
 ### On progress — tuntaskan sebelum klaim MVP
 
 | Cek | Prioritas | Pekerjaan berikutnya | Selesai jika |
 | --- | --- | --- | --- |
-| [ ] | P0 | Commit dan push perubahan modular monolith serta PDF/Gemini. Akses tulis Git telah pulih pada 2026-10-01; staging berhasil. | Semua perubahan sesi masuk commit dan tersedia di GitHub; file `.env` tetap tidak diikutkan. |
 | [ ] | P0 | Terapkan migrasi SQL ke project `thlfrtxnxsuzgbjfoeel`; periksa tabel, grant, RLS, dan bucket privat. Cek live 2026-10-01: `game_states` masih memberi `PGRST205`; bucket privat `expeditions` sudah dibuat dengan limit 25 MB dan MIME PDF/DOCX. | Query remote menunjukkan skema ada; akun biasa tidak bisa menulis `game_states` atau membaca file akun lain secara langsung. |
 | [ ] | P0 | Uji Anonymous Sign-Ins di Supabase Auth. Pada 2026-10-01 akun anonim sementara berhasil dibuat oleh `verify:pdf`; `/api/me` dan persistensi sesi browser masih perlu dibuktikan. | Akun anonim bisa dibuat, `/api/me` mengembalikan user valid, reload mempertahankan akun. |
 | [ ] | P0 | Uji jalur PDF live dengan dua akun: unggah PDF valid, refresh, buka ekspedisi; tolak file rusak, kosong, salah tipe, dan lebih dari 25 MB. | File tersimpan di bucket privat, row akun A bertambah, akun B tidak melihat row/file A, error upload tidak meninggalkan row palsu. |
