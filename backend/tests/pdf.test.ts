@@ -56,13 +56,14 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
   document.addPage().drawText("Kinetic energy: Ek = 1/2 m v^2.");
   const pdf = Buffer.from(await document.save());
   let state = initialGame();
-  let mode = "valid";
+  let mode = "busy-once";
   let uploads = 0;
   let writes = 0;
   let removes = 0;
   let generationRequests = 0;
   const nativeFetch = globalThis.fetch;
   t.mock.method(console, "error", () => {});
+  t.mock.method(console, "warn", () => {});
   t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     if (url.includes("generativelanguage.googleapis.com")) {
@@ -74,6 +75,7 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
       if (mode === "network") throw new Error("Network unavailable");
       if (mode === "quota") return Response.json({}, { status: 429 });
       if (mode === "busy") return Response.json({}, { status: 503 });
+      if (mode === "busy-once" && generationRequests === 1) return Response.json({}, { status: 503 });
       if (mode === "bad-json") return Response.json({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: "broken json" }] } }] });
       const data = content();
       if (mode === "unreadable") { data.readable = false; data.chapters = []; }
@@ -109,6 +111,7 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
   }
   const response = await forge();
   assert.equal(response.status, 200);
+  assert.equal(generationRequests, 2, "A temporary 503 is retried before saving one expedition");
   const snapshot = await response.json();
   assert.equal(state.expeditions.length, 2);
   assert.equal(state.expeditions[1].title, "Energi dan gerak");
@@ -120,9 +123,13 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
   const before = structuredClone(state);
   for (const [failure, status] of [["unreadable", 422], ["invalid", 502], ["truncated", 502], ["bad-json", 502], ["quota", 503], ["busy", 503], ["network", 504]] as const) {
     mode = failure;
+    const attemptsBefore: number = generationRequests;
     const failed = await forge();
     assert.equal(failed.status, status, failure);
-    assert.ok((await failed.json()).error);
+    const error = (await failed.json()).error;
+    assert.ok(error);
+    assert.equal(generationRequests - attemptsBefore, failure === "busy" ? 3 : 1);
+    if (failure === "busy") assert.match(error, /after 3 attempts/);
     assert.equal(uploads, 1);
     assert.equal(writes, 1);
     assert.deepEqual(state, before);

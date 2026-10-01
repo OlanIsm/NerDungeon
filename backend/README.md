@@ -26,7 +26,7 @@ Generated question banks stay in server-side game state. Snapshots expose chapte
 
 Answers, the active battle and the latest 20 completed attempts persist in the account's `game_states` JSON. The three visual encounters distribute that chapter's questions; Phaser cannot grant rewards. Longer audit history will need a separate result table.
 
-Generation uses one synchronous request with a 90-second timeout. If large PDFs regularly exceed it, move processing into a background job. On Windows PowerShell, use `npm.cmd` if `npm.ps1` is blocked.
+Generation is synchronous with one 90-second timeout shared across all attempts. A Gemini HTTP 503 triggers up to two retries (three attempts total), with increasing delays and jitter. Quota/configuration/invalid-PDF errors are not retried. Persistent overload returns an error without saving an expedition or source file. If large PDFs regularly exceed the timeout, move processing into a background job. On Windows PowerShell, use `npm.cmd` if `npm.ps1` is blocked.
 
 ## Verification
 
