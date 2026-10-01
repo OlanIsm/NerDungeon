@@ -339,6 +339,7 @@ export function RegionDetailScreen({
           <span style={ui.body} className="text">
             {region.summary}
           </span>
+          <span style={ui.body} className="text">Answer every question and get at least 60% correct to clear this chapter. Unfinished answers are saved.</span>
           {region.material && (
             <div style={s.topics} className="stack">
               <span style={ui.heading} className="text">Study material</span>

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { initialGame, type GameData } from "./state.ts";
+import { tutorialRegions } from "./tutorial.ts";
 
 type Client = SupabaseClient;
 type Row = { state: GameData; version: number };
@@ -7,7 +8,12 @@ type Row = { state: GameData; version: number };
 export async function readState(client: Client, userId: string): Promise<Row> {
   const existing = await client.from("game_states").select("state,version").eq("user_id", userId).maybeSingle();
   if (existing.error) throw existing.error;
-  if (existing.data) return existing.data as Row;
+  if (existing.data) {
+    const row = existing.data as Row;
+    const tutorial = row.state.expeditions.find((item) => item.id === "tutorial");
+    if (tutorial?.regions.some((region) => !region.questionBank?.length)) tutorial.regions = tutorialRegions();
+    return row;
+  }
   const created = await client.from("game_states").insert({ user_id: userId, state: initialGame() }).select("state,version").single();
   if (!created.error) return created.data as Row;
   if (created.error.code !== "23505") throw created.error;

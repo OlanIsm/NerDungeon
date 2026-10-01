@@ -270,14 +270,16 @@ export default function App() {
               />
             </div>
           )}
-          {screen === "Battle" && (
+          {screen === "Battle" && gameData?.battle && (
             <BattleScreen
+              key={gameData.battle.id}
               {...props}
-              onComplete={() =>
-                perform({ action: "complete" }).catch((error) =>
-                  setMessage(error.message),
-                )
-              }
+              battle={gameData.battle}
+              title={currentExpedition.title}
+              tutorial={currentExpedition.id === "tutorial"}
+              onAnswer={(questionId, selectedIndex) => perform({ action: "answer", battleId: gameData.battle!.id, questionId, selectedIndex }).then(() => {})}
+              onComplete={() => perform({ action: "complete", battleId: gameData.battle!.id }).then(() => {})}
+              onRestart={() => perform({ action: "start", expeditionId: currentExpedition.id, chapter: currentRegion.chapter }).then(() => {})}
             />
           )}
         </main>

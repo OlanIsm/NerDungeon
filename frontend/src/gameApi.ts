@@ -16,6 +16,17 @@ export type GameData = {
   lastAdventure: { expeditionId: string; chapter: number } | null;
   rewards?: string[];
   summonPool?: SummonItem[];
+  battle?: BattleView | null;
+};
+export type BattleQuestion = { id: string; prompt: string; options: string[]; sourcePage: number };
+export type BattleView = {
+  id: string; expeditionId: string; chapter: number;
+  status: "active" | "passed" | "failed";
+  total: number; correct: number; requiredCorrect: number;
+  goldReward: number; xpReward: number;
+  answers: { questionId: string; selectedIndex: number; correct: boolean }[];
+  question: BattleQuestion | null;
+  feedback: (BattleQuestion & { questionId: string; selectedIndex: number; correct: boolean; answerIndex: number; explanation: string }) | null;
 };
 const url = import.meta.env.VITE_API_URL ?? "";
 const supabase = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY

@@ -5,6 +5,8 @@ import { DebugControls } from "../game/DebugControls";
 import type { WorldControls } from "../game/PhaserWorld";
 import { GameState, type GamePhase } from "../game/types";
 import type { ScreenProps } from "../types";
+import type { BattleView } from "../gameApi";
+import { BattleQuiz } from "../components/BattleQuiz";
 
 const status: Record<GamePhase, string> = {
   walking: "Walking east",
@@ -17,7 +19,16 @@ const status: Record<GamePhase, string> = {
 export function BattleScreen({
   navigate,
   onComplete,
-}: ScreenProps & { onComplete: () => void }) {
+  onAnswer,
+  onRestart,
+  battle,
+  title,
+  tutorial,
+}: ScreenProps & {
+  battle: BattleView; title: string; tutorial: boolean;
+  onAnswer: (questionId: string, selectedIndex: number) => Promise<void>;
+  onComplete: () => Promise<void>; onRestart: () => Promise<void>;
+}) {
   const reducedMotion = useReducedMotion();
   const [phase, setPhase] = useState<
     "closing" | "loading" | "opening" | "ready"
@@ -34,6 +45,8 @@ export function BattleScreen({
   const [debug, setDebug] = useState(false);
   const [bounds, setBounds] = useState(false);
   const [triggers, setTriggers] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string>();
   const recorded = useRef(false);
   const loadingStarted = useRef(0);
   const reportReady = useCallback(
@@ -106,7 +119,8 @@ export function BattleScreen({
   useEffect(() => {
     if (gameState === GameState.result && !recorded.current) {
       recorded.current = true;
-      onComplete();
+      setSaving(true);
+      onComplete().catch((error) => setSaveError(error instanceof Error ? error.message : "Could not save the result. Try again.")).finally(() => setSaving(false));
     }
   }, [gameState, onComplete]);
   const inEncounter =
@@ -146,8 +160,8 @@ export function BattleScreen({
               style={{ minWidth: 62, paddingInline: 8 }}
             />
             <div className="battle-heading">
-              <h1>Sunlit Forest</h1>
-              <p>The scholar’s trail</p>
+              <h1>{title}</h1>
+              <p>Chapter {battle.chapter} · {battle.total} questions</p>
             </div>
             <button
               type="button"
@@ -180,13 +194,13 @@ export function BattleScreen({
             <div className="battle-status">
               <div className="battle-status-copy">
                 <h2 data-testid="fight-status" aria-live="polite">
-                  {game.paused ? "Journey paused" : status[game.state]}
+                  {game.state === GameState.result ? battle.status === "passed" ? "Chapter cleared!" : battle.status === "failed" ? "Keep learning" : "Saving result…" : game.paused ? "Journey paused" : status[game.state]}
                 </h2>
                 <p>
                   {inEncounter
                     ? `${game.encounter?.name} · ${game.encounter?.count} ${game.encounter?.count === 1 ? "enemy" : "enemies"}`
                     : game.state === GameState.result
-                      ? "The forest is safe. A new trail awaits."
+                      ? `${battle.correct} / ${battle.total} correct. ${battle.status === "passed" ? `+${battle.goldReward} gold · +${battle.xpReward} XP` : `You need ${battle.requiredCorrect} correct to pass.`}`
                       : game.state === GameState.encounterComplete
                         ? "The trail opens up again."
                         : "Follow the path toward the next clearing."}
@@ -198,21 +212,25 @@ export function BattleScreen({
               </div>
             </div>
             {inEncounter && (
-              <Button
-                label="Complete Encounter"
-                tone="gold"
-                onPress={() => world.act(() => game.completeEncounter())}
-              />
+              <BattleQuiz battle={battle} checkpoint={game.cleared + 1} tutorial={tutorial} onAnswer={onAnswer} onAdvance={() => world.act(() => game.completeEncounter())} />
             )}
             {game.state === GameState.result && (
               <div className="result-actions">
-                <Button
-                  label="Continue trail"
-                  tone="gold"
-                  onPress={() => world.act(() => game.continueTrail())}
-                  style={{ flex: 1 }}
-                />
-                <Button label="Replay" tone="quiet" onPress={retry} />
+                {saveError && <p className="quiz-error" role="alert">{saveError}</p>}
+                {battle.status === "active" ? (
+                  <Button label={saving ? "Saving result…" : "Retry saving"} disabled={saving} tone="gold" onPress={() => {
+                    setSaving(true); setSaveError(undefined);
+                    onComplete().catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
+                  }} />
+                ) : (
+                  <>
+                    <Button label="Back to chapter" tone="gold" onPress={() => navigate("RegionDetail")} />
+                    <Button label={saving ? "Starting…" : "Retry chapter"} disabled={saving} tone="quiet" onPress={() => {
+                      setSaving(true); setSaveError(undefined);
+                      onRestart().catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
+                    }} />
+                  </>
+                )}
               </div>
             )}
           </footer>

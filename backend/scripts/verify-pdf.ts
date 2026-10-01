@@ -12,6 +12,13 @@ const auth = authClient();
 const signedIn = await auth.auth.signInAnonymously();
 if (signedIn.error || !signedIn.data.session) throw new Error("Live verification could not create an anonymous account. Check Supabase Auth settings.");
 const userId = signedIn.data.user!.id;
+const secondAuth = authClient();
+const secondSignIn = await secondAuth.auth.signInAnonymously();
+if (secondSignIn.error || !secondSignIn.data.session) {
+  await client.auth.admin.deleteUser(userId);
+  throw new Error("Could not create the second verification account");
+}
+const secondUserId = secondSignIn.data.user!.id;
 const server = app.listen(0);
 let storedPath: string | undefined;
 try {
@@ -19,6 +26,12 @@ try {
   assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}/api/game`;
   const headers = { Authorization: `Bearer ${signedIn.data.session.access_token}` };
+  const secondHeaders = { Authorization: `Bearer ${secondSignIn.data.session.access_token}` };
+  async function action(body: object, expected = 200, requestHeaders = headers) {
+    const response = await fetch(base, { method: "POST", headers: { ...requestHeaders, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    assert.equal(response.status, expected, `Action ${JSON.stringify(body)}: ${response.status}`);
+    return response.json();
+  }
   const document = await PDFDocument.create();
   const page = document.addPage();
   const lines = [
@@ -53,7 +66,64 @@ try {
   const reloaded = await fetch(base, { headers });
   assert.equal(reloaded.status, 200);
   assert.equal((await reloaded.json()).expeditions.length, 2);
-  console.log("PASS: PDF content, validated questions, source pages, Storage and reload", { chapters: saved.regions.length, questions: saved.regions.reduce((count, region) => count + region.questions, 0) });
+  const other = await fetch(base, { headers: secondHeaders });
+  assert.equal(other.status, 200);
+  assert.equal((await other.json()).expeditions.length, 1);
+  await action({ action: "start", expeditionId: expedition.id, chapter: 1 }, 400, secondHeaders);
+  const deniedFile = await secondAuth.storage.from("expeditions").download(storedPath);
+  assert.ok(deniedFile.error, "Another account cannot read the source PDF");
+  const deniedWrite = await auth.from("game_states").update({ state: { gold: 999999 } }).eq("user_id", userId);
+  assert.ok(deniedWrite.error, "A browser account cannot grant itself resources directly");
+  const deniedRead = await secondAuth.from("game_states").select("state").eq("user_id", userId);
+  assert.ok(deniedRead.error || !deniedRead.data?.length, "Another account cannot read game state directly");
+  const me = await fetch(base.replace("/game", "/me"), { headers });
+  assert.equal(me.status, 200);
+  assert.equal((await me.json()).user.id, userId);
+  let battleState = await action({ action: "start", expeditionId: expedition.id, chapter: 1 });
+  const battleId = battleState.battle.id;
+  assert.equal(battleState.battle.question.answerIndex, undefined);
+  assert.equal(battleState.battle.question.explanation, undefined);
+  await action({ action: "complete", battleId }, 400);
+  await action({ action: "answer", battleId, questionId: battleState.battle.question.id, selectedIndex: 0 }, 400, secondHeaders);
+  const questions = saved.regions[0].questionBank!;
+  for (const [index, question] of questions.entries()) {
+    const body = { action: "answer", battleId, questionId: question.id, selectedIndex: question.answerIndex };
+    if (index === 0) {
+      // Concurrent identical retries must produce one stored answer.
+      await Promise.all([action(body), action(body)]);
+      const resumed = await action({ action: "start", expeditionId: expedition.id, chapter: 1 });
+      assert.equal(resumed.battle.id, battleId);
+      assert.equal(resumed.battle.answers.length, 1);
+      const partial = await fetch(base, { headers });
+      assert.equal((await partial.json()).battle.answers.length, 1);
+    } else {
+      battleState = await action(body);
+    }
+  }
+  const results = await Promise.all([action({ action: "complete", battleId }), action({ action: "complete", battleId })]);
+  assert.ok(results.every((result) => result.battle.status === "passed" && result.gold === snapshot.gold + 450 && result.xp === snapshot.xp + 100));
+  const final = await fetch(base, { headers });
+  const finalState = await final.json();
+  assert.equal(finalState.battleHistory.length, 1);
+  assert.equal(finalState.battle.answers.length, questions.length);
+  const refreshed = await auth.auth.refreshSession({ refresh_token: signedIn.data.session.refresh_token });
+  assert.ok(!refreshed.error && refreshed.data.session);
+  const refreshCheck = await fetch(base, { headers: { Authorization: `Bearer ${refreshed.data.session.access_token}` } });
+  assert.equal((await refreshCheck.json()).gold, finalState.gold);
+  for (const [buffer, name, status] of [
+    [new Uint8Array(), "empty.pdf", 400],
+    [new TextEncoder().encode("not a PDF"), "wrong.pdf", 400],
+    [new TextEncoder().encode("%PDF corrupt"), "corrupt.pdf", 422],
+    [new Uint8Array(25 * 1024 * 1024 + 1), "oversized.pdf", 400],
+  ] as const) {
+    const invalid = new FormData();
+    invalid.append("file", new Blob([new Uint8Array(buffer)]), name);
+    const failed = await fetch(`${base}/forge`, { method: "POST", headers, body: invalid });
+    assert.equal(failed.status, status, name);
+  }
+  const unchanged = await fetch(base, { headers });
+  assert.equal((await unchanged.json()).expeditions.length, 2);
+  console.log("PASS: PDF generation, source Storage, verified battle, concurrent retries, saved answers/results, token refresh, invalid uploads and two-account isolation", { chapters: saved.regions.length, questions: questions.length });
 } finally {
   server.close();
   if (storedPath) {
@@ -62,4 +132,6 @@ try {
   }
   const deleted = await client.auth.admin.deleteUser(userId);
   if (deleted.error) console.error("Could not clean up the verification account");
+  const secondDeleted = await client.auth.admin.deleteUser(secondUserId);
+  if (secondDeleted.error) console.error("Could not clean up the second verification account");
 }

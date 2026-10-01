@@ -10,7 +10,8 @@
     "lint": "npm --prefix frontend run lint",
     "backend:dev": "npm --prefix backend run dev",
     "test:game": "node scripts/verify-traversal.cjs",
-    "test:web": "node scripts/verify-game-entry.cjs"
+    "test:web": "node scripts/verify-game-entry.cjs",
+    "test:learning": "node --env-file=backend/.env scripts/verify-learning.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

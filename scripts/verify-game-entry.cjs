@@ -6,24 +6,33 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
   expeditions: [{ id: 'test', title: 'Walk Test', file: 'walk.pdf', progress: 0, regions: [{ chapter: 1, title: 'Forest', summary: 'Walk', topics: ['Walk'], questions: 1, enemies: 1 }] }],
   lastAdventure: { expeditionId: 'test', chapter: 1 } };
 (async () => {
+  const { applyGameAction, initialGame } = await import('../backend/src/modules/game/state.ts');
+  const { gameSnapshot } = await import('../backend/src/modules/game/index.ts');
+  state.expeditions[0].regions[0].questionBank = initialGame().expeditions[0].regions[0].questionBank;
+  state.expeditions[0].regions[0].questions = 3;
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
   try {
     const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
     const errors = [], assets = [], actions = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if (response.url().includes('.webp')) assets.push(response.url()); });
+    await page.route('**/auth/v1/**', route => route.fulfill({ json: {
+      access_token: 'test-token', refresh_token: 'test-refresh', expires_in: 3600, token_type: 'bearer',
+      user: { id: 'test-user', aud: 'authenticated', created_at: new Date().toISOString(), app_metadata: {}, user_metadata: {}, is_anonymous: true },
+    } }));
     await page.route('**/api/game', route => {
+      let rewards = [];
       if (route.request().method() === 'POST') {
         const action = route.request().postDataJSON(); actions.push(action);
-        if (action.action === 'summon') { state.gems -= action.count === 10 ? 900 : 100; state.rewards = Array(action.count).fill('Quill Staff'); }
-        if (action.action === 'complete') state.expeditions[0].progress = 100;
+        try { rewards = applyGameAction(state, action); }
+        catch (error) { return route.fulfill({ status: 400, json: { error: error.message } }); }
       }
-      return route.fulfill({ json: state });
+      return route.fulfill({ json: gameSnapshot(state, rewards) });
     });
     await page.route('**/api/game/forge', route => {
       assert(route.request().postDataBuffer().includes(Buffer.from('%PDF')), 'native File reaches multipart upload');
       state.expeditions.push({ ...state.expeditions[0], id: 'upload', title: 'Uploaded Notes', file: 'notes.pdf' });
-      return route.fulfill({ json: state });
+      return route.fulfill({ json: gameSnapshot(state) });
     });
     await page.goto(process.env.APP_URL || 'http://localhost:5173', { waitUntil: 'networkidle' });
     await page.getByText('The Study Forge', { exact: true }).waitFor();
@@ -87,17 +96,21 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.getByRole('button', { name: 'Debug controls', exact: true }).click();
     await page.screenshot({ path: 'test-results/phaser-game.png' });
     for (let encounter = 0; encounter < 3; encounter++) {
-      await page.getByRole('button', { name: 'Complete Encounter', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Submit answer', exact: true }).waitFor();
       assert.equal(await world.getAttribute('data-hero-texture'), 'scholar-idle', 'encounters use the standing texture instead of a frozen walk frame');
       const idleFrame = await world.getAttribute('data-walk-frame');
       await page.waitForTimeout(150);
       assert.equal(await world.getAttribute('data-walk-frame'), idleFrame, 'idle pose stays still during encounters');
       if (encounter === 0) await page.screenshot({ path: 'test-results/phaser-idle.png' });
-      await page.getByRole('button', { name: 'Complete Encounter', exact: true }).click();
+      const question = state.expeditions[0].regions[0].questionBank[encounter];
+      await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
+      await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
+      await page.getByText('Correct!', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
       if (encounter === 0) assert.equal(await world.getAttribute('data-enemies'), '1');
       if (encounter < 2) await page.waitForFunction(() => document.querySelector('[data-testid="phaser-world"]').dataset.heroTexture === 'scholar');
     }
-    await page.getByTestId('fight-status').getByText('Trail complete!', { exact: true }).waitFor();
+    await page.getByTestId('fight-status').getByText('Chapter cleared!', { exact: true }).waitFor();
     assert.equal(await world.getAttribute('data-hero-texture'), 'scholar-idle', 'result uses standing pose');
     assert.equal(actions.filter(action => action.action === 'complete').length, 1, 'completion submitted once');
     await page.getByRole('button', { name: 'Exit', exact: true }).click();

@@ -5,10 +5,11 @@ import { applyGameAction, newExpedition, type GameData } from "./state.ts";
 import { changeState, readState } from "./store.ts";
 import { summonPool } from "./summon.ts";
 import { generatePdfExpedition } from "./pdf.ts";
+import { battleSnapshot } from "./battle.ts";
 
 const fail = (message: string, status = 400) => Object.assign(new Error(message), { status });
-const snapshot = (game: GameData, rewards: string[] = []) => ({
-  ...game, rewards, summonPool,
+export const gameSnapshot = (game: GameData, rewards: string[] = []) => ({
+  ...game, rewards, summonPool, battle: battleSnapshot(game),
   expeditions: game.expeditions.map((expedition) => ({
     ...expedition,
     regions: expedition.regions.map(({ questionBank: _questionBank, ...region }) => region),
@@ -19,7 +20,7 @@ export const gameRouter = Router();
 
 gameRouter.get("/game", async (_request, response) => {
   const { client, userId } = session(response.locals);
-  response.json(snapshot((await readState(client, userId)).state));
+  response.json(gameSnapshot((await readState(client, userId)).state));
 });
 
 gameRouter.post("/game", async (request, response) => {
@@ -27,7 +28,7 @@ gameRouter.post("/game", async (request, response) => {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw fail("Invalid JSON");
   const { client, userId } = session(response.locals);
   const { game, result: rewards } = await changeState(client, userId, (game) => applyGameAction(game, body));
-  response.json(snapshot(game, rewards));
+  response.json(gameSnapshot(game, rewards));
 });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
@@ -43,7 +44,7 @@ gameRouter.post("/game/forge", upload.single("file"), async (request, response) 
   if (stored.error) throw stored.error;
   try {
     const { game } = await changeState(client, userId, (game) => { game.expeditions.push(expedition); });
-    response.json(snapshot(game));
+    response.json(gameSnapshot(game));
   } catch (error) {
     await client.storage.from("expeditions").remove([path]);
     throw error;
