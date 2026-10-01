@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { summonPool } from "../src/lib/summon.ts";
+import { summonPool } from "../src/modules/game/summon.ts";
 
 test("published odds match the uniform summon pool", () => {
   assert.equal(new Set(summonPool.map(item => item.name)).size, summonPool.length);

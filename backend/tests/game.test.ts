@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { applyGameAction, GameActionError, initialGame } from "../src/lib/game.ts";
+import { applyGameAction, GameActionError, initialGame } from "../src/modules/game/state.ts";
 import { app } from "../src/app.ts";
 
 test("new accounts start with only the tutorial and chapter rewards cannot be claimed twice", () => {
   const game = initialGame();
   assert.deepEqual(game.expeditions.map((item) => item.id), ["tutorial"]);
+  assert.throws(() => applyGameAction(game, { action: "complete" }), GameActionError);
+  assert.throws(() => applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 2 }), GameActionError);
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
   applyGameAction(game, { action: "complete" });
   assert.equal(game.expeditions[0].progress, 33);
   assert.equal(game.gold, 1900);

@@ -16,6 +16,8 @@ export type Region = {
   topics: string[];
   questions: number;
   enemies: number;
+  material?: string;
+  sourcePages?: number[];
 };
 export type Expedition = {
   id?: string;
@@ -323,7 +325,7 @@ export function RegionDetailScreen({
         </div>
         <div style={s.regionShowcase} className="stack">
           <img
-            src={[mapArt.desert, mapArt.volcano, mapArt.kingdom][index]}
+            src={[mapArt.desert, mapArt.volcano, mapArt.kingdom][index % 3]}
             style={{ ...s.regionImage, objectFit: "contain" }}
             className="art-image"
             alt=""
@@ -337,6 +339,17 @@ export function RegionDetailScreen({
           <span style={ui.body} className="text">
             {region.summary}
           </span>
+          {region.material && (
+            <div style={s.topics} className="stack">
+              <span style={ui.heading} className="text">Study material</span>
+              {region.material.split(/\n\s*\n/).map((paragraph, index) => (
+                <p key={index} style={{ ...ui.body, margin: 0, whiteSpace: "pre-wrap" }}>{paragraph}</p>
+              ))}
+              {!!region.sourcePages?.length && (
+                <span style={ui.body} className="text">PDF pages: {region.sourcePages.join(", ")}</span>
+              )}
+            </div>
+          )}
           <div style={s.topics} className="stack">
             {region.topics.map((topic, i) => (
               <div key={topic} style={s.topic} className="stack">

@@ -45,7 +45,7 @@ export function HomeScreen({
   }
   function selectFile(asset: File | undefined) {
     if (!asset) return;
-    if (!/\.(pdf|docx)$/i.test(asset.name) || asset.size > 25 * 1024 * 1024) {
+    if (!/\.(pdf|docx)$/i.test(asset.name) || !asset.size || asset.size > 25 * 1024 * 1024) {
       notify("Pilih PDF atau DOCX dengan ukuran maksimal 25 MB.");
       return;
     }
@@ -138,7 +138,7 @@ export function HomeScreen({
             </div>
           )}
           <span style={s.formats} className="text">
-            PDF / DOCX · Max 25 MB · Starter chapters use file name
+            PDF: chapters and questions · DOCX: starter chapters · Max 25 MB
           </span>
         </button>
         {file && (
