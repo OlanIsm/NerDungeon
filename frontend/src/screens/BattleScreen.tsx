@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { art } from "../assets";
+import { art, icons } from "../assets";
 import { Button, Icon, useReducedMotion } from "../components/GameUI";
 import type { WorldControls } from "../game/PhaserWorld";
 import { GameState, type GamePhase } from "../game/types";
@@ -187,6 +187,7 @@ export function BattleScreen({
         <footer
           className="battle-footer"
           data-testid="combat-quiz"
+          data-encounter={inEncounter}
           aria-hidden={phase !== "ready"}
           inert={phase !== "ready"}
         >
@@ -340,6 +341,6 @@ function HealthBar({ hp, max, label, enemy = false }: { hp: number; max: number;
   const id = enemy ? "enemy-hp" : "player-hp";
   return <section className={`battle-health ${enemy ? "combat-hud" : "player-health"}`} aria-label={enemy ? "Enemy health" : "Player health"}>
     <label htmlFor={id}><span>{label}</span><strong>{hp} / {max} HP</strong></label>
-    <div className="health-bar"><Icon name="heart" size={36} color="#ff343e" /><div className="health-frame"><progress id={id} max={max} value={hp} /></div></div>
+    <div className="health-bar"><img className="health-heart" src={icons.heart} alt="" /><div className="health-frame"><progress id={id} max={max} value={hp} /></div></div>
   </section>;
 }

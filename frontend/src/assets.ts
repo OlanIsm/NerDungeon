@@ -23,6 +23,7 @@ export const art = {
 };
 
 export const icons = {
+  heart: new URL("../assets/icon/Heart.webp", import.meta.url).href,
   equipment: new URL("../assets/icon/Equipment.webp", import.meta.url).href,
   potion: new URL("../assets/icon/Potion.webp", import.meta.url).href,
   hub: new URL("../assets/icon/Hub.webp", import.meta.url).href,

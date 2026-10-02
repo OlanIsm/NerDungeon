@@ -106,6 +106,18 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.screenshot({ path: 'test-results/phaser-game.png' });
+    async function assertStaticQuiz(buttonLabel) {
+      const footer = page.getByTestId('combat-quiz');
+      const size = await footer.evaluate(element => ({ height: element.clientHeight, content: element.scrollHeight, scroll: element.scrollTop, overflow: getComputedStyle(element).overflowY }));
+      assert(size.content <= size.height + 1, 'Quiz contents fit without scrolling');
+      assert.equal(size.scroll, 0);
+      assert.notEqual(size.overflow, 'auto');
+      const bounds = await page.getByRole('button', { name: buttonLabel, exact: true }).boundingBox();
+      assert(bounds.y >= 0 && bounds.y + bounds.height <= page.viewportSize().height, 'Action button stays in viewport');
+      const hearts = page.locator('.health-heart');
+      assert.equal(await hearts.count(), 2);
+      assert(await hearts.first().evaluate(img => img.complete && img.naturalWidth > 0 && img.src.includes('Heart')), 'HP uses loaded Heart asset');
+    }
     for (let encounter = 0; encounter < 3; encounter++) {
       await page.getByRole('button', { name: 'Submit answer', exact: true }).waitFor();
       const visual = await page.getByTestId('combat-visual').boundingBox();
@@ -119,15 +131,29 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
       const idleFrame = await world.getAttribute('data-walk-frame');
       await page.waitForTimeout(150);
       assert.equal(await world.getAttribute('data-walk-frame'), idleFrame, 'idle pose stays still during encounters');
-      if (encounter === 0) await page.screenshot({ path: 'test-results/phaser-idle.png' });
+      if (encounter === 0) {
+        for (const viewport of [{ width: 360, height: 640 }, { width: 390, height: 844 }, { width: 530, height: 900 }, { width: 1280, height: 900 }]) {
+          await page.setViewportSize(viewport);
+          await assertStaticQuiz('Submit answer');
+          await page.screenshot({ path: `test-results/static-quiz-${viewport.width}.png` });
+        }
+        await page.setViewportSize({ width: 430, height: 932 });
+        await page.screenshot({ path: 'test-results/phaser-idle.png' });
+      }
       const bank = state.expeditions[0].regions[0].questionBank;
       const target = Math.ceil(bank.length * (encounter + 1) / 3);
       while (state.battle.answers.length < target) {
         const question = bank[state.battle.answers.length];
+        await page.setViewportSize({ width: 360, height: 640 });
+        await assertStaticQuiz('Submit answer');
+        await page.setViewportSize({ width: 430, height: 932 });
         await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
         await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
         await page.getByText('Correct!', { exact: true }).waitFor();
         assert.equal(await page.locator('.feedback-correction').count(), 0);
+        await page.setViewportSize({ width: 360, height: 640 });
+        await assertStaticQuiz('Next');
+        await page.setViewportSize({ width: 430, height: 932 });
         if (encounter === 0 && state.battle.answers.length === 1) {
           await page.screenshot({ path: 'test-results/combat-feedback-mobile.png' });
           await page.setViewportSize({ width: 1280, height: 900 });
@@ -164,6 +190,7 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
       await page.getByRole('radio', { name: question.options[(question.answerIndex + 1) % 4], exact: true }).check();
       await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
       await page.getByText('Not quite', { exact: true }).waitFor();
+      await assertStaticQuiz('Next');
       if (state.battle.answers.length === 1) await page.screenshot({ path: 'test-results/combat-correction-mobile.png' });
       await page.locator('.feedback-correction').getByText(question.options[question.answerIndex], { exact: false }).waitFor();
       await page.getByRole('button', { name: 'Next', exact: true }).click();
