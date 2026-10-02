@@ -286,7 +286,7 @@ export default function App() {
               tutorial={currentExpedition.id === "tutorial"}
               onAnswer={(questionId, selectedIndex) => perform({ action: "answer", battleId: gameData.battle!.id, questionId, selectedIndex }).then(() => {})}
               onComplete={() => perform({ action: "complete", battleId: gameData.battle!.id }).then(() => {})}
-              onRestart={() => perform({ action: "start", expeditionId: currentExpedition.id, chapter: currentRegion.chapter }).then(() => {})}
+              onRestart={() => perform({ action: "restart", battleId: gameData.battle!.id, expeditionId: currentExpedition.id, chapter: currentRegion.chapter }).then(() => {})}
             />
           )}
         </main>

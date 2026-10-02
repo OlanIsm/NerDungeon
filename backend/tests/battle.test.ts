@@ -87,3 +87,23 @@ test("ten-question combat wins with remaining HP, loses at zero, and enemy respa
   game.expeditions[0].regions[0].questionBank = questions.slice(0, 3);
   assert.throws(() => applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 }), /10-question region/);
 });
+
+test("explicit restart resets an active attempt without changing resources or accepting stale answers", () => {
+  const game = initialGame();
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  const oldId = game.battle!.id;
+  const question = game.expeditions[0].regions[0].questionBank![0];
+  const answer = { action: "answer", battleId: oldId, questionId: question.id, selectedIndex: (question.answerIndex + 1) % 4 };
+  applyGameAction(game, answer);
+  const restart = { action: "restart", battleId: oldId, expeditionId: "tutorial", chapter: 1 };
+  assert.throws(() => applyGameAction(game, { ...restart, battleId: "another-account" }));
+  applyGameAction(game, restart);
+  assert.notEqual(game.battle!.id, oldId);
+  assert.equal(game.battle!.answers.length, 0);
+  assert.equal(battleSnapshot(game)!.playerHp, 500);
+  assert.equal(game.gold, 1450);
+  assert.equal(game.xp, 0);
+  assert.equal(game.expeditions[0].progress, 0);
+  assert.throws(() => applyGameAction(game, answer));
+  assert.throws(() => applyGameAction(game, restart));
+});

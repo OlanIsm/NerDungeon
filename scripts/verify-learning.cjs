@@ -74,19 +74,21 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     assert.equal(active.battle.answers.length, 1);
     assert.equal(active.battle.playerHp, 450);
     await page.getByText('Not quite', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
     for (const question of tutorialQuestions.slice(1)) {
       await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
       await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
       await page.getByText('Correct!', { exact: true }).waitFor();
-      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
     }
     await page.getByTestId('fight-status').getByText('Chapter cleared!', { exact: true }).waitFor();
     const completed = await admin.from('game_states').select('state').eq('user_id', userId).single();
     assert.equal(completed.data.state.gold, initial.gold + 450);
     assert.equal(completed.data.state.battleHistory.length, 1);
     await page.screenshot({ path: 'test-results/learning-result-mobile.png' });
+    await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
     await page.getByRole('button', { name: 'Exit', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('tab', { name: 'Hub', exact: true }).click();
@@ -126,7 +128,7 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
       assert.equal(answerData.battle.feedback.questionId, question.id);
       assert.equal(answerData.battle.feedback.correct, true, JSON.stringify(answerData.battle.feedback));
       await page.getByText('Correct!', { exact: true }).waitFor();
-      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
     }
     await page.getByTestId('fight-status').getByText('Chapter cleared!', { exact: true }).waitFor();
     const finished = await admin.from('game_states').select('state').eq('user_id', userId).single();
@@ -135,7 +137,9 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     assert.equal(finished.data.state.battleHistory.length, 2);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.screenshot({ path: 'test-results/learning-result-desktop.png' });
+    await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
     await page.getByRole('button', { name: 'Exit', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
     await page.reload({ waitUntil: 'networkidle' });
     const fresh = await admin.from('game_states').select('state').eq('user_id', userId).single();
     assert.equal(fresh.data.state.gold, initial.gold + 900);

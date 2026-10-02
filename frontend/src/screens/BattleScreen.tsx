@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { art } from "../assets";
 import { Button, Icon, useReducedMotion } from "../components/GameUI";
-import { DebugControls } from "../game/DebugControls";
 import type { WorldControls } from "../game/PhaserWorld";
 import { GameState, type GamePhase } from "../game/types";
 import type { ScreenProps } from "../types";
@@ -45,9 +44,9 @@ export function BattleScreen({
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [, render] = useState(0);
-  const [debug, setDebug] = useState(false);
-  const [bounds, setBounds] = useState(false);
-  const [triggers, setTriggers] = useState(false);
+  const [menu, setMenu] = useState<"pause" | "restart" | "exit" | null>(null);
+  const [answering, setAnswering] = useState(false);
+  const menuDialog = useRef<HTMLDialogElement>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
   const recorded = useRef(false);
@@ -112,11 +111,12 @@ export function BattleScreen({
     return () => clearTimeout(timer);
   }, [phase, reducedMotion]);
   useEffect(() => {
-    world?.setActive(phase === "ready" && !loadError);
-  }, [phase, world, loadError]);
+    world?.setActive(phase === "ready" && !loadError && menu === null);
+  }, [phase, world, loadError, menu]);
   useEffect(() => {
-    world?.setDebug(bounds, triggers);
-  }, [world, bounds, triggers]);
+    if (menu) menuDialog.current?.showModal();
+    else menuDialog.current?.close();
+  }, [menu]);
   const game = world?.model;
   const gameState = game?.state;
   useEffect(() => {
@@ -166,58 +166,19 @@ export function BattleScreen({
         {world && game && (
           <div aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
             <header className="battle-header">
-              <Button
-                label="Exit"
-                onPress={() => navigate("RegionDetail")}
-                style={{ minWidth: 62, paddingInline: 8 }}
-              />
               <div className="battle-heading">
                 <h1>{title}</h1>
                 <p>
                   Chapter {battle.chapter} · {battle.total} questions
                 </p>
               </div>
-              <button
-                type="button"
-                aria-label="Debug controls"
-                aria-expanded={debug}
-                onClick={() => setDebug(!debug)}
-                className="debug-toggle"
-              >
-                <Icon name="tune-variant" color="#48643c" />
-                <span>Debug</span>
+              <button type="button" aria-label="Battle menu" aria-haspopup="dialog" disabled={answering || saving} onClick={() => setMenu("pause")} className="battle-menu-toggle">
+                <span aria-hidden="true">&#9776;</span>
               </button>
             </header>
-            <section className="combat-hud" aria-label="Enemy health">
-              <div className="enemy-health">
-                <label htmlFor="enemy-hp">
-                  Enemy {battle.enemiesDefeated + (battle.enemyHp > 0 ? 1 : 0)}{" "}
-                  <strong>
-                    {battle.enemyHp} / {battle.enemyMaxHp} HP
-                  </strong>
-                </label>
-                <progress
-                  id="enemy-hp"
-                  max={battle.enemyMaxHp}
-                  value={battle.enemyHp}
-                />
-              </div>
-            </section>
-            {!debug && !inEncounter && game.state !== GameState.result && (
-              <div className="east">
-                <Icon name="arrow-right" size={18} color="#fff4c8" />
-                EAST
-              </div>
-            )}
-            {debug && (
-              <DebugControls
-                game={game}
-                act={world.act}
-                bounds={bounds}
-                triggers={triggers}
-                setBounds={setBounds}
-                setTriggers={setTriggers}
-              />
+            <HealthBar enemy hp={battle.enemyHp} max={battle.enemyMaxHp} label={`Enemy ${battle.enemiesDefeated + (battle.enemyHp > 0 ? 1 : 0)}`} />
+            {!inEncounter && game.state !== GameState.result && (
+              <div className="east"><Icon name="arrow-right" size={18} color="#fff4c8" />EAST</div>
             )}
           </div>
         )}
@@ -229,19 +190,7 @@ export function BattleScreen({
           aria-hidden={phase !== "ready"}
           inert={phase !== "ready"}
         >
-          <section className="player-health" aria-label="Player health">
-            <label htmlFor="player-hp">
-              Nerd Mage{" "}
-              <strong>
-                {battle.playerHp} / {battle.playerMaxHp} HP
-              </strong>
-            </label>
-            <progress
-              id="player-hp"
-              max={battle.playerMaxHp}
-              value={battle.playerHp}
-            />
-          </section>
+          <HealthBar hp={battle.playerHp} max={battle.playerMaxHp} label="Nerd Mage" />
           <div className="battle-status">
             <div className="battle-status-copy">
               <h2 data-testid="fight-status" aria-live="polite">
@@ -255,15 +204,13 @@ export function BattleScreen({
                     ? "Journey paused"
                     : status[game.state]}
               </h2>
-              <p>
-                {inEncounter
-                  ? "Correct: enemy −50 HP · Wrong: you −50 HP"
-                  : game.state === GameState.result
+              {!inEncounter && <p>
+                {game.state === GameState.result
                     ? `${battle.correct} / ${battle.total} correct. ${battle.status === "passed" ? `+${battle.goldReward} gold · +${battle.xpReward} XP` : battle.status === "failed" ? "Your HP reached 0. Retry the chapter." : "Saving your combat result."}`
                     : game.state === GameState.encounterComplete
                       ? "The trail opens up again."
                       : "Follow the path toward the next clearing."}
-              </p>
+              </p>}
             </div>
             <div className="battle-cleared">
               <Icon name="flag-checkered" size={19} color="#506837" />
@@ -275,7 +222,11 @@ export function BattleScreen({
               battle={battle}
               checkpoint={game.cleared + 1}
               tutorial={tutorial}
-              onAnswer={onAnswer}
+              onAnswer={async (questionId, selectedIndex) => {
+                setAnswering(true);
+                try { await onAnswer(questionId, selectedIndex); }
+                finally { setAnswering(false); }
+              }}
               onAdvance={() => world.act(() => game.completeEncounter())}
             />
           )}
@@ -324,6 +275,25 @@ export function BattleScreen({
           )}
         </footer>
       )}
+      <dialog ref={menuDialog} className="battle-menu" aria-labelledby="battle-menu-title" onCancel={(event) => { event.preventDefault(); if (!saving) setMenu(menu === "pause" ? null : "pause"); }}>
+        <div className="battle-menu-card">
+          <h2 id="battle-menu-title">{menu === "restart" ? "Restart battle?" : menu === "exit" ? "Exit battle?" : "Paused"}</h2>
+          {menu === "pause" ? <>
+            <Button label="Continue" tone="gold" onPress={() => setMenu(null)} />
+            <Button label="Restart" onPress={() => setMenu("restart")} />
+            <Button label="Exit" style={exitStyle} onPress={() => setMenu("exit")} />
+          </> : <>
+            <p>{menu === "restart" ? "Your answers and HP in this attempt will reset. Your earned rewards stay safe." : "Your battle is saved. You can resume it from the chapter."}</p>
+            {saveError && <p className="quiz-error" role="alert">{saveError}</p>}
+            <Button label={saving ? "Restarting..." : menu === "restart" ? "Confirm restart" : "Confirm exit"} disabled={saving} tone="gold" style={menu === "exit" ? exitStyle : undefined} onPress={() => {
+              if (menu === "exit") { navigate("RegionDetail"); return; }
+              setSaving(true); setSaveError(undefined);
+              onRestart().catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
+            }} />
+            <Button label="Cancel" tone="quiet" disabled={saving} onPress={() => { setSaveError(undefined); setMenu("pause"); }} />
+          </>}
+        </div>
+      </dialog>
       {(phase !== "ready" || loadError) && (
         <div
           className={`gate ${loadError ? "loading" : phase} ${closed ? "closed" : ""}`}
@@ -363,4 +333,13 @@ export function BattleScreen({
       )}
     </div>
   );
+}
+
+const exitStyle = { backgroundColor: "#b9322c", color: "#fff8e7", borderColor: "#76241e" };
+function HealthBar({ hp, max, label, enemy = false }: { hp: number; max: number; label: string; enemy?: boolean }) {
+  const id = enemy ? "enemy-hp" : "player-hp";
+  return <section className={`battle-health ${enemy ? "combat-hud" : "player-health"}`} aria-label={enemy ? "Enemy health" : "Player health"}>
+    <label htmlFor={id}><span>{label}</span><strong>{hp} / {max} HP</strong></label>
+    <div className="health-bar"><Icon name="heart" size={36} color="#ff343e" /><div className="health-frame"><progress id={id} max={max} value={hp} /></div></div>
+  </section>;
 }

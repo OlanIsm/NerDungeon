@@ -20,17 +20,18 @@ function activeRegion(game: GameData, battle: Pick<Battle, "expeditionId" | "cha
 }
 
 export function applyBattleAction(game: GameData, body: Record<string, unknown>): void {
-  if (body.action === "start") {
+  if (body.action === "start" || body.action === "restart") {
     const expedition = game.expeditions.find((item) => item.id === body.expeditionId);
     const chapter = body.chapter;
     const unlocked = expedition ? Math.min(expedition.regions.length, Math.round(expedition.progress * expedition.regions.length / 100) + 1) : 0;
     if (!expedition || typeof chapter !== "number" || !Number.isInteger(chapter) || chapter < 1 || chapter > unlocked) throw new GameActionError("Invalid chapter");
     const region = activeRegion(game, { expeditionId: expedition.id, chapter });
     const existing = game.battle;
-    if (region.questionBank!.length !== 10 && !(existing?.status === "active" && existing.expeditionId === expedition.id && existing.chapter === chapter)) {
+    if (body.action === "restart" && (!existing || body.battleId !== existing.id)) throw new GameActionError("Invalid battle to restart");
+    if (region.questionBank!.length !== 10 && !(body.action !== "restart" && existing?.status === "active" && existing.expeditionId === expedition.id && existing.chapter === chapter)) {
       throw new GameActionError("This chapter has an older question bank. Upload the PDF again to create a 10-question region.");
     }
-    if (!existing || existing.status !== "active" || existing.expeditionId !== expedition.id || existing.chapter !== chapter) {
+    if (body.action === "restart" || !existing || existing.status !== "active" || existing.expeditionId !== expedition.id || existing.chapter !== chapter) {
       game.battle = { id: crypto.randomUUID(), expeditionId: expedition.id, chapter, answers: [], status: "active", goldReward: 0, xpReward: 0 };
     }
     game.lastAdventure = { expeditionId: expedition.id, chapter };

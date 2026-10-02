@@ -1,6 +1,11 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { chromium } = require('@playwright/test');
+async function exitBattle(page) {
+  await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Exit', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
+}
 const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
   inventory: ['Blue Mage Robe', 'Quill Staff', 'Spectacles', 'HP Elixir'],
   expeditions: [{ id: 'test', title: 'Walk Test', file: 'walk.pdf', progress: 0, regions: [{ chapter: 1, title: 'Forest', summary: 'Walk', topics: ['Walk'], questions: 1, enemies: 1 }] }],
@@ -88,13 +93,18 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     assert.equal(urls.length, 11);
     assert(urls.every(url => url.includes('.webp')), 'all parallax textures are WebP');
     assert(urls.every(url => assets.includes(url)), 'all textures loaded by Phaser');
-    await page.getByRole('button', { name: 'Debug controls', exact: true }).click();
-    await page.getByRole('button', { name: 'Pause Scrolling', exact: true }).click();
+    await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
     const stopped = await world.getAttribute('data-walk-frame');
+    const distance = await world.getAttribute('data-distance');
     await page.waitForTimeout(250);
-    assert.equal(await world.getAttribute('data-walk-frame'), stopped, 'paused sprite freezes');
-    await page.getByRole('button', { name: 'Resume Scrolling', exact: true }).click();
-    await page.getByRole('button', { name: 'Debug controls', exact: true }).click();
+    assert.equal(await world.getAttribute('data-walk-frame'), stopped, 'pause menu freezes sprite');
+    assert.equal(await world.getAttribute('data-distance'), distance, 'pause menu freezes traversal');
+    await page.screenshot({ path: 'test-results/combat-menu-mobile.png' });
+    await page.getByRole('button', { name: 'Restart', exact: true }).click();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('button', { name: 'Exit', exact: true }).click();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.screenshot({ path: 'test-results/phaser-game.png' });
     for (let encounter = 0; encounter < 3; encounter++) {
       await page.getByRole('button', { name: 'Submit answer', exact: true }).waitFor();
@@ -117,7 +127,17 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
         await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
         await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
         await page.getByText('Correct!', { exact: true }).waitFor();
-        await page.getByRole('button', { name: 'Continue', exact: true }).click();
+        assert.equal(await page.locator('.feedback-correction').count(), 0);
+        if (encounter === 0 && state.battle.answers.length === 1) {
+          await page.screenshot({ path: 'test-results/combat-feedback-mobile.png' });
+          await page.setViewportSize({ width: 1280, height: 900 });
+          await page.screenshot({ path: 'test-results/combat-feedback-desktop.png' });
+          await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
+          await page.screenshot({ path: 'test-results/combat-menu-desktop.png' });
+          await page.keyboard.press('Escape');
+          await page.setViewportSize({ width: 430, height: 932 });
+        }
+        await page.getByRole('button', { name: 'Next', exact: true }).click();
       }
       if (encounter === 0) assert.equal(await world.getAttribute('data-enemies'), '1');
       if (encounter < 2) await page.waitForFunction(() => document.querySelector('[data-testid="phaser-world"]').dataset.heroTexture === 'scholar');
@@ -128,17 +148,31 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     const goldBeforeFailure = state.gold;
     await page.getByRole('button', { name: 'Retry chapter', exact: true }).click();
     const bank = state.expeditions[0].regions[0].questionBank;
+    await page.getByRole('radio', { name: bank[0].options[(bank[0].answerIndex + 1) % 4], exact: true }).check();
+    await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
+    await page.getByText('Not quite', { exact: true }).waitFor();
+    assert.equal(await page.locator('#player-hp').getAttribute('value'), '450');
+    const oldBattleId = state.battle.id;
+    await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Restart', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm restart', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit answer', exact: true }).waitFor();
+    assert.notEqual(state.battle.id, oldBattleId);
+    assert.equal(state.battle.answers.length, 0);
+    assert.equal(await page.locator('#player-hp').getAttribute('value'), '500');
     for (const question of bank) {
       await page.getByRole('radio', { name: question.options[(question.answerIndex + 1) % 4], exact: true }).check();
       await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
       await page.getByText('Not quite', { exact: true }).waitFor();
-      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      if (state.battle.answers.length === 1) await page.screenshot({ path: 'test-results/combat-correction-mobile.png' });
+      await page.locator('.feedback-correction').getByText(question.options[question.answerIndex], { exact: false }).waitFor();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
     }
     await page.getByTestId('fight-status').getByText('Defeated', { exact: true }).waitFor();
     assert.equal(await page.locator('#player-hp').getAttribute('value'), '0');
     assert.equal(state.gold, goldBeforeFailure, 'Defeat cannot grant rewards');
     await page.screenshot({ path: 'test-results/combat-defeat-mobile.png' });
-    await page.getByRole('button', { name: 'Exit', exact: true }).click();
+    await exitBattle(page);
     assert.equal(await page.locator('canvas').count(), 0, 'engine destroyed on exit');
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -150,7 +184,7 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     const app = await page.locator('.app').boundingBox();
     assert.equal(Math.round(canvas.width), Math.round(app.width - 4), 'canvas follows desktop shell resize');
     await page.screenshot({ path: 'test-results/phaser-desktop.png' });
-    await page.getByRole('button', { name: 'Exit', exact: true }).click();
+    await exitBattle(page);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('tab', { name: 'Hub', exact: true }).click();
@@ -171,13 +205,13 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     failGround = false;
     await reduced.getByRole('button', { name: 'Retry', exact: true }).click();
     await reduced.getByTestId('gate-ready').waitFor({ state: 'hidden' });
-    await reduced.getByRole('button', { name: 'Debug controls', exact: true }).waitFor();
+    await reduced.getByRole('button', { name: 'Battle menu', exact: true }).waitFor();
     const reducedWorld = reduced.getByTestId('phaser-world');
     const reducedFrame = await reducedWorld.getAttribute('data-walk-frame');
     await reduced.waitForTimeout(250);
     assert.equal(await reducedWorld.getAttribute('data-walk-frame'), reducedFrame, 'reduced motion freezes walk animation');
     assert.equal(await reduced.locator('canvas').count(), 1, 'asset retry replaces the failed engine');
-    await reduced.getByRole('button', { name: 'Exit', exact: true }).click();
+    await exitBattle(reduced);
     assert.equal(await reduced.locator('canvas').count(), 0);
     await reduced.close();
     const errorPage = await browser.newPage();
