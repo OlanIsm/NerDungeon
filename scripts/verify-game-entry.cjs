@@ -125,7 +125,11 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
       const canvasBounds = await page.locator('canvas').boundingBox();
       assert(visual.y + visual.height <= quiz.y + 1, 'Visual and quiz have separate rows');
       assert(canvasBounds.y + canvasBounds.height <= quiz.y + 1, 'Quiz never covers the Phaser canvas');
-      assert((await page.locator('#player-hp').boundingBox()).y >= quiz.y, 'Player HP belongs to the quiz row');
+      const hpPanel = await page.getByRole('region', { name: 'Player health', exact: true }).boundingBox();
+      assert(hpPanel.y >= visual.y + visual.height - 1, 'Player HP is below the visual');
+      assert(hpPanel.y + hpPanel.height <= quiz.y + 1, 'Player HP has a separate panel above quiz');
+      assert.equal(await page.getByTestId('combat-quiz').locator('#player-hp').count(), 0, 'HP is outside quiz DOM');
+      assert(await page.locator('.player-health').evaluate(element => getComputedStyle(element).backgroundImage.includes('Plank')), 'HP panel reuses navbar plank asset');
       assert((await page.locator('#enemy-hp').boundingBox()).y < quiz.y, 'Enemy HP belongs to the visual row');
       assert.equal(await world.getAttribute('data-hero-texture'), 'scholar-idle', 'encounters use the standing texture instead of a frozen walk frame');
       const idleFrame = await world.getAttribute('data-walk-frame');

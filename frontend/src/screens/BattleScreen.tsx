@@ -184,6 +184,8 @@ export function BattleScreen({
         )}
       </div>
       {world && game && (
+        <div className="battle-lower" aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
+          <HealthBar hp={battle.playerHp} max={battle.playerMaxHp} label="Nerd Mage" />
         <footer
           className="battle-footer"
           data-testid="combat-quiz"
@@ -191,7 +193,6 @@ export function BattleScreen({
           aria-hidden={phase !== "ready"}
           inert={phase !== "ready"}
         >
-          <HealthBar hp={battle.playerHp} max={battle.playerMaxHp} label="Nerd Mage" />
           <div className="battle-status">
             <div className="battle-status-copy">
               <h2 data-testid="fight-status" aria-live="polite">
@@ -275,6 +276,7 @@ export function BattleScreen({
             </div>
           )}
         </footer>
+        </div>
       )}
       <dialog ref={menuDialog} className="battle-menu" aria-labelledby="battle-menu-title" onCancel={(event) => { event.preventDefault(); if (!saving) setMenu(menu === "pause" ? null : "pause"); }}>
         <div className="battle-menu-card">
@@ -339,7 +341,7 @@ export function BattleScreen({
 const exitStyle = { backgroundColor: "#b9322c", color: "#fff8e7", borderColor: "#76241e" };
 function HealthBar({ hp, max, label, enemy = false }: { hp: number; max: number; label: string; enemy?: boolean }) {
   const id = enemy ? "enemy-hp" : "player-hp";
-  return <section className={`battle-health ${enemy ? "combat-hud" : "player-health"}`} aria-label={enemy ? "Enemy health" : "Player health"}>
+  return <section className={`battle-health ${enemy ? "combat-hud" : "player-health"}`} aria-label={enemy ? "Enemy health" : "Player health"} style={enemy ? undefined : { backgroundImage: `url("${art.navPlank}")` }}>
     <label htmlFor={id}><span>{label}</span><strong>{hp} / {max} HP</strong></label>
     <div className="health-bar"><img className="health-heart" src={icons.heart} alt="" /><div className="health-frame"><progress id={id} max={max} value={hp} /></div></div>
   </section>;

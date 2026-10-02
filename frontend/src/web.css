@@ -928,6 +928,7 @@ p {
   font: 9px Rubik_700Bold;
   letter-spacing: 1.5px;
 }
+.battle-lower { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; border-top: 4px solid #9a794b; }
 .battle-footer {
   position: static;
   padding: 12px;
@@ -937,7 +938,7 @@ p {
   gap: 8px;
   border-radius: 0;
   border-bottom: 0;
-  border-top: 4px solid #9a794b;
+  border-top: 0;
 }
 .battle-status {
   display: flex;
@@ -973,7 +974,8 @@ p {
 
 .battle-quiz { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 8px; }
 .combat-hud { position: absolute; top: 88px; left: 12px; right: 12px; z-index: 2; }
-.player-health { flex-shrink: 0; padding: 0; background: #fff1d4; }
+.player-health { padding: 4px 12px; background-color: #694120; background-size: 100% 100%; background-repeat: no-repeat; }
+.player-health label { color: #fff8e7; text-shadow: 0 1px 2px #29170a; }
 .battle-health { color: #352d26; font: 11px/1.5 Rubik_700Bold; }
 .battle-health label { display: flex; justify-content: space-between; gap: 8px; padding-left: 36px; }
 .health-bar { position: relative; height: 34px; display: flex; align-items: center; padding-left: 24px; }
@@ -1023,6 +1025,7 @@ p {
   .battle-heading h1 { font-size: 14px; }
   .battle-menu-toggle { width: 40px; height: 40px; flex-basis: 40px; }
   .combat-hud { top: 60px; }
+  .player-health { padding: 2px 8px; }
   .battle-footer { padding: 8px; gap: 4px; }
   .battle-footer[data-encounter="true"] .battle-status { display: none; }
   .battle-health { font-size: 10px; }
