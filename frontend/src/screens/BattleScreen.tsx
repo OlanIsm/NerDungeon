@@ -350,7 +350,7 @@ const exitStyle = { backgroundColor: "#b9322c", color: "#fff8e7", borderColor: "
 function HealthBar({ hp, max, label, enemy = false }: { hp: number; max: number; label: string; enemy?: boolean }) {
   const id = enemy ? "enemy-hp" : "player-hp";
   return <section className={`battle-health ${enemy ? "combat-hud" : "player-health"}`} aria-label={enemy ? "Enemy health" : "Player health"} style={enemy ? undefined : { backgroundImage: `url("${art.navPlank}")` }}>
-    <label htmlFor={id}>{enemy && <span>{label}</span>}<strong>{hp} / {max} HP</strong></label>
+    {enemy && <label htmlFor={id}><span>{label}</span><strong>{hp} / {max} HP</strong></label>}
     <div className="health-bar"><img className="health-heart" src={icons.heart} alt="" /><div className="health-frame"><progress id={id} aria-label={label} max={max} value={hp} /></div></div>
   </section>;
 }
