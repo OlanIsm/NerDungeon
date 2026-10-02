@@ -39,6 +39,7 @@ const { chromium } = require('@playwright/test');
     assert.equal(await page.locator('.navbar').evaluate(el => Number(getComputedStyle(el).opacity)), 0);
     assert.equal(await page.locator('.player-header').evaluate(el => Number(getComputedStyle(el).opacity)), 0);
     assert.equal(await page.locator('.loot-name').count(), 0, 'No rewards revealed while request is pending');
+    assert.equal(await page.getByText(/Something stirs within|Calling your treasures|Your treasures are awakening|A little magic/).count(), 0, 'Chest animation has no narration');
     await page.keyboard.press('Escape');
     assert(await page.getByRole('dialog', { name: 'Summon treasure' }).isVisible());
     fs.mkdirSync('test-results', { recursive: true });
@@ -113,6 +114,22 @@ const { chromium } = require('@playwright/test');
     await page.getByRole('button', { name: 'View rewards', exact: true }).click();
     await page.getByRole('button', { name: 'Return to Bazaar', exact: true }).click();
     assert.equal(state.gems, 1400);
+    const paidRequests = requests;
+    for (const balance of [0, 99, 899]) {
+      state.gems = balance;
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByRole('tab', { name: 'Bazaar', exact: true }).click();
+      for (const count of balance < 100 ? [1, 10] : [10]) {
+        await page.getByRole('button', { name: `Summon ${count}x`, exact: true }).click();
+        await page.getByRole('dialog').getByText('Gems tidak cukup.', { exact: true }).waitFor();
+        assert.equal(await page.locator('.summon-ritual').count(), 0, 'Insufficient gems never starts animation');
+        assert.equal(await page.locator('.app').getAttribute('data-summoning'), 'false');
+        assert.equal(await page.evaluate(() => window.summonAudioContexts.length), 0, 'No SFX context created');
+        assert.equal(requests, paidRequests, 'Insufficient gems sends no paid request');
+        assert.equal(state.gems, balance);
+        await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      }
+    }
     assert.deepEqual(errors, []);
     console.log('PASS summon choreography, single paid request, exact ordered backend rewards, sequential card reveals, 1x/10x, failure recovery, SFX lifecycle/mute, reduced motion and small/desktop layouts');
   } finally { await browser.close(); }

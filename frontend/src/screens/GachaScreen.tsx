@@ -13,10 +13,12 @@ export function GachaScreen({
   onSummon,
   onSummoningChange,
   pool = [],
+  gems,
 }: ScreenProps & {
   onSummon: (count: 1 | 10) => Promise<GameData>;
   onSummoningChange: (active: boolean) => void;
   pool?: SummonItem[];
+  gems?: number;
 }) {
   const [ritual, setRitual] = useState<Ritual>();
   const [sound, setSound] = useState(() => localStorage.getItem("nerdungeon.summonSound") !== "off");
@@ -34,6 +36,8 @@ export function GachaScreen({
   }
   async function summon(count: 1 | 10) {
     if (pending.current || !chest.current) return;
+    if (gems === undefined) { notify("Game data is still loading. Try again."); return; }
+    if (gems < (count === 10 ? 900 : 100)) { notify("Gems tidak cukup."); return; }
     pending.current = true;
     const effects = summonAudio(sound); audio.current = effects;
     const ceremony: Ritual = { count, origin: chest.current.getBoundingClientRect(), rewards: null, audio: effects };

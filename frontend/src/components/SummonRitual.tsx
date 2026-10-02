@@ -92,7 +92,7 @@ export function SummonRitual({ ritual, dismiss, sound, toggleSound }: {
       <div className="ritual-burst" />
       <div className="ritual-particles">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ "--angle": `${i * 20}deg`, "--travel": `${120 + i % 4 * 35}px`, "--delay": `${i % 3 * .04}s` } as CSSProperties} />)}</div>
     </div>
-    {(phase === "gather" || phase === "charge" || phase === "open") && <div className="ritual-caption" role="status"><span>THE SCHOLAR'S VAULT</span><h2>{phase === "open" ? "A little magic. A new discovery." : "Something stirs within..."}</h2><p>{ritual.rewards ? "Your treasures are awakening" : "Calling your treasures..."}</p>{ritual.rewards && <button className="ritual-skip" onClick={() => setPhase("cards")}>Skip animation</button>}</div>}
+    {(phase === "gather" || phase === "charge" || phase === "open") && ritual.rewards && <div className="ritual-caption"><button className="ritual-skip" onClick={() => setPhase("cards")}>Skip animation</button></div>}
     {phase === "cards" && reward && <div className="ritual-reveal">
       <header><p>THE SCHOLAR'S VAULT</p><h2>{revealed ? "A treasure, uncovered." : "What did the chest find?"}</h2><span>{index + 1} / {ritual.count}</span></header>
       <div className="loot-stack">

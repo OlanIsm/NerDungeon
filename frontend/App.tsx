@@ -217,6 +217,7 @@ export default function App() {
               <GachaScreen
                 {...props}
                 pool={gameData?.summonPool}
+                gems={gameData?.gems}
                 onSummoningChange={setSummoning}
                 onSummon={(count) => perform({ action: "summon", count })}
               />
