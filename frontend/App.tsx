@@ -37,6 +37,9 @@ function findExpedition(items: Expedition[], selected: Expedition) {
   );
 }
 export default function App() {
+  const [startingBattle, setStartingBattle] = useState(false);
+  const [battleEntry, setBattleEntry] = useState(0);
+  const startPending = useRef(false);
   const [screen, setScreen] = useState<Screen>("Hub");
   const [message, setMessage] = useState<string>();
   const [gameData, setGameData] = useState<GameData>();
@@ -243,6 +246,11 @@ export default function App() {
                 region={currentRegion}
                 onBack={() => navigate("Region")}
                 onStart={async () => {
+                  if (startPending.current) return;
+                  startPending.current = true;
+                  setStartingBattle(true);
+                  setBattleEntry((value) => value + 1);
+                  navigate("Battle");
                   try {
                     let expedition = currentExpedition;
                     if (!expedition.id) {
@@ -265,28 +273,31 @@ export default function App() {
                       expedition,
                       region: currentRegion,
                     });
-                    navigate("Battle");
                   } catch (error) {
+                    navigate("RegionDetail");
                     setMessage(
                       error instanceof Error
                         ? error.message
                         : "Adventure failed to start",
                     );
+                  } finally {
+                    startPending.current = false;
+                    setStartingBattle(false);
                   }
                 }}
               />
             </div>
           )}
-          {screen === "Battle" && gameData?.battle && (
+          {screen === "Battle" && (startingBattle || gameData?.battle) && (
             <BattleScreen
-              key={gameData.battle.id}
+              key={battleEntry}
               {...props}
-              battle={gameData.battle}
+              battle={startingBattle ? null : gameData?.battle ?? null}
               title={currentExpedition.title}
               tutorial={currentExpedition.id === "tutorial"}
-              onAnswer={(questionId, selectedIndex) => perform({ action: "answer", battleId: gameData.battle!.id, questionId, selectedIndex }).then(() => {})}
-              onComplete={() => perform({ action: "complete", battleId: gameData.battle!.id }).then(() => {})}
-              onRestart={() => perform({ action: "restart", battleId: gameData.battle!.id, expeditionId: currentExpedition.id, chapter: currentRegion.chapter }).then(() => {})}
+              onAnswer={(questionId, selectedIndex) => perform({ action: "answer", battleId: gameData!.battle!.id, questionId, selectedIndex }).then(() => {})}
+              onComplete={() => perform({ action: "complete", battleId: gameData!.battle!.id }).then(() => {})}
+              onRestart={() => perform({ action: "restart", battleId: gameData!.battle!.id, expeditionId: currentExpedition.id, chapter: currentRegion.chapter }).then(() => setBattleEntry((value) => value + 1))}
             />
           )}
         </main>

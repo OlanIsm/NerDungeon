@@ -24,7 +24,7 @@ export function BattleScreen({
   title,
   tutorial,
 }: ScreenProps & {
-  battle: BattleView;
+  battle: BattleView | null;
   title: string;
   tutorial: boolean;
   onAnswer: (questionId: string, selectedIndex: number) => Promise<void>;
@@ -32,6 +32,7 @@ export function BattleScreen({
   onRestart: () => Promise<void>;
 }) {
   const reducedMotion = useReducedMotion();
+  const battleReady = battle !== null;
   const [phase, setPhase] = useState<
     "closing" | "loading" | "opening" | "ready"
   >("closing");
@@ -96,10 +97,10 @@ export function BattleScreen({
     return () => clearTimeout(timer);
   }, [phase, attempt]);
   useEffect(() => {
-    if (phase === "ready" || phase === "opening" || loadError) return;
+    if (phase === "ready" || phase === "opening" || loadError || (phase === "loading" && !battleReady)) return;
     const timer = setTimeout(reportError, 20000);
     return () => clearTimeout(timer);
-  }, [phase, attempt, loadError, reportError]);
+  }, [phase, attempt, loadError, reportError, battleReady]);
   useEffect(() => {
     if (phase !== "loading" || !world || !minimumElapsed || loadError) return;
     const timer = setTimeout(() => setPhase("opening"), 0);
@@ -154,7 +155,7 @@ export function BattleScreen({
       data-loading-started={loadingStarted.current}
     >
       <div className="battle-stage" data-testid="combat-visual">
-        {phase !== "closing" && WorldRenderer && (
+        {phase !== "closing" && WorldRenderer && battle && (
           <WorldRenderer
             key={attempt}
             onReady={reportReady}
@@ -163,7 +164,7 @@ export function BattleScreen({
             reducedMotion={reducedMotion}
           />
         )}
-        {world && game && (
+        {world && game && battle && (
           <div aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
             <header className="battle-header">
               <div className="battle-heading">
@@ -183,7 +184,7 @@ export function BattleScreen({
           </div>
         )}
       </div>
-      {world && game && (
+      {world && game && battle && (
         <div className="battle-lower" aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
           <HealthBar hp={battle.playerHp} max={battle.playerMaxHp} label="Nerd Mage" />
         <footer

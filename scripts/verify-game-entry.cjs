@@ -26,10 +26,21 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if (response.url().includes('.webp')) assets.push(response.url()); });
     await page.route('**/auth/v1/**', route => route.fulfill({ json: authSession }));
-    await page.route('**/api/game', route => {
+    let releaseStart;
+    let delayStart = false;
+    let rejectStart = false;
+    await page.route('**/api/game', async route => {
       let rewards = [];
       if (route.request().method() === 'POST') {
         const action = route.request().postDataJSON(); actions.push(action);
+        if (action.action === 'start' && delayStart) {
+          delayStart = false;
+          await new Promise(resolve => { releaseStart = resolve; });
+        }
+        if (action.action === 'start' && rejectStart) {
+          rejectStart = false;
+          return route.fulfill({ status: 503, json: { error: 'Could not start battle. Try again.' } });
+        }
         try { rewards = applyGameAction(state, action); }
         catch (error) { return route.fulfill({ status: 400, json: { error: error.message } }); }
       }
@@ -69,10 +80,34 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.getByRole('button', { name: 'Forge Adventure', exact: true }).click();
     await page.getByRole('button', { name: 'Select Uploaded Notes', exact: true }).waitFor();
     await page.getByRole('tab', { name: 'Hub', exact: true }).click();
-    async function enter() {
+    delayStart = true; rejectStart = true;
+    await page.getByRole('button', { name: 'Continue Adventure', exact: true }).click();
+    await page.getByRole('button', { name: 'Start Adventure', exact: true }).click();
+    await page.locator('.gate.closing.closed').waitFor({ timeout: 1000 });
+    await page.getByTestId('gate-loading').waitFor();
+    releaseStart();
+    await page.getByRole('dialog').getByText('Could not start battle. Try again.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    assert.equal(await page.getByTestId('fight-page').count(), 0, 'Failed start returns to chapter');
+    await page.getByRole('button', { name: 'Start Adventure', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('tab', { name: 'Hub', exact: true }).click();
+    async function enter(slowStart = false) {
       await page.getByRole('button', { name: 'Continue Adventure', exact: true }).click();
+      if (slowStart) delayStart = true;
       await page.getByRole('button', { name: 'Start Adventure', exact: true }).click();
+      if (slowStart) await page.locator('.gate.closing.closed').waitFor({ timeout: 1000 });
       await page.getByTestId('gate-loading').waitFor();
+      if (slowStart) {
+        assert.equal(await page.locator('canvas').count(), 0, 'Game waits behind closed doors for start response');
+        const loadingStarted = await page.getByTestId('fight-page').getAttribute('data-loading-started');
+        await page.waitForTimeout(1700);
+        assert.equal(await page.getByTestId('fight-page').getAttribute('data-phase'), 'loading', 'Doors stay closed while backend is pending');
+        releaseStart();
+        await page.locator('canvas').waitFor();
+        assert.equal(await page.getByTestId('fight-page').getAttribute('data-loading-started'), loadingStarted, 'Start response does not restart door closing');
+      }
       const gate = await page.getByTestId('gate-loading').boundingBox();
       assert.equal(gate.y, 0, 'gate fills viewport without inherited scroll');
       assert.equal(gate.height, 932);
@@ -83,7 +118,7 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
       await page.getByTestId('gate-opening').waitFor({ state: 'hidden' });
       assert.equal(await page.locator('canvas').count(), 1, 'one Phaser instance');
     }
-    await enter();
+    await enter(true);
     const world = page.getByTestId('phaser-world');
     assert.equal(await world.getAttribute('data-renderer'), 'WebGL');
     const first = await world.getAttribute('data-walk-frame');
