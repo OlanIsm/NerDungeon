@@ -40,6 +40,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("Hub");
   const [message, setMessage] = useState<string>();
   const [gameData, setGameData] = useState<GameData>();
+  const [forgeNotice, setForgeNotice] = useState<string>();
   const [selectedExpedition, setSelectedExpedition] = useState<Expedition>(
     expeditions[0],
   );
@@ -152,7 +153,13 @@ export default function App() {
                 {...props}
                 expeditions={availableExpeditions}
                 lastAdventure={recentAdventure}
-                onForge={async (file) => setGameData(await forgeRequest(file))}
+                onForge={async (file) => {
+                  const data = await forgeRequest(file);
+                  setGameData(data);
+                  return data.expeditions[data.expeditions.length - 1];
+                }}
+                onForgeSettled={(result) => setForgeNotice(result === "ready" ? "Your adventure is ready" : "Your forge needs attention")}
+                onReadForge={() => setForgeNotice(undefined)}
                 onContinue={() => {
                   setSelectedExpedition(recentAdventure.expedition);
                   setSelectedRegion(recentAdventure.region);
@@ -293,7 +300,14 @@ export default function App() {
                 icon={item.icon}
                 size={39}
                 selected={screen === item.screen}
-                onPress={() => navigate(item.screen)}
+                notification={item.screen === "Hub" ? forgeNotice : undefined}
+                onPress={() => {
+                  navigate(item.screen);
+                  if (item.screen === "Hub" && forgeNotice) {
+                    setForgeNotice(undefined);
+                    requestAnimationFrame(() => pages.current.Hub?.querySelector("[data-forge-status]")?.scrollIntoView({ block: "center" }));
+                  }
+                }}
               />
             ))}
           </nav>

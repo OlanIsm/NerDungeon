@@ -25,6 +25,8 @@ export function HomeScreen({
   lastAdventure,
   expeditions: items = expeditions,
   onForge,
+  onForgeSettled,
+  onReadForge,
 }: ScreenProps & {
   onSelectExpedition: (expedition: Expedition) => void;
   onContinue: () => void;
@@ -33,11 +35,24 @@ export function HomeScreen({
     region: Region;
   };
   expeditions?: Expedition[];
-  onForge: (asset: File) => Promise<void>;
+  onForge: (asset: File) => Promise<Expedition>;
+  onForgeSettled: (result: "ready" | "failed") => void;
+  onReadForge: () => void;
 }) {
   const [file, setFile] = useState<string>();
   const [asset, setAsset] = useState<File>();
-  const [forging, setForging] = useState(false);
+  // ponytail: one in-flight forge stays in the mounted Hub; persist jobs if reloads must retain tracking.
+  const [job, setJob] = useState<{
+    file: File;
+    startedAt: number;
+    status: "processing" | "ready" | "failed";
+    expedition?: Expedition;
+    error?: string;
+  }>();
+  const [expanded, setExpanded] = useState(false);
+  const minimized = useRef(false);
+  const pending = useRef(false);
+  const forging = job?.status === "processing";
   const reducedMotion = useReducedMotion();
   const fileInput = useRef<HTMLInputElement>(null);
   function pickFile() {
@@ -45,24 +60,38 @@ export function HomeScreen({
   }
   function selectFile(asset: File | undefined) {
     if (!asset) return;
-    if (!/\.(pdf|docx)$/i.test(asset.name) || !asset.size || asset.size > 25 * 1024 * 1024) {
+    if (
+      !/\.(pdf|docx)$/i.test(asset.name) ||
+      !asset.size ||
+      asset.size > 25 * 1024 * 1024
+    ) {
       notify("Pilih PDF atau DOCX dengan ukuran maksimal 25 MB.");
       return;
     }
     setFile(asset.name);
     setAsset(asset);
   }
-  async function forgeAdventure() {
-    if (forging) return;
-    setForging(true);
+  async function forgeAdventure(source = asset) {
+    if (pending.current || !source) return;
+    pending.current = true;
+    minimized.current = false;
+    const startedAt = Date.now();
+    setJob({ file: source, startedAt, status: "processing" });
+    setExpanded(true);
+    onReadForge();
     try {
-      if (!asset) throw new Error("Choose a file first");
-      await onForge(asset);
-      navigate("Expedition");
+      const expedition = await onForge(source);
+      setJob({ file: source, startedAt, status: "ready", expedition });
+      onForgeSettled("ready");
+      if (!minimized.current) navigate("Expedition");
     } catch (error) {
-      notify(error instanceof Error ? error.message : "Forge failed");
+      const message = error instanceof Error ? error.message : "Forge failed";
+      setJob({ file: source, startedAt, status: "failed", error: message });
+      onForgeSettled("failed");
+      if (!minimized.current) notify(message);
     } finally {
-      setForging(false);
+      pending.current = false;
+      setExpanded(false);
     }
   }
   return (
@@ -72,13 +101,34 @@ export function HomeScreen({
         type="file"
         accept=".pdf,.docx"
         hidden
+        disabled={forging}
         aria-label="Study file"
         onChange={(event) => {
           selectFile(event.currentTarget.files?.[0]);
           event.currentTarget.value = "";
         }}
       />
-      {forging && <ForgeDialog file={file} reducedMotion={reducedMotion} />}
+      {forging && expanded && (
+        <ForgeDialog
+          file={job.file.name}
+          startedAt={job.startedAt}
+          reducedMotion={reducedMotion}
+          onMinimize={() => {
+            minimized.current = true;
+            setExpanded(false);
+            requestAnimationFrame(() => {
+              const status = document.querySelector<HTMLElement>(
+                "[data-forge-status]",
+              );
+              status?.focus({ preventScroll: true });
+              status?.scrollIntoView({
+                block: "center",
+                behavior: reducedMotion ? "instant" : "smooth",
+              });
+            });
+          }}
+        />
+      )}
 
       <div style={s.scroll} className="stack">
         <div
@@ -111,6 +161,7 @@ export function HomeScreen({
           style={{ ...s.dropZone }}
           className="stack pressable"
           type="button"
+          disabled={forging}
         >
           <div
             aria-label={file ? "Selected PDF" : undefined}
@@ -146,7 +197,7 @@ export function HomeScreen({
             label="Forge Adventure"
             tone="gold"
             icon="creation"
-            onPress={forgeAdventure}
+            onPress={() => void forgeAdventure()}
             disabled={forging}
           />
         )}
@@ -203,6 +254,71 @@ export function HomeScreen({
         </button>
       </div>
       <div style={s.materials} className="stack">
+        {job && (
+          <RealmFrame variant="sage" style={{ gap: 12 }}>
+            <section
+              className="forge-status"
+              data-forge-status={job.status}
+              aria-label="Forge progress"
+              tabIndex={-1}
+            >
+              <div className="forge-status-heading">
+                <img
+                  src={
+                    forging && !reducedMotion ? art.nerdEatPdf : art.character
+                  }
+                  alt=""
+                />
+                <div>
+                  <h3>
+                    {forging
+                      ? "Forging adventure"
+                      : job.status === "ready"
+                        ? "Adventure ready!"
+                        : "Could not forge adventure"}
+                  </h3>
+                  <p>{job.file.name}</p>
+                </div>
+              </div>
+              <div role={job.status === "failed" ? "alert" : "status"}>
+                {forging ? (
+                  <>
+                    <progress aria-label="Generating study material" />
+                    <p>
+                      You can keep exploring. Your result will appear here. Keep
+                      this tab open.
+                    </p>
+                  </>
+                ) : job.status === "ready" ? (
+                  <p>{job.expedition?.title} is ready to explore.</p>
+                ) : (
+                  <p>{job.error}</p>
+                )}
+              </div>
+              {forging ? (
+                <Button
+                  label="View forging progress"
+                  onPress={() => setExpanded(true)}
+                />
+              ) : job.status === "ready" && job.expedition ? (
+                <Button
+                  label="Open adventure"
+                  tone="gold"
+                  onPress={() => {
+                    onReadForge();
+                    onSelectExpedition(job.expedition!);
+                  }}
+                />
+              ) : (
+                <Button
+                  label="Retry forge"
+                  tone="gold"
+                  onPress={() => void forgeAdventure(job.file)}
+                />
+              )}
+            </section>
+          </RealmFrame>
+        )}
         {items.slice(0, 2).map((expedition) => (
           <ExpeditionCard
             key={expedition.title}
@@ -388,28 +504,51 @@ const s = {
 function ForgeDialog({
   file,
   reducedMotion,
+  startedAt,
+  onMinimize,
 }: {
   file?: string;
   reducedMotion: boolean;
+  startedAt: number;
+  onMinimize: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [canMinimize, setCanMinimize] = useState(
+    Date.now() - startedAt >= 3000,
+  );
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setCanMinimize(true),
+      Math.max(0, 3000 - (Date.now() - startedAt)),
+    );
+    return () => clearTimeout(timer);
+  }, [startedAt]);
   return (
     <dialog
       className="forge-dialog"
       ref={dialog}
       aria-label="Forging adventure"
-      onCancel={(event) => event.preventDefault()}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (canMinimize) onMinimize();
+      }}
     >
       <div className="forge-dialog-content">
         <img
           alt="Nerd eating PDF"
           src={reducedMotion ? art.character : art.nerdEatPdf}
         />
-        <h2 aria-live="polite">Forging your adventure?</h2>
+        <h2 aria-live="polite">Forging your adventure</h2>
         <p>{file}</p>
+        {canMinimize && (
+          <div className="forge-minimize">
+            <p>Continue exploring while we prepare your questions.</p>
+            <Button label="Minimize" tone="gold" onPress={onMinimize} />
+          </div>
+        )}
       </div>
     </dialog>
   );

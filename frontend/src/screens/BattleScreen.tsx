@@ -25,9 +25,12 @@ export function BattleScreen({
   title,
   tutorial,
 }: ScreenProps & {
-  battle: BattleView; title: string; tutorial: boolean;
+  battle: BattleView;
+  title: string;
+  tutorial: boolean;
   onAnswer: (questionId: string, selectedIndex: number) => Promise<void>;
-  onComplete: () => Promise<void>; onRestart: () => Promise<void>;
+  onComplete: () => Promise<void>;
+  onRestart: () => Promise<void>;
 }) {
   const reducedMotion = useReducedMotion();
   const [phase, setPhase] = useState<
@@ -120,7 +123,15 @@ export function BattleScreen({
     if (gameState === GameState.result && !recorded.current) {
       recorded.current = true;
       setSaving(true);
-      onComplete().catch((error) => setSaveError(error instanceof Error ? error.message : "Could not save the result. Try again.")).finally(() => setSaving(false));
+      onComplete()
+        .catch((error) =>
+          setSaveError(
+            error instanceof Error
+              ? error.message
+              : "Could not save the result. Try again.",
+          ),
+        )
+        .finally(() => setSaving(false));
     }
   }, [gameState, onComplete]);
   const inEncounter =
@@ -142,109 +153,176 @@ export function BattleScreen({
       data-testid="fight-page"
       data-loading-started={loadingStarted.current}
     >
-      {phase !== "closing" && WorldRenderer && (
-        <WorldRenderer
-          key={attempt}
-          onReady={reportReady}
-          onChange={reportChange}
-          onError={reportError}
-          reducedMotion={reducedMotion}
-        />
-      )}
-      {world && game && (
-        <div aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
-          <header className="battle-header">
-            <Button
-              label="Exit"
-              onPress={() => navigate("RegionDetail")}
-              style={{ minWidth: 62, paddingInline: 8 }}
-            />
-            <div className="battle-heading">
-              <h1>{title}</h1>
-              <p>Chapter {battle.chapter} · {battle.total} questions</p>
-            </div>
-            <button
-              type="button"
-              aria-label="Debug controls"
-              aria-expanded={debug}
-              onClick={() => setDebug(!debug)}
-              className="debug-toggle"
-            >
-              <Icon name="tune-variant" color="#48643c" />
-              <span>Debug</span>
-            </button>
-          </header>
-          <section className="combat-hud" aria-label="Combat health">
-            <div>
-              <label htmlFor="player-hp">Nerd Mage <strong>{battle.playerHp} / {battle.playerMaxHp} HP</strong></label>
-              <progress id="player-hp" max={battle.playerMaxHp} value={battle.playerHp} />
-            </div>
-            <div className="enemy-health">
-              <label htmlFor="enemy-hp">Enemy {battle.enemiesDefeated + (battle.enemyHp > 0 ? 1 : 0)} <strong>{battle.enemyHp} / {battle.enemyMaxHp} HP</strong></label>
-              <progress id="enemy-hp" max={battle.enemyMaxHp} value={battle.enemyHp} />
-            </div>
-          </section>
-          {!debug && !inEncounter && game.state !== GameState.result && (
-            <div className="east">
-              <Icon name="arrow-right" size={18} color="#fff4c8" />
-              EAST
-            </div>
-          )}
-          {debug && (
-            <DebugControls
-              game={game}
-              act={world.act}
-              bounds={bounds}
-              triggers={triggers}
-              setBounds={setBounds}
-              setTriggers={setTriggers}
-            />
-          )}
-          <footer className="battle-footer">
-            <div className="battle-status">
-              <div className="battle-status-copy">
-                <h2 data-testid="fight-status" aria-live="polite">
-                  {game.state === GameState.result ? battle.status === "passed" ? "Chapter cleared!" : battle.status === "failed" ? "Defeated" : "Saving result…" : game.paused ? "Journey paused" : status[game.state]}
-                </h2>
+      <div className="battle-stage" data-testid="combat-visual">
+        {phase !== "closing" && WorldRenderer && (
+          <WorldRenderer
+            key={attempt}
+            onReady={reportReady}
+            onChange={reportChange}
+            onError={reportError}
+            reducedMotion={reducedMotion}
+          />
+        )}
+        {world && game && (
+          <div aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
+            <header className="battle-header">
+              <Button
+                label="Exit"
+                onPress={() => navigate("RegionDetail")}
+                style={{ minWidth: 62, paddingInline: 8 }}
+              />
+              <div className="battle-heading">
+                <h1>{title}</h1>
                 <p>
-                  {inEncounter
-                    ? "Correct: enemy −50 HP · Wrong: you −50 HP"
-                    : game.state === GameState.result
-                      ? `${battle.correct} / ${battle.total} correct. ${battle.status === "passed" ? `+${battle.goldReward} gold · +${battle.xpReward} XP` : battle.status === "failed" ? "Your HP reached 0. Retry the chapter." : "Saving your combat result."}`
-                      : game.state === GameState.encounterComplete
-                        ? "The trail opens up again."
-                        : "Follow the path toward the next clearing."}
+                  Chapter {battle.chapter} · {battle.total} questions
                 </p>
               </div>
-              <div className="battle-cleared">
-                <Icon name="flag-checkered" size={19} color="#506837" />
-                <span>{battle.enemiesDefeated} defeated</span>
+              <button
+                type="button"
+                aria-label="Debug controls"
+                aria-expanded={debug}
+                onClick={() => setDebug(!debug)}
+                className="debug-toggle"
+              >
+                <Icon name="tune-variant" color="#48643c" />
+                <span>Debug</span>
+              </button>
+            </header>
+            <section className="combat-hud" aria-label="Enemy health">
+              <div className="enemy-health">
+                <label htmlFor="enemy-hp">
+                  Enemy {battle.enemiesDefeated + (battle.enemyHp > 0 ? 1 : 0)}{" "}
+                  <strong>
+                    {battle.enemyHp} / {battle.enemyMaxHp} HP
+                  </strong>
+                </label>
+                <progress
+                  id="enemy-hp"
+                  max={battle.enemyMaxHp}
+                  value={battle.enemyHp}
+                />
               </div>
+            </section>
+            {!debug && !inEncounter && game.state !== GameState.result && (
+              <div className="east">
+                <Icon name="arrow-right" size={18} color="#fff4c8" />
+                EAST
+              </div>
+            )}
+            {debug && (
+              <DebugControls
+                game={game}
+                act={world.act}
+                bounds={bounds}
+                triggers={triggers}
+                setBounds={setBounds}
+                setTriggers={setTriggers}
+              />
+            )}
+          </div>
+        )}
+      </div>
+      {world && game && (
+        <footer
+          className="battle-footer"
+          data-testid="combat-quiz"
+          aria-hidden={phase !== "ready"}
+          inert={phase !== "ready"}
+        >
+          <section className="player-health" aria-label="Player health">
+            <label htmlFor="player-hp">
+              Nerd Mage{" "}
+              <strong>
+                {battle.playerHp} / {battle.playerMaxHp} HP
+              </strong>
+            </label>
+            <progress
+              id="player-hp"
+              max={battle.playerMaxHp}
+              value={battle.playerHp}
+            />
+          </section>
+          <div className="battle-status">
+            <div className="battle-status-copy">
+              <h2 data-testid="fight-status" aria-live="polite">
+                {game.state === GameState.result
+                  ? battle.status === "passed"
+                    ? "Chapter cleared!"
+                    : battle.status === "failed"
+                      ? "Defeated"
+                      : "Saving result…"
+                  : game.paused
+                    ? "Journey paused"
+                    : status[game.state]}
+              </h2>
+              <p>
+                {inEncounter
+                  ? "Correct: enemy −50 HP · Wrong: you −50 HP"
+                  : game.state === GameState.result
+                    ? `${battle.correct} / ${battle.total} correct. ${battle.status === "passed" ? `+${battle.goldReward} gold · +${battle.xpReward} XP` : battle.status === "failed" ? "Your HP reached 0. Retry the chapter." : "Saving your combat result."}`
+                    : game.state === GameState.encounterComplete
+                      ? "The trail opens up again."
+                      : "Follow the path toward the next clearing."}
+              </p>
             </div>
-            {inEncounter && (
-              <BattleQuiz battle={battle} checkpoint={game.cleared + 1} tutorial={tutorial} onAnswer={onAnswer} onAdvance={() => world.act(() => game.completeEncounter())} />
-            )}
-            {game.state === GameState.result && (
-              <div className="result-actions">
-                {saveError && <p className="quiz-error" role="alert">{saveError}</p>}
-                {battle.status === "active" ? (
-                  <Button label={saving ? "Saving result…" : "Retry saving"} disabled={saving} tone="gold" onPress={() => {
-                    setSaving(true); setSaveError(undefined);
-                    onComplete().catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
-                  }} />
-                ) : (
-                  <>
-                    <Button label="Back to chapter" tone="gold" onPress={() => navigate("RegionDetail")} />
-                    <Button label={saving ? "Starting…" : "Retry chapter"} disabled={saving} tone="quiet" onPress={() => {
-                      setSaving(true); setSaveError(undefined);
-                      onRestart().catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
-                    }} />
-                  </>
-                )}
-              </div>
-            )}
-          </footer>
-        </div>
+            <div className="battle-cleared">
+              <Icon name="flag-checkered" size={19} color="#506837" />
+              <span>{battle.enemiesDefeated} defeated</span>
+            </div>
+          </div>
+          {inEncounter && (
+            <BattleQuiz
+              battle={battle}
+              checkpoint={game.cleared + 1}
+              tutorial={tutorial}
+              onAnswer={onAnswer}
+              onAdvance={() => world.act(() => game.completeEncounter())}
+            />
+          )}
+          {game.state === GameState.result && (
+            <div className="result-actions">
+              {saveError && (
+                <p className="quiz-error" role="alert">
+                  {saveError}
+                </p>
+              )}
+              {battle.status === "active" ? (
+                <Button
+                  label={saving ? "Saving result…" : "Retry saving"}
+                  disabled={saving}
+                  tone="gold"
+                  onPress={() => {
+                    setSaving(true);
+                    setSaveError(undefined);
+                    onComplete()
+                      .catch((error) => setSaveError(error.message))
+                      .finally(() => setSaving(false));
+                  }}
+                />
+              ) : (
+                <>
+                  <Button
+                    label="Back to chapter"
+                    tone="gold"
+                    onPress={() => navigate("RegionDetail")}
+                  />
+                  <Button
+                    label={saving ? "Starting…" : "Retry chapter"}
+                    disabled={saving}
+                    tone="quiet"
+                    onPress={() => {
+                      setSaving(true);
+                      setSaveError(undefined);
+                      onRestart()
+                        .catch((error) => setSaveError(error.message))
+                        .finally(() => setSaving(false));
+                    }}
+                  />
+                </>
+              )}
+            </div>
+          )}
+        </footer>
       )}
       {(phase !== "ready" || loadError) && (
         <div

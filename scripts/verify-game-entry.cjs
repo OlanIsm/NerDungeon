@@ -98,6 +98,13 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.screenshot({ path: 'test-results/phaser-game.png' });
     for (let encounter = 0; encounter < 3; encounter++) {
       await page.getByRole('button', { name: 'Submit answer', exact: true }).waitFor();
+      const visual = await page.getByTestId('combat-visual').boundingBox();
+      const quiz = await page.getByTestId('combat-quiz').boundingBox();
+      const canvasBounds = await page.locator('canvas').boundingBox();
+      assert(visual.y + visual.height <= quiz.y + 1, 'Visual and quiz have separate rows');
+      assert(canvasBounds.y + canvasBounds.height <= quiz.y + 1, 'Quiz never covers the Phaser canvas');
+      assert((await page.locator('#player-hp').boundingBox()).y >= quiz.y, 'Player HP belongs to the quiz row');
+      assert((await page.locator('#enemy-hp').boundingBox()).y < quiz.y, 'Enemy HP belongs to the visual row');
       assert.equal(await world.getAttribute('data-hero-texture'), 'scholar-idle', 'encounters use the standing texture instead of a frozen walk frame');
       const idleFrame = await world.getAttribute('data-walk-frame');
       await page.waitForTimeout(150);
@@ -178,11 +185,11 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await errorPage.route('**/api/**', route => route.fulfill({ contentType: 'text/html', body: '<!DOCTYPE html><html><body>Other application</body></html>' }));
     await errorPage.goto(process.env.APP_URL || 'http://localhost:5173', { waitUntil: 'networkidle' });
     const connectionError = 'Game server is not connected. Restart the Nerdungeon backend, then reload this page.';
-    await errorPage.getByText(connectionError, { exact: true }).waitFor();
+    await errorPage.getByRole('dialog').getByText(connectionError, { exact: true }).waitFor();
     await errorPage.getByRole('button', { name: 'Continue', exact: true }).click();
     await errorPage.getByLabel('Study file', { exact: true }).setInputFiles({ name: 'notes.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF notes') });
     await errorPage.getByRole('button', { name: 'Forge Adventure', exact: true }).click();
-    await errorPage.getByText(connectionError, { exact: true }).waitFor();
+    await errorPage.getByRole('dialog').getByText(connectionError, { exact: true }).waitFor();
     assert.equal(await errorPage.getByText(/Unexpected token/).count(), 0);
     await errorPage.close();
     assert.deepEqual(errors, []);

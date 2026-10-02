@@ -13,6 +13,10 @@ export async function generatePdfJson(pdf: Buffer, schema: object, pageCount: nu
   if (!key) throw new GeminiError("PDF generation is not configured", 503);
   const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
   let response: Response;
+  let inputLimit = false;
+  let providerStatus: string | undefined;
+  const startedAt = Date.now();
+  const requestInfo = { model, pdfBytes: pdf.length, pageCount };
   const signal = AbortSignal.timeout(90_000);
   try {
     // Share one timeout across attempts: an overloaded model must not hold uploads indefinitely.
@@ -30,17 +34,23 @@ export async function generatePdfJson(pdf: Buffer, schema: object, pageCount: nu
           generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 24000, temperature: 0.2 },
         }),
       });
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        const status = failure?.error?.status;
+        providerStatus = typeof status === "string" && /^[A-Z_]{1,40}$/.test(status) ? status : undefined;
+        const message = typeof failure?.error?.message === "string" ? failure.error.message : "";
+        inputLimit = response.status === 400 && /(input|context|payload).*(exceed|too large|too long|limit)|(exceed|too large|too long).*(input|context|payload)/i.test(message);
+      }
       if (response.status !== 503 || attempt === 2) break;
-      await response.body?.cancel();
-      console.warn("Gemini busy; retrying generation", { status: 503, model, attempt: attempt + 1 });
+      console.warn("Gemini busy; retrying generation", { ...requestInfo, status: 503, providerStatus, attempt: attempt + 1 });
       await delay(1000 * 2 ** attempt + Math.floor(Math.random() * 250), undefined, { signal });
     }
   } catch {
     throw new GeminiError("PDF generation timed out or could not connect. Try again.", 504);
   }
   if (!response.ok) {
-    await response.body?.cancel();
-    console.error("Gemini generation failed", { status: response.status, model });
+    console.error("Gemini generation failed", { ...requestInfo, status: response.status, providerStatus, reason: inputLimit ? "input_limit" : "provider_error", elapsedMs: Date.now() - startedAt });
+    if (inputLimit) throw new GeminiError("This PDF exceeds the model's input limit. Split it into smaller PDFs and try again.", 422);
     if (response.status === 429) throw new GeminiError("Gemini quota reached. Check your quota and try again later.", 503);
     if (response.status === 503) throw new GeminiError("Gemini is still busy after 3 attempts. Wait a moment, then upload the PDF again.", 503);
     if (response.status === 400) throw new GeminiError("Gemini could not process this PDF. Try a readable, unencrypted PDF.", 422);
@@ -53,7 +63,9 @@ export async function generatePdfJson(pdf: Buffer, schema: object, pageCount: nu
     const text = candidate.content?.parts?.filter((part: { thought?: boolean; text?: string }) => !part.thought && typeof part.text === "string")
       .map((part: { text: string }) => part.text).join("");
     if (!text || text.length > 200_000) throw new Error("Invalid output size");
-    return JSON.parse(text);
+    const content = JSON.parse(text);
+    console.info("Gemini generation completed", { ...requestInfo, elapsedMs: Date.now() - startedAt, inputTokens: result.usageMetadata?.promptTokenCount, outputTokens: result.usageMetadata?.candidatesTokenCount });
+    return content;
   } catch {
     throw new GeminiError("Gemini returned incomplete or invalid content. Try again.");
   }

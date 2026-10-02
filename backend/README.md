@@ -28,6 +28,8 @@ Answers, the active battle and the latest 20 completed attempts persist in the a
 
 Generation is synchronous with one 90-second timeout shared across all attempts. A Gemini HTTP 503 triggers up to two retries (three attempts total), with increasing delays and jitter. Quota/configuration/invalid-PDF errors are not retried. Persistent overload returns an error without saving an expedition or source file. If large PDFs regularly exceed the timeout, move processing into a background job. On Windows PowerShell, use `npm.cmd` if `npm.ps1` is blocked.
 
+HTTP 503 alone does not prove a PDF exceeded the context window. Explicit input/context/payload-limit errors return a distinct 422 message asking for smaller PDFs. Diagnostics record model, byte/page counts, provider status, elapsed time and token counts when available; they do not log keys, document text or generated answers. The upload UI can minimize after three seconds and keeps tracking during navigation, with a Hub badge for completion/failure. Tracking is browser memory; reloading/closing the tab loses its pending UI, and the backend has no durable job queue.
+
 ## Verification
 
 | Command from repository root | Checks |
@@ -35,6 +37,7 @@ Generation is synchronous with one 90-second timeout shared across all attempts.
 | `npm --prefix backend test` | Battle ordering, scores, failed attempts, reward retries, locked chapters, PDF validation and summons. |
 | `npm --prefix backend run typecheck` / `npm run typecheck` / `npm run lint` / `npm run build` | Backend/frontend types, frontend lint and production build. |
 | `npm run test:web` | Mocked browser regression: auth session, upload, summon, quiz, Phaser traversal, resize, gate loading, reduced motion and asset retry. Requires frontend dev server. |
+| `npm run test:forge` | Delayed mock forge: three-second minimize threshold, Study scrolls status, navigation without interruption, ready/failure Hub badges, acknowledgement, retry and mobile/desktop. Requires frontend dev server. |
 | `npm --prefix backend run verify:pdf` | Live Gemini/Supabase: two accounts, PDF/Storage, ordered battle, saved results, concurrent retries, token refresh, invalid uploads and denied cross-account access. |
 | `npm run test:learning` | Live browser: tutorial, wrong-answer feedback, answer retry after an injected 503, resume after reload, real PDF generation, battle rewards and session persistence on mobile/desktop. Requires frontend and backend dev servers. |
 

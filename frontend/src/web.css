@@ -652,13 +652,27 @@ p {
   height: 220px;
   object-fit: contain;
 }
+.forge-minimize { max-width: 340px; display: grid; gap: 16px; }
+.forge-minimize p { line-height: 1.5; }
+.forge-status { display: grid; gap: 12px; color: #352d26; }
+.forge-status-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.forge-status-heading img { width: 56px; height: 56px; object-fit: contain; flex: 0 0 auto; }
+.forge-status-heading > div { min-width: 0; }
+.forge-status h3 { font: 17px/1.4 Rubik_700Bold; margin: 0 0 4px; }
+.forge-status p { font: 12px/1.6 Epilogue_500Medium; margin: 0; overflow-wrap: anywhere; }
+.forge-status progress { width: 100%; height: 12px; accent-color: #3c705f; margin-bottom: 8px; }
+.forge-status [role="alert"] { color: #94362d; }
+.nav-notice { position: absolute; width: 14px; height: 14px; top: 0; right: calc(50% - 32px); border-radius: 50%; border: 2px solid #fff2d5; background: #bf352f; }
 .battle-screen {
   position: absolute;
   inset: 0;
   min-height: 0;
   overflow: hidden;
-  background: #17110c;
+  background: #fff1d4;
+  display: grid;
+  grid-template-rows: minmax(190px, 45%) minmax(0, 1fr);
 }
+.battle-stage { position: relative; min-height: 0; overflow: hidden; background: #d9bd91; }
 .battle-screen[data-phase="closing"] {
   background: transparent;
 }
@@ -926,9 +940,15 @@ p {
   letter-spacing: 1.5px;
 }
 .battle-footer {
-  bottom: 12px;
+  position: static;
   padding: 12px;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 0;
+  border-bottom: 0;
+  border-top: 4px solid #9a794b;
 }
 .battle-status {
   display: flex;
@@ -962,28 +982,23 @@ p {
   gap: 8px;
 }
 
-.battle-footer:has(.battle-quiz) {
-  max-height: calc(100dvh - 120px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
 .battle-quiz { display: grid; gap: 10px; }
 .combat-hud {
-  position: absolute; top: 104px; left: 12px; right: 12px; z-index: 2;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-  padding: 10px 12px; background: #fff2d5; border-radius: 12px;
+  position: absolute; top: 88px; left: 12px; right: 12px; z-index: 2;
+  padding: 6px 12px; background: #fff2d5; border-radius: 12px;
   color: #352d26; font: 11px/1.5 Rubik_700Bold;
 }
-.combat-hud label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
-.combat-hud progress { width: 100%; height: 12px; border: 0; border-radius: 6px; overflow: hidden; accent-color: #3c705f; }
-.combat-hud progress::-webkit-progress-bar { background: #d5c6a6; }
-.combat-hud progress::-webkit-progress-value { background: #3c705f; transition: width .2s ease-out; }
-.combat-hud progress::-moz-progress-bar { background: #3c705f; }
+.player-health { position: sticky; top: -12px; z-index: 2; padding: 8px 0; background: #fff1d4; color: #352d26; font: 12px/1.5 Rubik_700Bold; }
+.combat-hud label, .player-health label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
+.combat-hud progress, .player-health progress { display: block; width: 100%; height: 12px; border: 0; border-radius: 6px; overflow: hidden; accent-color: #3c705f; }
+.combat-hud progress::-webkit-progress-bar, .player-health progress::-webkit-progress-bar { background: #d5c6a6; }
+.player-health progress::-webkit-progress-value { background: #3c705f; transition: width .2s ease-out; }
+.player-health progress::-moz-progress-bar { background: #3c705f; }
 .enemy-health progress { accent-color: #a4443d; }
 .enemy-health progress::-webkit-progress-value { background: #a4443d; }
 .enemy-health progress::-moz-progress-bar { background: #a4443d; }
 .combat-damage { color: #6f4315; font-weight: bold; }
-.battle-screen .east { top: 184px; }
+.battle-screen .east { top: 142px; }
 .battle-quiz p { margin: 0; line-height: 1.55; }
 .quiz-progress, .quiz-source { font-size: 12px; color: #6c604c; }
 .battle-quiz fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

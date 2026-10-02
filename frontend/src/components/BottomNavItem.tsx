@@ -8,18 +8,21 @@ type BottomNavItemProps = {
   iconOffsetX?: number;
   selected: boolean;
   onPress: () => void;
+  notification?: string;
 };
 export function BottomNavItem({
   screen,
   icon,
   selected,
   onPress,
+  notification,
 }: BottomNavItemProps) {
   return (
     <button
       role="tab"
       aria-selected={selected}
       aria-label={screen}
+      aria-describedby={notification ? `nav-notice-${screen}` : undefined}
       onClick={onPress}
       style={{ ...s.item, ...((selected && s.selected) || {}) }}
       className="stack pressable"
@@ -42,6 +45,7 @@ export function BottomNavItem({
         {screen}
       </span>
       {selected && <div style={s.marker} className="stack" />}
+      {notification && <span id={`nav-notice-${screen}`} className="nav-notice" role="status" aria-label={notification} title={notification} data-testid="forge-notification" />}
     </button>
   );
 }

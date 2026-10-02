@@ -241,7 +241,7 @@ export function PhaserWorld({
         });
         this.hero
           .setPosition(102 * scale, model.playerY * scale)
-          .setDisplaySize(116 * scale, 116 * scale);
+          .setDisplaySize(Math.min(116 * scale, height * 0.32), Math.min(116 * scale, height * 0.32));
         this.heroShadow
           .setPosition(102 * scale, model.playerY * scale - 3 * scale)
           .setDisplaySize(80 * scale, 5 * scale);
@@ -272,7 +272,7 @@ export function PhaserWorld({
           this.shadows = [];
           if (visible) {
             const scale = this.scale.width / WORLD.width;
-            const size = (encounter.boss ? 168 : 108) * scale;
+            const size = Math.min((encounter.boss ? 168 : 108) * scale, this.scale.height * 0.34);
             const x = 244 * scale;
             this.shadows.push(
               this.add
@@ -332,14 +332,14 @@ export function PhaserWorld({
         if (model.state !== GameState.walking) {
           if (this.hero.texture.key !== "scholar-idle") {
             this.hero.stop().setTexture("scholar-idle");
-            const size = 116 * (this.scale.width / WORLD.width);
+            const size = Math.min(116 * (this.scale.width / WORLD.width), this.scale.height * 0.32);
             this.hero.setDisplaySize(size, size);
             parent.dataset.walkFrame = this.hero.frame.name;
           }
         } else if (walking) {
           if (this.hero.texture.key !== "scholar") {
             this.hero.play("scholar-walk");
-            const size = 116 * (this.scale.width / WORLD.width);
+            const size = Math.min(116 * (this.scale.width / WORLD.width), this.scale.height * 0.32);
             this.hero.setDisplaySize(size, size);
           } else this.hero.anims.resume();
         } else this.hero.anims.pause();

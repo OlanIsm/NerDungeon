@@ -30,6 +30,8 @@ Express verifies answers, HP, rewards and progress. Supabase Auth creates one an
 
 Combat starts with 500 player HP and 100 enemy HP. Each correct answer deals 50 damage to the enemy; a wrong answer costs 50 player HP. A defeated enemy is replaced while questions remain. Finish all 10 questions with player HP above zero to win; zero HP loses. First-time chapter wins grant 450 gold and 100 XP. Saved answers make refresh/resume and identical retries safe. The tutorial upgrades for existing accounts; older PDF banks need a new upload before starting a new attempt.
 
+Battle uses two rows: the upper Phaser scene and enemy HP, followed by player HP and the scrollable quiz. Quiz content never overlays the canvas. Forge loading can be minimized after three seconds; its status moves to Study scrolls while you navigate. Success or failure adds a red Hub badge, cleared when you open Hub or its ready adventure. Progress tracking requires the tab to stay open; this does not create a persistent background job.
+
 ## Verify
 
 ```sh
@@ -38,6 +40,7 @@ npm run lint
 npm run build
 npm run test:game
 npm run test:web
+npm run test:forge
 npm --prefix backend test
 npm --prefix backend run typecheck
 npm --prefix backend run verify:pdf

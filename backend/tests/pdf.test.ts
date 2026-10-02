@@ -65,6 +65,7 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
   const nativeFetch = globalThis.fetch;
   t.mock.method(console, "error", () => {});
   t.mock.method(console, "warn", () => {});
+  t.mock.method(console, "info", () => {});
   t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     if (url.includes("generativelanguage.googleapis.com")) {
@@ -77,6 +78,7 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
       if (mode === "quota") return Response.json({}, { status: 429 });
       if (mode === "busy") return Response.json({}, { status: 503 });
       if (mode === "busy-once" && generationRequests === 1) return Response.json({}, { status: 503 });
+      if (mode === "input-limit") return Response.json({ error: { status: "INVALID_ARGUMENT", message: "Input token count exceeds the context limit" } }, { status: 400 });
       if (mode === "bad-json") return Response.json({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: "broken json" }] } }] });
       const data = content();
       if (mode === "unreadable") { data.readable = false; data.chapters = []; }
@@ -122,7 +124,7 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
   const reload = await nativeFetch(base, { headers: { Authorization: "Bearer test-token" } });
   assert.equal((await reload.json()).expeditions[1].regions[0].questions, 10);
   const before = structuredClone(state);
-  for (const [failure, status] of [["unreadable", 422], ["invalid", 502], ["truncated", 502], ["bad-json", 502], ["quota", 503], ["busy", 503], ["network", 504]] as const) {
+  for (const [failure, status] of [["unreadable", 422], ["invalid", 502], ["truncated", 502], ["bad-json", 502], ["quota", 503], ["busy", 503], ["input-limit", 422], ["network", 504]] as const) {
     mode = failure;
     const attemptsBefore: number = generationRequests;
     const failed = await forge();
@@ -131,6 +133,7 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
     assert.ok(error);
     assert.equal(generationRequests - attemptsBefore, failure === "busy" ? 3 : 1);
     if (failure === "busy") assert.match(error, /after 3 attempts/);
+    if (failure === "input-limit") assert.match(error, /input limit/);
     assert.equal(uploads, 1);
     assert.equal(writes, 1);
     assert.deepEqual(state, before);
