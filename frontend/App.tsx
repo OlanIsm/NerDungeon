@@ -40,6 +40,7 @@ export default function App() {
   const [startingBattle, setStartingBattle] = useState(false);
   const [battleEntry, setBattleEntry] = useState(0);
   const startPending = useRef(false);
+  const [summoning, setSummoning] = useState(false);
   const [screen, setScreen] = useState<Screen>("Hub");
   const [message, setMessage] = useState<string>();
   const [gameData, setGameData] = useState<GameData>();
@@ -115,7 +116,7 @@ export default function App() {
   const showShell = ["Hub", "Expedition", "Bazaar", "Bag"].includes(screen);
   return (
     <div className="app-shell">
-      <div className="app" data-screen={screen}>
+      <div className="app" data-screen={screen} data-summoning={summoning}>
         {screen === "Bag" && (
           <div
             className="bag-backdrop"
@@ -216,6 +217,7 @@ export default function App() {
               <GachaScreen
                 {...props}
                 pool={gameData?.summonPool}
+                onSummoningChange={setSummoning}
                 onSummon={(count) => perform({ action: "summon", count })}
               />
             </div>

@@ -4,30 +4,47 @@ import { inventory } from "../data/inventory";
 import { Button } from "../components/GameUI";
 import { rarity } from "../theme";
 import type { ScreenProps } from "../types";
+import { SummonRitual, type Ritual } from "../components/SummonRitual";
+import { summonAudio } from "../components/summonAudio";
 import type { GameData, SummonItem } from "../gameApi";
 
 export function GachaScreen({
   notify,
   onSummon,
+  onSummoningChange,
   pool = [],
 }: ScreenProps & {
   onSummon: (count: 1 | 10) => Promise<GameData>;
+  onSummoningChange: (active: boolean) => void;
   pool?: SummonItem[];
 }) {
-  const [pending, setPending] = useState<1 | 10>();
+  const [ritual, setRitual] = useState<Ritual>();
+  const [sound, setSound] = useState(() => localStorage.getItem("nerdungeon.summonSound") !== "off");
   const [details, setDetails] = useState(false);
+  const chest = useRef<HTMLImageElement>(null);
+  const pending = useRef(false);
+  const audio = useRef<ReturnType<typeof summonAudio> | undefined>(undefined);
+  useEffect(() => {
+    inventory.forEach(item => { const image = new Image(); image.src = item.image; });
+    return () => audio.current?.close();
+  }, []);
+  function finish() {
+    audio.current?.close(); audio.current = undefined;
+    pending.current = false; setRitual(undefined); onSummoningChange(false);
+  }
   async function summon(count: 1 | 10) {
-    if (pending) return;
-    setPending(count);
+    if (pending.current || !chest.current) return;
+    pending.current = true;
+    const effects = summonAudio(sound); audio.current = effects;
+    const ceremony: Ritual = { count, origin: chest.current.getBoundingClientRect(), rewards: null, audio: effects };
+    setRitual(ceremony); onSummoningChange(true);
     try {
       const data = await onSummon(count);
-      notify(`You received: ${data.rewards?.join(", ")}.`);
+      if (data.rewards?.length !== count) throw new Error("Could not show summon results. Check your bag before summoning again.");
+      setRitual({ ...ceremony, rewards: data.rewards.map(name => ({ name, rarity: pool.find(item => item.name === name)?.rarity ?? "Common" })) });
     } catch (error) {
-      notify(
-        error instanceof Error ? error.message : "Summon failed. Try again.",
-      );
-    } finally {
-      setPending(undefined);
+      finish();
+      notify(error instanceof Error ? error.message : "Summon failed. Check your bag before trying again.");
     }
   }
   return (
@@ -42,6 +59,7 @@ export function GachaScreen({
         >
           <div className="chest-aura" aria-hidden="true" />
           <img
+            ref={chest}
             src={miniIcons.chest}
             alt="Scholar treasure chest"
             className="bazaar-chest"
@@ -56,8 +74,8 @@ export function GachaScreen({
           aria-label="Summon 1x"
           aria-description="Costs 100 gems"
           title="Costs 100 gems"
-          aria-busy={pending === 1}
-          disabled={!!pending}
+          aria-busy={ritual?.count === 1}
+          disabled={!!ritual}
           onClick={() => summon(1)}
         >
           <SingleSummonArt />
@@ -68,13 +86,17 @@ export function GachaScreen({
           aria-label="Summon 10x"
           aria-description="Costs 900 gems"
           title="Costs 900 gems"
-          aria-busy={pending === 10}
-          disabled={!!pending}
+          aria-busy={ritual?.count === 10}
+          disabled={!!ritual}
           onClick={() => summon(10)}
         >
           <img className="summon-reference" src={art.summon10x} alt="" />
         </button>
       </div>
+      {ritual && <SummonRitual ritual={ritual} dismiss={finish} sound={sound} toggleSound={() => {
+        const next = !sound; setSound(next); audio.current?.setEnabled(next);
+        localStorage.setItem("nerdungeon.summonSound", next ? "on" : "off");
+      }} />}
       {details && <DropRates pool={pool} dismiss={() => setDetails(false)} />}
     </div>
   );

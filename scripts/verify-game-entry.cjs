@@ -68,14 +68,20 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.getByRole('tab', { name: 'Potions', exact: true }).click();
     assert.equal(await page.getByLabel('Bag items').getByRole('button').count(), 1, 'one potion category item retained');
     await page.getByRole('tab', { name: 'Bazaar', exact: true }).click();
+    async function collectSummon(count) {
+      for (let i = 0; i < count; i++) {
+        await page.getByRole('button', { name: `Reveal card ${i + 1} of ${count}`, exact: true }).click();
+        await page.waitForTimeout(650);
+        await page.getByRole('button', { name: i + 1 === count ? 'View rewards' : 'Next card', exact: true }).click();
+      }
+      await page.getByRole('button', { name: 'Return to Bazaar', exact: true }).click();
+    }
     await page.getByRole('button', { name: 'Summon 10x', exact: true }).click();
-    await page.getByRole('dialog').getByText(/^You received:/).waitFor();
+    await collectSummon(10);
     assert.equal(actions.find(action => action.action === 'summon').count, 10, 'Summon 10x sends ten pulls');
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.getByRole('button', { name: 'Summon 1x', exact: true }).click();
-    await page.getByRole('dialog').getByText(/^You received:/).waitFor();
+    await collectSummon(1);
     assert.deepEqual(actions.filter(action => action.action === 'summon').map(action => action.count), [10, 1]);
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.getByRole('tab', { name: 'Expedition', exact: true }).click();
     await page.getByRole('button', { name: 'Open Chapter 1: Forest', exact: true }).click();
     await page.getByRole('button', { name: 'View chapter', exact: true }).click();

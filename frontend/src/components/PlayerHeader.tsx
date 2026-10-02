@@ -33,7 +33,7 @@ export function PlayerHeader({
   xp?: number;
 }) {
   return (
-    <div style={s.header} className="stack">
+    <div style={s.header} className="stack player-header">
       <div aria-hidden={true} style={s.highlight} className="stack" />
       <button
         role="button"

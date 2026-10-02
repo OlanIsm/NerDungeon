@@ -1,0 +1,104 @@
+.player-header, .navbar, .summon-actions { transition: opacity .35s ease, filter .35s ease; }
+.bazaar-room-art { transition: transform 1.8s cubic-bezier(.16,1,.3,1); transform-origin: 50% 55%; }
+.app[data-summoning="true"] .player-header,
+.app[data-summoning="true"] .navbar,
+.app[data-summoning="true"] .summon-actions { opacity: 0; filter: blur(4px); pointer-events: none; }
+.app[data-summoning="true"] .chest-trigger { visibility: hidden; }
+.app[data-summoning="true"] .bazaar-room-art { transform: scale(1.16); }
+.summon-ritual { position: fixed; inset: 0; margin: auto; width: min(540px, 100vw); height: 100dvh; max-width: none; max-height: none; padding: 0; border: 0; overflow: clip; color: #fff2cf; background: transparent; isolation: isolate; }
+.summon-ritual::backdrop { background: transparent; }
+.ritual-backdrop { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 44%, #41274ba6, #100c20e8 65%, #0a0913fa); animation: ritual-dim .65s both; }
+.ritual-sound, .ritual-skip { border: 1px solid #d9ba7555; background: #140f2399; color: #eddbb4; min-height: 44px; padding: 8px 16px; border-radius: 24px; font: 11px Rubik_700Bold; }
+.ritual-sound { position: absolute; top: max(16px, env(safe-area-inset-top)); right: 16px; z-index: 8; }
+.ritual-skip { margin-top: 20px; background: transparent; }
+.ritual-stage { position: absolute; inset: 0; pointer-events: none; transition: opacity .6s ease; }
+.ritual-chest-position { position: absolute; left: 50%; top: 46%; width: min(400px, 82vw); aspect-ratio: 1; transform: translate(-50%, -50%); }
+.ritual-zoom { width: 100%; height: 100%; animation: ritual-zoom .75s cubic-bezier(.16,1,.3,1) both; }
+.ritual-chest { position: relative; width: 100%; height: 100%; filter: drop-shadow(0 24px 22px #0009); }
+.ritual-chest img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.chest-body { clip-path: polygon(0 44%,100% 44%,100% 100%,0 100%); }
+.chest-lid { clip-path: polygon(0 0,100% 0,100% 44%,0 44%); transform-origin: 22% 44%; }
+.chest-inner-light { position: absolute; left: 18%; right: 18%; top: 40%; height: 15%; border-radius: 50%; background: #fffad0; box-shadow: 0 0 35px 12px #ffd56f, 0 -45px 70px 10px #e4aeff; opacity: 0; }
+.ritual-ring { position: absolute; left: 50%; top: 46%; width: min(460px, 92vw); aspect-ratio: 1; border: 1px solid #ebbd6844; border-radius: 50%; transform: translate(-50%,-50%); opacity: .65; }
+.ritual-ring::before, .ritual-ring::after { content: ""; position: absolute; inset: 12%; border: 1px solid #e4bc7366; transform: rotate(45deg); }
+.ritual-ring::after { inset: 20%; transform: rotate(15deg); border-color: #b59ce744; }
+.ring-one { animation: ritual-orbit 18s linear infinite; }
+.ring-two { width: min(360px, 72vw); transform: translate(-50%,-50%) rotate(30deg); border-style: dashed; animation: ritual-orbit 24s linear infinite reverse; }
+.summon-ritual[data-phase="charge"] .ritual-chest { animation: chest-rattle .7s ease-in-out infinite; }
+.summon-ritual[data-phase="charge"] .chest-inner-light { opacity: .6; animation: chest-pressure .7s ease-in-out infinite alternate; }
+.summon-ritual[data-phase="open"] .chest-lid { animation: chest-unseal .65s cubic-bezier(.16,1,.3,1) forwards; }
+.summon-ritual[data-phase="open"] .chest-body { animation: chest-recoil .6s ease-out; }
+.summon-ritual[data-phase="open"] .chest-inner-light { opacity: 1; }
+.ritual-burst { position: absolute; inset: 0; opacity: 0; background: radial-gradient(ellipse at 50% 43%, #fffce4 0%, #ffe6a3bb 10%, #daa1ff33 35%, transparent 65%); }
+.summon-ritual[data-phase="open"] .ritual-burst { animation: treasure-burst .9s ease-out both; }
+.ritual-particles { position: absolute; top: 46%; left: 50%; }
+.ritual-particles i { position: absolute; display: block; width: 5px; height: 12px; background: #ffe4a1; box-shadow: 0 0 14px #ffd77c; opacity: 0; }
+.summon-ritual[data-phase="open"] .ritual-particles i { animation: treasure-spark .9s var(--delay) cubic-bezier(.16,1,.3,1) both; }
+.ritual-caption { position: absolute; top: 72%; left: 24px; right: 24px; text-align: center; animation: ritual-dim .5s both; }
+.ritual-caption > span, .ritual-reveal header > p, .ritual-summary header > p { font: 10px Rubik_700Bold; letter-spacing: .22em; color: #d9b677; }
+.ritual-caption h2 { margin: 12px 0; font: 23px/1.3 Rubik_700Bold; }
+.ritual-caption p { color: #c6b9ce; font-size: 12px; }
+.summon-ritual[data-phase="cards"] .ritual-stage, .summon-ritual[data-phase="summary"] .ritual-stage { opacity: 0; }
+.ritual-reveal { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4vh, 40px); padding: 64px 24px 24px; }
+.ritual-reveal header, .ritual-summary header { text-align: center; }
+.ritual-reveal h2, .ritual-summary h2 { margin: 12px 0 10px; font: 26px/1.25 Rubik_700Bold; }
+.ritual-reveal header > span { font: 13px Rubik_700Bold; color: #b4a5bd; }
+.loot-stack { position: relative; width: min(266px, 68vw, 34vh); aspect-ratio: .69; perspective: 1100px; flex-shrink: 0; }
+.loot-card { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 18px; padding: 0; background: transparent; text-align: center; }
+.stack-shadow { transform: translate(calc(var(--depth) * 9px), calc(var(--depth) * -8px)) rotate(calc(var(--depth) * 4deg)); filter: brightness(.72); }
+.active-card { z-index: 3; animation: card-arrive .65s cubic-bezier(.16,1,.3,1) both; touch-action: manipulation; }
+.card-turn { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.65,.2,1); }
+.is-revealed .card-turn { transform: rotateY(180deg); }
+.card-back, .card-front { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: inherit; }
+.card-back-art { position: absolute; inset: 0; overflow: hidden; border: 2px solid #dcba75; border-radius: 18px; background: repeating-linear-gradient(45deg, #d1a96208 0 1px, transparent 1px 14px), radial-gradient(ellipse at center, #4d315d, #21192f 75%); box-shadow: inset 0 0 0 5px #211827, inset 0 0 0 6px #d8b17266, 0 18px 35px #0007; color: #e9c885; }
+.card-filigree { position: absolute; inset: 13% 18%; border: 1px solid #e9c88566; transform: rotate(45deg); border-radius: 25%; }
+.card-emblem { position: absolute; left: 50%; top: 43%; transform: translate(-50%,-50%) rotate(-45deg); border: 1px solid #dcb76e; width: 90px; height: 90px; display: grid; place-items: center; background: #35203f; box-shadow: 0 0 30px #d9b87926, inset 0 0 0 5px #35203f, inset 0 0 0 6px #dcb76e55; }
+.card-emblem .icon { transform: rotate(45deg); }
+.card-corner { position: absolute; font-size: 24px; }
+.card-corner.top { top: 16px; left: 16px; }
+.card-corner.bottom { bottom: 16px; right: 16px; }
+.card-back-title { position: absolute; top: 70%; left: 0; right: 0; font: 13px Rubik_700Bold; letter-spacing: .18em; }
+.card-back-note { position: absolute; top: 78%; left: 0; right: 0; font-size: 10px; color: #bda98a; }
+.card-front { transform: rotateY(180deg); overflow: hidden; border: 2px solid var(--loot-color); border-radius: 18px; background: radial-gradient(ellipse at 50% 38%, #55416a, #20182f 62%); box-shadow: inset 0 0 0 5px #261b32, inset 0 0 0 6px #ffffff20, 0 0 45px color-mix(in srgb, var(--loot-color) 20%, transparent), 0 18px 35px #0007; color: #fff5dc; }
+.loot-rarity { position: absolute; top: 8%; left: 0; right: 0; color: var(--loot-color); text-transform: uppercase; font: 11px Rubik_700Bold; letter-spacing: .22em; }
+.loot-art { position: absolute; left: 15%; top: 20%; width: 70%; height: 43%; object-fit: contain; filter: drop-shadow(0 9px 10px #0007); }
+.loot-art-halo { position: absolute; inset: 16% 10% 30%; background: radial-gradient(ellipse, color-mix(in srgb, var(--loot-color) 30%, transparent), transparent 65%); }
+.loot-name { position: absolute; left: 16px; right: 16px; top: 70%; }
+.loot-name > span { color: #baaac7; font-size: 8px; letter-spacing: .2em; }
+.loot-name h3 { margin: 8px 0 0; font: 20px/1.2 Rubik_700Bold; }
+.loot-seal { position: absolute; left: 0; right: 0; bottom: 5%; color: var(--loot-color); }
+.is-sliding { animation: card-slide .36s cubic-bezier(.45,0,.9,.5) forwards; }
+.reveal-guidance { min-height: 44px; text-align: center; }
+.reveal-guidance p { margin-bottom: 8px; font: 14px Rubik_700Bold; }
+.reveal-guidance > span { color: #b8a9c4; font-size: 11px; }
+.ritual-summary { position: absolute; inset: 0; padding: 80px 24px 24px; display: flex; flex-direction: column; gap: 24px; animation: ritual-dim .5s both; }
+.ritual-summary header > span { font-size: 12px; color: #c4b6cd; }
+.summary-items { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; overflow: auto; min-height: 0; padding: 4px; }
+.summary-item { display: grid; grid-template-columns: 48px 1fr; gap: 4px 8px; align-items: center; padding: 12px 8px; border: 1px solid color-mix(in srgb, var(--loot-color) 50%, transparent); background: #2c2037; border-radius: 10px; }
+.summary-item img { grid-row: span 2; width: 48px; height: 48px; object-fit: contain; }
+.summary-item strong { font: 11px/1.4 Rubik_700Bold; }
+.summary-item span { color: var(--loot-color); font-size: 10px; }
+.ritual-summary > .game-button { margin-top: auto; flex-shrink: 0; }
+@keyframes ritual-dim { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ritual-zoom { from { transform: translate(var(--start-x),var(--start-y)) scale(var(--start-scale)); } to { transform: translate(0,0) scale(1); } }
+@keyframes ritual-orbit { to { transform: translate(-50%,-50%) rotate(360deg); } }
+@keyframes chest-rattle { 0%,100% { transform: rotate(0) translateY(0); } 15% { transform: rotate(-3deg) translate(-3px,2px); } 35% { transform: rotate(4deg) translate(3px,-3px); } 55% { transform: rotate(-5deg) translate(-4px,1px); } 75% { transform: rotate(3deg) translate(3px,-5px); } }
+@keyframes chest-pressure { to { opacity: 1; transform: scale(1.12); } }
+@keyframes chest-unseal { to { transform: translate(-8%,-16%) rotate(-24deg); } }
+@keyframes chest-recoil { 25% { transform: translateY(7%) scale(1.06,.94); } 65% { transform: translateY(-3%); } }
+@keyframes treasure-burst { 0% { opacity: 0; transform: scale(.6); } 18% { opacity: .95; } 100% { opacity: 0; transform: scale(1.5); } }
+@keyframes treasure-spark { 0% { opacity: 0; transform: rotate(var(--angle)) translateY(0) scale(.3); } 20% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(-1 * var(--travel))) scale(.3); } }
+@keyframes card-arrive { from { opacity: 0; transform: translateY(90px) scale(.7) rotate(-8deg); } to { opacity: 1; transform: none; } }
+@keyframes card-slide { to { opacity: 0; transform: translateX(-130%) translateY(30px) rotate(-20deg); } }
+@media (min-width: 700px) { .summon-ritual { height: calc(100dvh - 40px); border-radius: 28px; } }
+@media (max-height: 700px) { .ritual-reveal { gap: 18px; padding-top: 60px; } .ritual-reveal h2 { font-size: 21px; } .ritual-caption { top: 70%; } .ritual-caption h2 { font-size: 19px; } .ritual-summary { padding-top: 64px; gap: 16px; } }
+@media (prefers-reduced-motion: reduce) {
+  .summon-ritual *, .app[data-summoning="true"] * { animation: none !important; transition-duration: .1s !important; }
+  .ritual-zoom { transform: none; }
+  .summon-ritual[data-phase="open"] .chest-lid { transform: translateY(-8%); }
+  .active-card.is-sliding { opacity: 0; }
+}
+html:has(.summon-ritual[open]) .bazaar-chest { animation-play-state: paused; }
+
+.summon-ritual button:focus-visible { outline: 2px solid #e7ca83; outline-offset: 5px; }
+.summon-ritual[data-phase="cards"] .ritual-stage *, .summon-ritual[data-phase="summary"] .ritual-stage *, .summon-ritual[data-background="true"] * { animation-play-state: paused !important; }
