@@ -2,8 +2,9 @@
   "name": "nerdungeon",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix frontend run dev",
-    "start": "npm --prefix frontend run dev",
+    "dev": "node scripts/dev.cjs",
+    "start": "node scripts/dev.cjs",
+    "frontend:dev": "npm --prefix frontend run dev",
     "web": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "typecheck": "npm --prefix frontend run typecheck",

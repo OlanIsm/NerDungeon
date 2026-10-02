@@ -9,17 +9,18 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
   const { applyGameAction, initialGame } = await import('../backend/src/modules/game/state.ts');
   const { gameSnapshot } = await import('../backend/src/modules/game/index.ts');
   state.expeditions[0].regions[0].questionBank = initialGame().expeditions[0].regions[0].questionBank;
-  state.expeditions[0].regions[0].questions = 3;
+  state.expeditions[0].regions[0].questions = 10;
+  const authSession = {
+    access_token: 'test-token', refresh_token: 'test-refresh', expires_in: 3600, token_type: 'bearer',
+    user: { id: 'test-user', aud: 'authenticated', created_at: new Date().toISOString(), app_metadata: {}, user_metadata: {}, is_anonymous: true },
+  };
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
   try {
     const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
     const errors = [], assets = [], actions = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if (response.url().includes('.webp')) assets.push(response.url()); });
-    await page.route('**/auth/v1/**', route => route.fulfill({ json: {
-      access_token: 'test-token', refresh_token: 'test-refresh', expires_in: 3600, token_type: 'bearer',
-      user: { id: 'test-user', aud: 'authenticated', created_at: new Date().toISOString(), app_metadata: {}, user_metadata: {}, is_anonymous: true },
-    } }));
+    await page.route('**/auth/v1/**', route => route.fulfill({ json: authSession }));
     await page.route('**/api/game', route => {
       let rewards = [];
       if (route.request().method() === 'POST') {
@@ -102,17 +103,34 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
       await page.waitForTimeout(150);
       assert.equal(await world.getAttribute('data-walk-frame'), idleFrame, 'idle pose stays still during encounters');
       if (encounter === 0) await page.screenshot({ path: 'test-results/phaser-idle.png' });
-      const question = state.expeditions[0].regions[0].questionBank[encounter];
-      await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
-      await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
-      await page.getByText('Correct!', { exact: true }).waitFor();
-      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      const bank = state.expeditions[0].regions[0].questionBank;
+      const target = Math.ceil(bank.length * (encounter + 1) / 3);
+      while (state.battle.answers.length < target) {
+        const question = bank[state.battle.answers.length];
+        await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
+        await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
+        await page.getByText('Correct!', { exact: true }).waitFor();
+        await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      }
       if (encounter === 0) assert.equal(await world.getAttribute('data-enemies'), '1');
       if (encounter < 2) await page.waitForFunction(() => document.querySelector('[data-testid="phaser-world"]').dataset.heroTexture === 'scholar');
     }
     await page.getByTestId('fight-status').getByText('Chapter cleared!', { exact: true }).waitFor();
     assert.equal(await world.getAttribute('data-hero-texture'), 'scholar-idle', 'result uses standing pose');
     assert.equal(actions.filter(action => action.action === 'complete').length, 1, 'completion submitted once');
+    const goldBeforeFailure = state.gold;
+    await page.getByRole('button', { name: 'Retry chapter', exact: true }).click();
+    const bank = state.expeditions[0].regions[0].questionBank;
+    for (const question of bank) {
+      await page.getByRole('radio', { name: question.options[(question.answerIndex + 1) % 4], exact: true }).check();
+      await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
+      await page.getByText('Not quite', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    }
+    await page.getByTestId('fight-status').getByText('Defeated', { exact: true }).waitFor();
+    assert.equal(await page.locator('#player-hp').getAttribute('value'), '0');
+    assert.equal(state.gold, goldBeforeFailure, 'Defeat cannot grant rewards');
+    await page.screenshot({ path: 'test-results/combat-defeat-mobile.png' });
     await page.getByRole('button', { name: 'Exit', exact: true }).click();
     assert.equal(await page.locator('canvas').count(), 0, 'engine destroyed on exit');
     await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -133,7 +151,7 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.screenshot({ path: 'test-results/react-desktop.png' });
     const reduced = await browser.newPage({ viewport: { width: 430, height: 932 }, reducedMotion: 'reduce' });
     reduced.on('pageerror', error => errors.push(error.message));
-    await reduced.route('**/api/game', route => route.fulfill({ json: state }));
+    await reduced.route('**/api/game', route => route.fulfill({ json: gameSnapshot(state) }));
     let failGround = true;
     await reduced.route(/_01_ground.*\.webp/, route => {
       if (failGround) return route.abort();
@@ -155,6 +173,18 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await reduced.getByRole('button', { name: 'Exit', exact: true }).click();
     assert.equal(await reduced.locator('canvas').count(), 0);
     await reduced.close();
+    const errorPage = await browser.newPage();
+    await errorPage.route('**/auth/v1/**', route => route.fulfill({ json: authSession }));
+    await errorPage.route('**/api/**', route => route.fulfill({ contentType: 'text/html', body: '<!DOCTYPE html><html><body>Other application</body></html>' }));
+    await errorPage.goto(process.env.APP_URL || 'http://localhost:5173', { waitUntil: 'networkidle' });
+    const connectionError = 'Game server is not connected. Restart the Nerdungeon backend, then reload this page.';
+    await errorPage.getByText(connectionError, { exact: true }).waitFor();
+    await errorPage.getByRole('button', { name: 'Continue', exact: true }).click();
+    await errorPage.getByLabel('Study file', { exact: true }).setInputFiles({ name: 'notes.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF notes') });
+    await errorPage.getByRole('button', { name: 'Forge Adventure', exact: true }).click();
+    await errorPage.getByText(connectionError, { exact: true }).waitFor();
+    assert.equal(await errorPage.getByText(/Unexpected token/).count(), 0);
+    await errorPage.close();
     assert.deepEqual(errors, []);
     console.log('PASS React pages, upload/summon, Phaser WebGL/walk/pause/encounters, gate hold, resize, cleanup/re-entry, asset retry, reduced motion');
   } finally { await browser.close(); }

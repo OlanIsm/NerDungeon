@@ -15,7 +15,7 @@ export function BattleQuiz({ battle, checkpoint, tutorial, onAnswer, onAdvance }
   const previousCheckpoint = Math.ceil(battle.total * Math.min(checkpoint - 1, 3) / 3);
   const feedback = battle.feedback && battle.feedback.questionId !== acknowledged && battle.answers.length > previousCheckpoint ? battle.feedback : null;
   const question = battle.question;
-  const cleared = battle.answers.length >= Math.ceil(battle.total * Math.min(checkpoint, 3) / 3);
+  const cleared = battle.finished || battle.answers.length >= Math.ceil(battle.total * Math.min(checkpoint, 3) / 3);
   async function submit() {
     if (!question || selected === undefined || pending.current) return;
     pending.current = true;
@@ -33,10 +33,11 @@ export function BattleQuiz({ battle, checkpoint, tutorial, onAnswer, onAdvance }
   }
   return (
     <section className="battle-quiz" aria-label="Chapter question">
-      <p className="quiz-progress">{battle.answers.length} / {battle.total} answered · Pass with {battle.requiredCorrect} correct</p>
+      <p className="quiz-progress">{battle.answers.length} / {battle.total} answered · Finish with HP remaining to win</p>
       {feedback ? (
         <div className="quiz-feedback" role="status">
           <h2>{feedback.correct ? "Correct!" : "Not quite"}</h2>
+          <p className="combat-damage">{feedback.correct ? "Enemy takes 50 damage." : "You take 50 damage."} {feedback.correct && battle.correct % 2 === 0 ? "Enemy defeated!" : ""}</p>
           <p>{feedback.prompt}</p>
           <p><strong>Answer:</strong> {feedback.options[feedback.answerIndex]}</p>
           <p>{feedback.explanation}</p>

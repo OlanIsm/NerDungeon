@@ -11,7 +11,18 @@ export async function readState(client: Client, userId: string): Promise<Row> {
   if (existing.data) {
     const row = existing.data as Row;
     const tutorial = row.state.expeditions.find((item) => item.id === "tutorial");
-    if (tutorial?.regions.some((region) => !region.questionBank?.length)) tutorial.regions = tutorialRegions();
+    if (tutorial?.regions.some((region) => region.questionBank?.length !== 10)) {
+      tutorial.regions = tutorialRegions().map((region) => {
+        const active = row.state.battle;
+        const previous = tutorial.regions.find((item) => item.chapter === region.chapter);
+        // Append tutorial questions without changing an unfinished attempt's accepted answer keys.
+        if (active?.status === "active" && active.expeditionId === "tutorial" && active.chapter === region.chapter && previous?.questionBank?.length) {
+          const old = previous.questionBank;
+          return { ...region, questionBank: [...old, ...region.questionBank!.filter((question) => !old.some((item) => item.id === question.id))] };
+        }
+        return region;
+      });
+    }
     return row;
   }
   const created = await client.from("game_states").insert({ user_id: userId, state: initialGame() }).select("state,version").single();

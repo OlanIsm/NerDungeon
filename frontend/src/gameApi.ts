@@ -22,7 +22,8 @@ export type BattleQuestion = { id: string; prompt: string; options: string[]; so
 export type BattleView = {
   id: string; expeditionId: string; chapter: number;
   status: "active" | "passed" | "failed";
-  total: number; correct: number; requiredCorrect: number;
+  total: number; correct: number;
+  playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; enemiesDefeated: number; finished: boolean;
   goldReward: number; xpReward: number;
   answers: { questionId: string; selectedIndex: number; correct: boolean }[];
   question: BattleQuestion | null;
@@ -54,9 +55,7 @@ export async function gameRequest(
         }
       : { headers: { Authorization: `Bearer ${await token()}` } },
   );
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error ?? "Server unavailable");
-  return data as GameData;
+  return readGameResponse(response);
 }
 export async function forgeRequest(asset: File): Promise<GameData> {
   const form = new FormData();
@@ -66,7 +65,16 @@ export async function forgeRequest(asset: File): Promise<GameData> {
     headers: { Authorization: `Bearer ${await token()}` },
     body: form,
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error ?? "Forge failed");
+  return readGameResponse(response);
+}
+async function readGameResponse(response: Response): Promise<GameData> {
+  if (!response.headers.get("content-type")?.includes("application/json")) {
+    throw new Error("Game server is not connected. Restart the Nerdungeon backend, then reload this page.");
+  }
+  let data;
+  try { data = await response.json(); }
+  catch { throw new Error("Game server returned invalid data. Reload this page and try again."); }
+  if (!response.ok) throw new Error(typeof data?.error === "string" ? data.error : "Game server unavailable. Try again.");
+  if (!Array.isArray(data?.expeditions) || typeof data.gold !== "number") throw new Error("Game server returned invalid data. Reload this page and try again.");
   return data as GameData;
 }

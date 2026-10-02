@@ -170,8 +170,8 @@ export function AdventureScreen({
           {selectedRegion.summary}
         </span>
         <span style={ui.label} className="text">
-          {selectedRegion.questions} questions · {selectedRegion.enemies}{" "}
-          encounters
+          {selectedRegion.questions} questions · Up to {selectedRegion.enemies}{" "}
+          enemies
         </span>
         <Button
           label="View chapter"
@@ -339,7 +339,7 @@ export function RegionDetailScreen({
           <span style={ui.body} className="text">
             {region.summary}
           </span>
-          <span style={ui.body} className="text">Answer every question and get at least 60% correct to clear this chapter. Unfinished answers are saved.</span>
+          <span style={ui.body} className="text">Start with 500 HP. Each enemy has 100 HP. Correct answers deal 50 damage; wrong answers cost you 50 HP. Finish every question with HP remaining to win. Unfinished answers are saved.</span>
           {region.material && (
             <div style={s.topics} className="stack">
               <span style={ui.heading} className="text">Study material</span>
@@ -370,7 +370,7 @@ export function RegionDetailScreen({
               text={`${region.questions} questions`}
               icon="help-circle-outline"
             />
-            <Badge text={`${region.enemies} enemies`} icon="sword-cross" />
+            <Badge text={`Up to ${region.enemies} enemies`} icon="sword-cross" />
           </div>
         </RealmFrame>
         <div style={s.readyBlock} className="stack">

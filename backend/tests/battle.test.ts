@@ -19,6 +19,8 @@ test("answers are ordered, immutable and idempotent; future answer keys are not 
   applyGameAction(game, answer);
   applyGameAction(game, answer);
   assert.equal(game.battle!.answers.length, 1);
+  assert.equal(battleSnapshot(game)!.playerHp, 500);
+  assert.equal(battleSnapshot(game)!.enemyHp, 50);
   assert.equal(battleSnapshot(game)!.feedback!.explanation, questions[0].explanation);
   assert.throws(() => applyGameAction(game, { ...answer, selectedIndex: 3 }), /already been answered/);
   applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
@@ -37,6 +39,7 @@ test("failed attempts save results without rewards; a passing retry rewards once
   for (const question of questions) applyGameAction(game, { action: "answer", battleId: oldId, questionId: question.id, selectedIndex: (question.answerIndex + 1) % 4 });
   applyGameAction(game, { action: "complete", battleId: oldId });
   assert.equal(game.battle!.status, "failed");
+  assert.equal(battleSnapshot(game)!.playerHp, 0);
   assert.equal(game.gold, 1450);
   assert.equal(game.expeditions[0].progress, 0);
   assert.equal(game.battleHistory!.length, 1);
@@ -58,4 +61,29 @@ test("failed attempts save results without rewards; a passing retry rewards once
   applyGameAction(game, { action: "complete", battleId: replayId });
   assert.equal(game.gold, 1900);
   assert.equal(game.battle!.goldReward, 0);
+});
+
+test("ten-question combat wins with remaining HP, loses at zero, and enemy respawns after two hits", () => {
+  const game = initialGame();
+  const questions = game.expeditions[0].regions[0].questionBank!;
+  assert.equal(questions.length, 10);
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  const battleId = game.battle!.id;
+  questions.forEach((question, index) => {
+    applyGameAction(game, { action: "answer", battleId, questionId: question.id, selectedIndex: index === 0 ? question.answerIndex : (question.answerIndex + 1) % 4 });
+  });
+  assert.equal(battleSnapshot(game)!.playerHp, 50);
+  assert.equal(battleSnapshot(game)!.enemyHp, 50);
+  applyGameAction(game, { action: "complete", battleId });
+  assert.equal(game.battle!.status, "passed", "Surviving all questions wins, even below the old 60% score");
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  const retryId = game.battle!.id;
+  questions.slice(0, 2).forEach(question => applyGameAction(game, { action: "answer", battleId: retryId, questionId: question.id, selectedIndex: question.answerIndex }));
+  assert.equal(battleSnapshot(game)!.enemiesDefeated, 1);
+  assert.equal(battleSnapshot(game)!.enemyHp, 100, "Next enemy starts with full HP");
+  assert.equal(battleSnapshot(game)!.playerHp, 500);
+  assert.throws(() => applyGameAction(game, { action: "complete", battleId: retryId }));
+  game.battle = undefined;
+  game.expeditions[0].regions[0].questionBank = questions.slice(0, 3);
+  assert.throws(() => applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 }), /10-question region/);
 });

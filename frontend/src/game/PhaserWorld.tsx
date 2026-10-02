@@ -270,31 +270,30 @@ export function PhaserWorld({
           this.shadows.forEach((shadow) => shadow.destroy());
           this.enemies = [];
           this.shadows = [];
-          if (visible)
-            for (let index = 0; index < encounter.count; index++) {
-              const scale = this.scale.width / WORLD.width;
-              const size = (encounter.boss ? 168 : 108) * scale;
-              const x = (244 + index * 68) * scale;
-              this.shadows.push(
-                this.add
-                  .ellipse(
-                    x,
-                    model.playerY * scale - 3 * scale,
-                    size * 0.7,
-                    size * 0.04,
-                    0x443423,
-                    0.24,
-                  )
-                  .setDepth(12),
-              );
-              this.enemies.push(
-                this.add
-                  .image(x, model.playerY * scale, "soda")
-                  .setOrigin(0.5, 1)
-                  .setDisplaySize(size, size)
-                  .setDepth(14),
-              );
-            }
+          if (visible) {
+            const scale = this.scale.width / WORLD.width;
+            const size = (encounter.boss ? 168 : 108) * scale;
+            const x = 244 * scale;
+            this.shadows.push(
+              this.add
+                .ellipse(
+                  x,
+                  model.playerY * scale - 3 * scale,
+                  size * 0.7,
+                  size * 0.04,
+                  0x443423,
+                  0.24,
+                )
+                .setDepth(12),
+            );
+            this.enemies.push(
+              this.add
+                .image(x, model.playerY * scale, "soda")
+                .setOrigin(0.5, 1)
+                .setDisplaySize(size, size)
+                .setDepth(14),
+            );
+          }
         }
         this.enemies.forEach((enemy) =>
           enemy.setAlpha(

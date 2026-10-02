@@ -20,7 +20,7 @@ test("legacy tutorial gains questions without resetting saved resources or progr
   assert.equal(loaded.state.gold, 237);
   assert.equal(loaded.state.xp, 200);
   assert.equal(loaded.state.expeditions[0].progress, 67);
-  assert.ok(loaded.state.expeditions[0].regions.every((region) => region.questionBank?.length === 3));
+  assert.ok(loaded.state.expeditions[0].regions.every((region) => region.questionBank?.length === 10));
   assert.deepEqual(loaded.state.expeditions[1], uploaded);
 });
 
@@ -41,6 +41,23 @@ test("new accounts start with only the tutorial and chapter rewards cannot be cl
   applyGameAction(game, { action: "complete", battleId });
   assert.equal(game.gold, 1900);
   assert.throws(() => applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 4 }), GameActionError);
+});
+
+test("unfinished three-question tutorial expands to ten without changing accepted answers", async () => {
+  const state = initialGame();
+  const region = state.expeditions[0].regions[0];
+  applyGameAction(state, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  region.questionBank = region.questionBank!.slice(0, 3);
+  region.questions = 3;
+  const oldBank = structuredClone(region.questionBank);
+  const battleId = state.battle!.id;
+  applyGameAction(state, { action: "answer", battleId, questionId: oldBank[0].id, selectedIndex: oldBank[0].answerIndex });
+  const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: { state, version: 2 }, error: null }) };
+  const loaded = await readState({ from: () => query } as unknown as Parameters<typeof readState>[0], "legacy-user");
+  assert.equal(loaded.state.expeditions[0].regions[0].questions, 10);
+  assert.deepEqual(loaded.state.expeditions[0].regions[0].questionBank!.slice(0, 3), oldBank);
+  assert.equal(loaded.state.battle!.id, battleId);
+  assert.equal(loaded.state.battle!.answers.length, 1);
 });
 
 test("summons charge the requested amount and reject invalid counts", () => {

@@ -10,20 +10,21 @@ const content = () => ({
   chapters: [{
     title: "Energi kinetik", summary: "Energi benda yang bergerak.", topics: ["Massa", "Kecepatan"],
     material: "Energi kinetik bergantung pada massa dan kuadrat kecepatan. Rumusnya Ek = 1/2 m v^2.", sourcePages: [1],
-    questions: Array.from({ length: 3 }, (_, index) => ({
+    questions: Array.from({ length: 10 }, (_, index) => ({
       prompt: `Berapa energi kinetik benda ${index + 1}?`, options: ["1 joule", "2 joule", "3 joule", "4 joule"],
-      answerIndex: index, explanation: "Gunakan Ek = 1/2 m v^2.", sourcePage: 1,
+      answerIndex: index % 4, explanation: "Gunakan Ek = 1/2 m v^2.", sourcePage: 1,
     })),
   }],
 });
 
 test("PDF content validation rejects empty content, invalid answers, duplicate options and nonexistent pages", () => {
   const valid = validatePdfContent(content(), 1);
-  assert.equal(valid.regions[0].questions, 3);
+  assert.equal(valid.regions[0].questions, 10);
   assert.equal(valid.regions[0].questionBank?.[0].id, "1-1");
   for (const mutate of [
     (data: ReturnType<typeof content>) => { data.readable = false; },
     (data: ReturnType<typeof content>) => { data.chapters = []; },
+    (data: ReturnType<typeof content>) => { data.chapters[0].questions.pop(); },
     (data: ReturnType<typeof content>) => { data.chapters[0].questions[0].answerIndex = 4; },
     (data: ReturnType<typeof content>) => { data.chapters[0].questions[0].answerIndex = 1.5; },
     (data: ReturnType<typeof content>) => { data.chapters[0].questions[0].options[1] = "1 joule"; },
@@ -115,11 +116,11 @@ test("forge sends PDF bytes to Gemini, persists validated content and never save
   const snapshot = await response.json();
   assert.equal(state.expeditions.length, 2);
   assert.equal(state.expeditions[1].title, "Energi dan gerak");
-  assert.equal(state.expeditions[1].regions[0].questionBank?.length, 3);
+  assert.equal(state.expeditions[1].regions[0].questionBank?.length, 10);
   assert.equal(snapshot.expeditions[1].regions[0].material, content().chapters[0].material);
   assert.equal(snapshot.expeditions[1].regions[0].questionBank, undefined);
   const reload = await nativeFetch(base, { headers: { Authorization: "Bearer test-token" } });
-  assert.equal((await reload.json()).expeditions[1].regions[0].questions, 3);
+  assert.equal((await reload.json()).expeditions[1].regions[0].questions, 10);
   const before = structuredClone(state);
   for (const [failure, status] of [["unreadable", 422], ["invalid", 502], ["truncated", 502], ["bad-json", 502], ["quota", 503], ["busy", 503], ["network", 504]] as const) {
     mode = failure;

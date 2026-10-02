@@ -968,6 +968,22 @@ p {
   overscroll-behavior: contain;
 }
 .battle-quiz { display: grid; gap: 10px; }
+.combat-hud {
+  position: absolute; top: 104px; left: 12px; right: 12px; z-index: 2;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  padding: 10px 12px; background: #fff2d5; border-radius: 12px;
+  color: #352d26; font: 11px/1.5 Rubik_700Bold;
+}
+.combat-hud label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
+.combat-hud progress { width: 100%; height: 12px; border: 0; border-radius: 6px; overflow: hidden; accent-color: #3c705f; }
+.combat-hud progress::-webkit-progress-bar { background: #d5c6a6; }
+.combat-hud progress::-webkit-progress-value { background: #3c705f; transition: width .2s ease-out; }
+.combat-hud progress::-moz-progress-bar { background: #3c705f; }
+.enemy-health progress { accent-color: #a4443d; }
+.enemy-health progress::-webkit-progress-value { background: #a4443d; }
+.enemy-health progress::-moz-progress-bar { background: #a4443d; }
+.combat-damage { color: #6f4315; font-weight: bold; }
+.battle-screen .east { top: 184px; }
 .battle-quiz p { margin: 0; line-height: 1.55; }
 .quiz-progress, .quiz-source { font-size: 12px; color: #6c604c; }
 .battle-quiz fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

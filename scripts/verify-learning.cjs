@@ -72,6 +72,7 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     active = await (await resumedResponse).json();
     assert.equal(active.battle.id, originalBattleId);
     assert.equal(active.battle.answers.length, 1);
+    assert.equal(active.battle.playerHp, 450);
     await page.getByText('Not quite', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     for (const question of tutorialQuestions.slice(1)) {
@@ -114,9 +115,16 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     const pdfBattle = await start();
     const saved = await admin.from('game_states').select('state').eq('user_id', userId).single();
     const bank = saved.data.state.expeditions.find(item => item.id === expedition.id).regions[0].questionBank;
+    assert.equal(bank.length, 10);
     for (const question of bank) {
       await page.getByRole('radio', { name: question.options[question.answerIndex], exact: true }).check();
+      const reply = page.waitForResponse(response => response.url().endsWith('/api/game') && response.request().postDataJSON()?.action === 'answer');
       await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
+      const answerResponse = await reply;
+      const answerData = await answerResponse.json();
+      assert.equal(answerResponse.status(), 200, JSON.stringify(answerData));
+      assert.equal(answerData.battle.feedback.questionId, question.id);
+      assert.equal(answerData.battle.feedback.correct, true, JSON.stringify(answerData.battle.feedback));
       await page.getByText('Correct!', { exact: true }).waitFor();
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
     }
@@ -134,6 +142,12 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     assert.equal(users.size, 1, 'Reload preserves the browser account');
     assert.deepEqual(errors, []);
     console.log('PASS live browser: tutorial, wrong-answer feedback, network retry, resumed answers, real PDF generation, verified battle rewards and reload persistence');
+  } catch (error) {
+    fs.mkdirSync('test-results', { recursive: true });
+    for (const context of browser.contexts()) for (const page of context.pages()) {
+      await page.screenshot({ path: 'test-results/learning-failure.png' }).catch(() => {});
+    }
+    throw error;
   } finally {
     await browser.close();
     if (paths.size) {

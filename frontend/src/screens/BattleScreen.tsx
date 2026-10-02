@@ -174,7 +174,17 @@ export function BattleScreen({
               <span>Debug</span>
             </button>
           </header>
-          {!debug && (
+          <section className="combat-hud" aria-label="Combat health">
+            <div>
+              <label htmlFor="player-hp">Nerd Mage <strong>{battle.playerHp} / {battle.playerMaxHp} HP</strong></label>
+              <progress id="player-hp" max={battle.playerMaxHp} value={battle.playerHp} />
+            </div>
+            <div className="enemy-health">
+              <label htmlFor="enemy-hp">Enemy {battle.enemiesDefeated + (battle.enemyHp > 0 ? 1 : 0)} <strong>{battle.enemyHp} / {battle.enemyMaxHp} HP</strong></label>
+              <progress id="enemy-hp" max={battle.enemyMaxHp} value={battle.enemyHp} />
+            </div>
+          </section>
+          {!debug && !inEncounter && game.state !== GameState.result && (
             <div className="east">
               <Icon name="arrow-right" size={18} color="#fff4c8" />
               EAST
@@ -194,13 +204,13 @@ export function BattleScreen({
             <div className="battle-status">
               <div className="battle-status-copy">
                 <h2 data-testid="fight-status" aria-live="polite">
-                  {game.state === GameState.result ? battle.status === "passed" ? "Chapter cleared!" : battle.status === "failed" ? "Keep learning" : "Saving result…" : game.paused ? "Journey paused" : status[game.state]}
+                  {game.state === GameState.result ? battle.status === "passed" ? "Chapter cleared!" : battle.status === "failed" ? "Defeated" : "Saving result…" : game.paused ? "Journey paused" : status[game.state]}
                 </h2>
                 <p>
                   {inEncounter
-                    ? `${game.encounter?.name} · ${game.encounter?.count} ${game.encounter?.count === 1 ? "enemy" : "enemies"}`
+                    ? "Correct: enemy −50 HP · Wrong: you −50 HP"
                     : game.state === GameState.result
-                      ? `${battle.correct} / ${battle.total} correct. ${battle.status === "passed" ? `+${battle.goldReward} gold · +${battle.xpReward} XP` : `You need ${battle.requiredCorrect} correct to pass.`}`
+                      ? `${battle.correct} / ${battle.total} correct. ${battle.status === "passed" ? `+${battle.goldReward} gold · +${battle.xpReward} XP` : battle.status === "failed" ? "Your HP reached 0. Retry the chapter." : "Saving your combat result."}`
                       : game.state === GameState.encounterComplete
                         ? "The trail opens up again."
                         : "Follow the path toward the next clearing."}
@@ -208,7 +218,7 @@ export function BattleScreen({
               </div>
               <div className="battle-cleared">
                 <Icon name="flag-checkered" size={19} color="#506837" />
-                <span>{game.cleared} cleared</span>
+                <span>{battle.enemiesDefeated} defeated</span>
               </div>
             </div>
             {inEncounter && (

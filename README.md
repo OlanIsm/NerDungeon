@@ -12,19 +12,13 @@ npm --prefix frontend ci
 npm --prefix backend ci
 ```
 
-Start the API in one terminal:
-
-```sh
-npm run backend:dev
-```
-
-Start the web app in another terminal:
+Start the API and web app together:
 
 ```sh
 npm run dev
 ```
 
-Open http://localhost:5173. Vite proxies /api to http://localhost:3000. Set VITE_API_URL in frontend/.env only when using another API origin. This is a web app; Expo Go and Android/iOS builds are no longer used.
+Open http://localhost:5173. Vite proxies /api to the Nerdungeon Express API on http://127.0.0.1:3001. Keep `PORT=3001` in backend/.env. Port 3000 may belong to another app; pointing the proxy there can return HTML instead of API JSON. To run services separately, use `npm run backend:dev` and `npm run frontend:dev`. Stop existing Nerdungeon dev processes before starting the combined command. Vite refuses a busy frontend port. Set VITE_API_URL in frontend/.env only when using another API origin. This is a web app; Expo Go and Android/iOS builds are no longer used.
 
 Before starting, apply the Supabase migration, enable Anonymous Sign-Ins, and fill backend/frontend `.env` files as described in [backend/README.md](backend/README.md).
 
@@ -32,7 +26,9 @@ Before starting, apply the Supabase migration, enable Anonymous Sign-Ins, and fi
 
 Phaser loads when entering Battle and is destroyed on exit. Doors slide shut before game assets load, remain closed for at least 1.5 seconds, and reopen when the scene is ready. The game stays inactive until opening completes. Walking stops during encounters, pause, and hidden browser tabs. Canvas resizes with the app shell. Reduced motion disables walking animation and door motion while keeping the loading hold.
 
-Express handles uploads, summons, and chapter progress. Supabase Auth creates one anonymous account per browser; Postgres and Storage keep each account's data. Every new account starts with one tutorial expedition. Uploads support PDF/DOCX up to 25 MB; chapters currently derive from filenames, without AI question generation. Battle retains the encounter completion prototype.
+Express verifies answers, HP, rewards and progress. Supabase Auth creates one anonymous account per browser; Postgres and private Storage keep each account's data. Each account starts with one playable tutorial adventure, three regions with 10 questions each. PDF uploads up to 25 MB generate 1-3 regions with exactly 10 questions each through Gemini. DOCX still has starter chapters without generated questions.
+
+Combat starts with 500 player HP and 100 enemy HP. Each correct answer deals 50 damage to the enemy; a wrong answer costs 50 player HP. A defeated enemy is replaced while questions remain. Finish all 10 questions with player HP above zero to win; zero HP loses. First-time chapter wins grant 450 gold and 100 XP. Saved answers make refresh/resume and identical retries safe. The tutorial upgrades for existing accounts; older PDF banks need a new upload before starting a new attempt.
 
 ## Verify
 
@@ -44,9 +40,11 @@ npm run test:game
 npm run test:web
 npm --prefix backend test
 npm --prefix backend run typecheck
+npm --prefix backend run verify:pdf
+npm run test:learning
 ```
 
-Run the web app before test:web. Its browser test mocks the API, checks every React page, upload/summon requests, gate timing, Phaser WebGL animation, encounters, resize, and engine cleanup/re-entry. It uses installed Chrome; CHROME_PATH can override the executable. APP_URL can target Vite preview or another port. Screenshots go into ignored test-results/.
+Run the web app before test:web. Its browser test mocks API/Auth and checks combat win/defeat, HTML API errors, every React page, upload/summon, gate timing, Phaser animation, resize and engine cleanup. `verify:pdf` uses real Gemini/Supabase with two temporary accounts. `test:learning` needs both services and checks a real browser tutorial/PDF battle, network retry and account persistence. Live tests consume Gemini quota and clean up temporary users/files. Tests use installed Chrome; CHROME_PATH overrides it. APP_URL can target another frontend URL. Screenshots go into ignored test-results/.
 
 Production output is frontend/dist. Configure the deployment to proxy /api to the backend or build with VITE_API_URL. Hashed assets support browser caching when the host sends suitable cache headers.
 

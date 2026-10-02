@@ -59,7 +59,7 @@ try {
   const row = await client.from("game_states").select("state").eq("user_id", userId).single();
   if (row.error) throw new Error("Live verification could not read saved game state");
   const saved = (row.data.state as GameData).expeditions.find((item) => item.id === expedition.id)!;
-  assert.ok(saved.regions.every((region) => region.material && region.questionBank && region.questionBank.length >= 3));
+  assert.ok(saved.regions.every((region) => region.material && region.questionBank && region.questionBank.length === 10));
   const file = await client.storage.from("expeditions").download(storedPath);
   if (file.error || !file.data) throw new Error("Live verification could not download saved source PDF");
   assert.deepEqual(Buffer.from(await file.data.arrayBuffer()), Buffer.from(bytes));
@@ -106,6 +106,8 @@ try {
   const finalState = await final.json();
   assert.equal(finalState.battleHistory.length, 1);
   assert.equal(finalState.battle.answers.length, questions.length);
+  assert.equal(finalState.battle.playerHp, 500);
+  assert.equal(finalState.battle.enemiesDefeated, 5);
   const refreshed = await auth.auth.refreshSession({ refresh_token: signedIn.data.session.refresh_token });
   assert.ok(!refreshed.error && refreshed.data.session);
   const refreshCheck = await fetch(base, { headers: { Authorization: `Bearer ${refreshed.data.session.access_token}` } });
