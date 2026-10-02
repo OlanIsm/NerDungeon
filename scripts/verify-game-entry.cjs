@@ -5,6 +5,7 @@ async function exitBattle(page) {
   await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
   await page.getByRole('button', { name: 'Exit', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
+  await page.getByRole('button', { name: 'Start Adventure', exact: true }).waitFor();
 }
 const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
   inventory: ['Blue Mage Robe', 'Quill Staff', 'Spectacles', 'HP Elixir'],
@@ -29,6 +30,7 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     let releaseStart;
     let delayStart = false;
     let rejectStart = false;
+    let rejectExit = false;
     await page.route('**/api/game', async route => {
       let rewards = [];
       if (route.request().method() === 'POST') {
@@ -36,6 +38,10 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
         if (action.action === 'start' && delayStart) {
           delayStart = false;
           await new Promise(resolve => { releaseStart = resolve; });
+        }
+        if (action.action === 'exit' && rejectExit) {
+          rejectExit = false;
+          return route.fulfill({ status: 503, json: { error: 'Could not exit battle. Try again.' } });
         }
         if (action.action === 'start' && rejectStart) {
           rejectStart = false;
@@ -217,6 +223,32 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
     await page.getByText('Not quite', { exact: true }).waitFor();
     assert.equal(await page.locator('#player-hp').getAttribute('value'), '450');
+    rejectExit = true;
+    await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Exit', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
+    await page.getByRole('alert').getByText('Could not exit battle. Try again.', { exact: true }).waitFor();
+    assert.equal(state.battle.answers.length, 1, 'Failed exit preserves accepted answer');
+    assert.equal(await page.locator('canvas').count(), 1, 'Failed exit stays in battle');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    const exitedId = state.battle.id;
+    const earnedGold = state.gold;
+    const chapterProgress = state.expeditions[0].progress;
+    await exitBattle(page);
+    await page.getByRole('button', { name: 'Start Adventure', exact: true }).waitFor();
+    assert.equal(state.battle, undefined, 'Exit clears saved attempt');
+    assert.equal(state.gold, earnedGold);
+    assert.equal(state.expeditions[0].progress, chapterProgress);
+    await page.reload({ waitUntil: 'networkidle' });
+    await enter();
+    await page.getByRole('button', { name: 'Submit answer', exact: true }).waitFor();
+    assert.notEqual(state.battle.id, exitedId);
+    assert.equal(state.battle.answers.length, 0, 'Exit cannot resume after reload');
+    assert.equal(await page.locator('#player-hp').getAttribute('value'), '500');
+    await page.getByRole('radio', { name: bank[0].options[(bank[0].answerIndex + 1) % 4], exact: true }).check();
+    await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
+    await page.getByText('Not quite', { exact: true }).waitFor();
     const oldBattleId = state.battle.id;
     await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
     await page.getByRole('button', { name: 'Restart', exact: true }).click();
@@ -258,7 +290,10 @@ const state = { gold: 1450, gems: 1450, xp: 1771, favor: 3,
     await page.screenshot({ path: 'test-results/react-desktop.png' });
     const reduced = await browser.newPage({ viewport: { width: 430, height: 932 }, reducedMotion: 'reduce' });
     reduced.on('pageerror', error => errors.push(error.message));
-    await reduced.route('**/api/game', route => route.fulfill({ json: gameSnapshot(state) }));
+    await reduced.route('**/api/game', route => {
+      if (route.request().method() === 'POST') applyGameAction(state, route.request().postDataJSON());
+      return route.fulfill({ json: gameSnapshot(state) });
+    });
     let failGround = true;
     await reduced.route(/_01_ground.*\.webp/, route => {
       if (failGround) return route.abort();

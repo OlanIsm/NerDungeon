@@ -20,6 +20,13 @@ function activeRegion(game: GameData, battle: Pick<Battle, "expeditionId" | "cha
 }
 
 export function applyBattleAction(game: GameData, body: Record<string, unknown>): void {
+  if (body.action === "exit") {
+    if (typeof body.battleId !== "string" || !body.battleId) throw new GameActionError("Invalid battle to exit");
+    if (!game.battle) return; // Retry after a lost response is safe once the attempt is removed.
+    if (game.battle.id !== body.battleId) throw new GameActionError("Invalid battle to exit");
+    delete game.battle;
+    return;
+  }
   if (body.action === "start" || body.action === "restart") {
     const expedition = game.expeditions.find((item) => item.id === body.expeditionId);
     const chapter = body.chapter;

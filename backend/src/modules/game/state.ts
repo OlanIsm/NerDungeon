@@ -26,7 +26,7 @@ export function newExpedition(file: string): Expedition {
 }
 
 export function applyGameAction(game: GameData, body: Record<string, unknown>): string[] {
-  if (body.action === "start" || body.action === "restart" || body.action === "answer" || body.action === "complete") {
+  if (body.action === "start" || body.action === "restart" || body.action === "exit" || body.action === "answer" || body.action === "complete") {
     applyBattleAction(game, body);
   } else if (body.action === "summon") {
     const cost = body.count === 10 ? 900 : body.count === 1 ? 100 : 0;

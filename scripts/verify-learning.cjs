@@ -89,6 +89,7 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
     await page.getByRole('button', { name: 'Exit', exact: true }).click();
     await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
+    await page.getByRole('button', { name: 'Start Adventure', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('tab', { name: 'Hub', exact: true }).click();
@@ -140,9 +141,11 @@ const { createClient } = require('../backend/node_modules/@supabase/supabase-js'
     await page.getByRole('button', { name: 'Battle menu', exact: true }).click();
     await page.getByRole('button', { name: 'Exit', exact: true }).click();
     await page.getByRole('button', { name: 'Confirm exit', exact: true }).click();
+    await page.getByRole('button', { name: 'Start Adventure', exact: true }).waitFor();
     await page.reload({ waitUntil: 'networkidle' });
     const fresh = await admin.from('game_states').select('state').eq('user_id', userId).single();
     assert.equal(fresh.data.state.gold, initial.gold + 900);
+    assert.equal(fresh.data.state.battle, undefined, 'Confirmed exit removes the saved attempt');
     assert.equal(users.size, 1, 'Reload preserves the browser account');
     assert.deepEqual(errors, []);
     console.log('PASS live browser: tutorial, wrong-answer feedback, network retry, resumed answers, real PDF generation, verified battle rewards and reload persistence');

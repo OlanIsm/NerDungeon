@@ -107,3 +107,30 @@ test("explicit restart resets an active attempt without changing resources or ac
   assert.throws(() => applyGameAction(game, answer));
   assert.throws(() => applyGameAction(game, restart));
 });
+
+test("exit discards chapter answers without removing completed progress or resources and rejects stale actions", () => {
+  const game = initialGame();
+  const questions = game.expeditions[0].regions[0].questionBank!;
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  const passedId = game.battle!.id;
+  for (const question of questions) applyGameAction(game, { action: "answer", battleId: passedId, questionId: question.id, selectedIndex: question.answerIndex });
+  applyGameAction(game, { action: "complete", battleId: passedId });
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  const oldId = game.battle!.id;
+  applyGameAction(game, { action: "answer", battleId: oldId, questionId: questions[0].id, selectedIndex: (questions[0].answerIndex + 1) % 4 });
+  const before = structuredClone(game);
+  assert.throws(() => applyGameAction(game, { action: "exit", battleId: "another-account" }));
+  const exit = { action: "exit", battleId: oldId };
+  applyGameAction(game, exit);
+  applyGameAction(game, exit);
+  assert.equal(battleSnapshot(game), null);
+  delete before.battle;
+  assert.deepEqual(game, before);
+  applyGameAction(game, { action: "start", expeditionId: "tutorial", chapter: 1 });
+  assert.notEqual(game.battle!.id, oldId);
+  assert.equal(game.battle!.answers.length, 0);
+  assert.equal(battleSnapshot(game)!.playerHp, 500);
+  assert.equal(battleSnapshot(game)!.enemyHp, 100);
+  assert.throws(() => applyGameAction(game, exit));
+  assert.throws(() => applyGameAction(game, { action: "answer", battleId: oldId, questionId: questions[1].id, selectedIndex: 0 }));
+});

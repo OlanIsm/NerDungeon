@@ -20,6 +20,7 @@ export function BattleScreen({
   onComplete,
   onAnswer,
   onRestart,
+  onExit,
   battle,
   title,
   tutorial,
@@ -30,6 +31,7 @@ export function BattleScreen({
   onAnswer: (questionId: string, selectedIndex: number) => Promise<void>;
   onComplete: () => Promise<void>;
   onRestart: () => Promise<void>;
+  onExit: () => Promise<void>;
 }) {
   const reducedMotion = useReducedMotion();
   const battleReady = battle !== null;
@@ -186,7 +188,7 @@ export function BattleScreen({
       </div>
       {world && game && battle && (
         <div className="battle-lower" aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
-          <HealthBar hp={battle.playerHp} max={battle.playerMaxHp} label="Nerd Mage" />
+          <HealthBar hp={battle.playerHp} max={battle.playerMaxHp} label="Player health" />
         <footer
           className="battle-footer"
           data-testid="combat-quiz"
@@ -287,12 +289,12 @@ export function BattleScreen({
             <Button label="Restart" onPress={() => setMenu("restart")} />
             <Button label="Exit" style={exitStyle} onPress={() => setMenu("exit")} />
           </> : <>
-            <p>{menu === "restart" ? "Your answers and HP in this attempt will reset. Your earned rewards stay safe." : "Your battle is saved. You can resume it from the chapter."}</p>
+            <p>{menu === "restart" ? "Your answers and HP in this attempt will reset. Your earned rewards stay safe." : "Your answers and HP in this attempt will reset. The next start begins at question 1. Earned rewards stay safe."}</p>
             {saveError && <p className="quiz-error" role="alert">{saveError}</p>}
-            <Button label={saving ? "Restarting..." : menu === "restart" ? "Confirm restart" : "Confirm exit"} disabled={saving} tone="gold" style={menu === "exit" ? exitStyle : undefined} onPress={() => {
-              if (menu === "exit") { navigate("RegionDetail"); return; }
+            <Button label={saving ? (menu === "exit" ? "Exiting..." : "Restarting...") : menu === "restart" ? "Confirm restart" : "Confirm exit"} disabled={saving} tone="gold" style={menu === "exit" ? exitStyle : undefined} onPress={() => {
               setSaving(true); setSaveError(undefined);
-              onRestart().catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
+              const action = menu === "exit" ? onExit().then(() => navigate("RegionDetail")) : onRestart();
+              action.catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
             }} />
             <Button label="Cancel" tone="quiet" disabled={saving} onPress={() => { setSaveError(undefined); setMenu("pause"); }} />
           </>}
@@ -325,10 +327,15 @@ export function BattleScreen({
           {loadError && (
             <div className="loading-actions" role="alert">
               <p>Some assets failed to load.</p>
+              {saveError && <p>{saveError}</p>}
               <Button
-                label="Exit"
+                label={saving ? "Exiting..." : "Exit"}
                 tone="quiet"
-                onPress={() => navigate("RegionDetail")}
+                disabled={saving || !battleReady}
+                onPress={() => {
+                  setSaving(true); setSaveError(undefined);
+                  onExit().then(() => navigate("RegionDetail")).catch((error) => setSaveError(error.message)).finally(() => setSaving(false));
+                }}
               />
               <Button label="Retry" tone="gold" onPress={retry} />
             </div>
@@ -343,7 +350,7 @@ const exitStyle = { backgroundColor: "#b9322c", color: "#fff8e7", borderColor: "
 function HealthBar({ hp, max, label, enemy = false }: { hp: number; max: number; label: string; enemy?: boolean }) {
   const id = enemy ? "enemy-hp" : "player-hp";
   return <section className={`battle-health ${enemy ? "combat-hud" : "player-health"}`} aria-label={enemy ? "Enemy health" : "Player health"} style={enemy ? undefined : { backgroundImage: `url("${art.navPlank}")` }}>
-    <label htmlFor={id}><span>{label}</span><strong>{hp} / {max} HP</strong></label>
-    <div className="health-bar"><img className="health-heart" src={icons.heart} alt="" /><div className="health-frame"><progress id={id} max={max} value={hp} /></div></div>
+    <label htmlFor={id}>{enemy && <span>{label}</span>}<strong>{hp} / {max} HP</strong></label>
+    <div className="health-bar"><img className="health-heart" src={icons.heart} alt="" /><div className="health-frame"><progress id={id} aria-label={label} max={max} value={hp} /></div></div>
   </section>;
 }
